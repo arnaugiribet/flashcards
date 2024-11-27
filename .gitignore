@@ -1,0 +1,5 @@
+# Ignore Python bytecode files and notebook checkpoints
+*.pyc
+*.pyo
+__pycache__/
+.ipynb_checkpoints

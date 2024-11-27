@@ -1,3 +1,6 @@
+import csv
+from io import StringIO
+
 class FlashcardGenerator:
     def __init__(self, llm_client):
         """
@@ -10,20 +13,24 @@ class FlashcardGenerator:
         Generate flashcards from the provided text input.
         """
         response = self.llm_client.query(text_input)
-        # flashcards = self.parse_response(response)
-        return response
+        flashcards = self.parse_response(response)
+        return flashcards
 
     def parse_response(self, response):
         """
         Parse the LLM's response into a list of tuples representing flashcards.
+        The expected format is CSV, where the response contains question,answer pairs.
+        Handle cases where the question or answer contains escape characters (e.g., \n, \t, commas).
         """
-        # Assuming the LLM returns output in the format:
-        # "Question: What is X?\nAnswer: X is Y.\n..."
-        lines = response.split("\n")
         flashcards = []
-        for line in lines:
-            if line.startswith("Question:") and "Answer:" in line:
-                question, answer = line.split("Answer:", 1)
-                flashcards.append((question.replace("Question:", "").strip(),
-                                   answer.strip()))
+
+        # Use StringIO to treat the response as a file-like object for the CSV reader
+        response_io = StringIO(response)
+        reader = csv.reader(response_io, quotechar='"', escapechar='\\')
+
+        # Iterate over each row in the CSV response
+        for row in reader:
+            question, answer = row
+            flashcards.append((question.strip(), answer.strip()))
+
         return flashcards

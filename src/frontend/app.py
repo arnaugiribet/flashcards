@@ -35,8 +35,8 @@ def main():
                 # Generate Flashcards
                 flashcards = flashcard_generator.generate_flashcards(text_input)
                 if flashcards:
-                    #st.success(f"Generated {len(flashcards)} flashcards!")
-                    st.success(flashcards)
+                    for question, answer in flashcards:
+                        st.success(f"Q: {question}\nA: {answer}")
 
                 else:
                     st.warning("No flashcards were generated. Try revising your input.")
