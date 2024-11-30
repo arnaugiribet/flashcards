@@ -1,5 +1,6 @@
 import csv
 from io import StringIO
+from src.backend.flashcard_class import Flashcard
 
 class FlashcardGenerator:
     def __init__(self, llm_client):
@@ -14,11 +15,12 @@ class FlashcardGenerator:
         """
         response = self.llm_client.query(text_input)
         flashcards = self.parse_response(response)
+
         return flashcards
 
     def parse_response(self, response):
         """
-        Parse the LLM's response into a list of tuples representing flashcards.
+        Parse the LLM's response into a list of Flaschards instances.
         The expected format is CSV, where the response contains question,answer pairs.
         Handle cases where the question or answer contains escape characters (e.g., \n, \t, commas).
         """
@@ -31,6 +33,7 @@ class FlashcardGenerator:
         # Iterate over each row in the CSV response
         for row in reader:
             question, answer = row
-            flashcards.append((question.strip(), answer.strip()))
+            card_i = Flashcard(question.strip(), answer.strip())
+            flashcards.append(card_i)
 
         return flashcards
