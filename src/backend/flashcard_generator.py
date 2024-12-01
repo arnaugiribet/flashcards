@@ -14,15 +14,24 @@ class FlashcardGenerator:
         Generate flashcards from the provided text input.
         """
         response = self.llm_client.query(text_input)
-        flashcards = self.parse_response(response)
+        flashcards = self.create_flashcards_from_response(response)
 
         return flashcards
 
-    def parse_response(self, response):
+    def create_flashcards_from_response(self, response):
         """
-        Parse the LLM's response into a list of Flaschards instances.
-        The expected format is CSV, where the response contains question,answer pairs.
-        Handle cases where the question or answer contains escape characters (e.g., \n, \t, commas).
+        Transform the LLM's raw text output into a list of Flashcard instances.
+    
+        Processes a CSV-formatted response from the Language Learning Model,
+        converting each row into a structured Flashcard object. The method 
+        handles complex parsing scenarios, including:
+        - Escape characters in questions and answers
+        - Comma-separated values
+        - Quoted text with special characters
+    
+        :param response: Raw text output from the LLM, formatted as CSV
+        :return: A list of Flashcard objects created from the parsed response
+        :raises: Potential parsing errors if the CSV format is invalid
         """
         flashcards = []
 
