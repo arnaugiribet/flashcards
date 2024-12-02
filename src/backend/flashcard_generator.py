@@ -9,10 +9,11 @@ class FlashcardGenerator:
         """
         self.llm_client = llm_client
 
-    def generate_flashcards(self, text_input):
+    def generate_flashcards(self, text_input, proposed_flashcards = "", feedback = ""):
         """
         Generate flashcards from the provided text input.
         """
+        text_input = text_input + feedback
         response = self.llm_client.query(text_input)
         flashcards = self.create_flashcards_from_response(response)
 
@@ -33,6 +34,8 @@ class FlashcardGenerator:
         :return: A list of Flashcard objects created from the parsed response
         :raises: Potential parsing errors if the CSV format is invalid
         """
+
+        print("Turning LLM output into flashcards...")
         flashcards = []
 
         # Use StringIO to treat the response as a file-like object for the CSV reader
@@ -45,4 +48,5 @@ class FlashcardGenerator:
             card_i = Flashcard(question.strip(), answer.strip())
             flashcards.append(card_i)
 
+        print("Flashcards were created")
         return flashcards
