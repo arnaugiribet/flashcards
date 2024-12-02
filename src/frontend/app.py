@@ -52,7 +52,6 @@ def main():
                     st.session_state.generated_flashcards = flashcards
                     st.session_state.original_text = text_input
                     
-                    
                 else:
                     st.warning("No flashcards were generated. Try revising your input.")
             except Exception as e:
@@ -63,7 +62,7 @@ def main():
         # Display Generated Flashcards
         st.subheader("Generated Flashcards")
         for i, flashcard in enumerate(st.session_state.generated_flashcards, 1):
-            st.success(f"Flashcard {i}\nQ: {flashcard.question}\nA: {flashcard.answer}")
+            st.success(str(flashcard).replace("\n","\n\n"))
 
         # Radio button for Accept or Feedback
         action_choice = st.radio(
@@ -97,12 +96,12 @@ def main():
                         )
                         
                         if regenerated_flashcards:
-                            st.session_state.generated_flashcards = regenerated_flashcards
+                            st.session_state.regenerated_flashcards = regenerated_flashcards
                             
                             # Display Regenerated Flashcards
                             st.subheader("Regenerated Flashcards")
                             for i, flashcard in enumerate(regenerated_flashcards, 1):
-                                st.success(f"Flashcard {i}\nQ: {flashcard.question}\nA: {flashcard.answer}")
+                                st.success(str(flashcard).replace("\n","\n\n"))
                         else:
                             st.warning("No flashcards were regenerated. Try different feedback.")
                     except Exception as e:

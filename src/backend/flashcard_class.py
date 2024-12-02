@@ -69,8 +69,17 @@ class Flashcard:
         
         :return: A formatted string with flashcard details
         """
-        return (f"Flashcard (ID: {self._id})\n"
+        return (f"Flashcard ID: {self._id}\n"
                 f"Question: {self._question}\n"
                 f"Answer: {self._answer}\n"
                 f"Created: {self._creation_date}\n"
                 f"Due: {self._due}")
+
+    def short_str(self):
+        """
+        String short representation of the Flashcard.
+        
+        :return: A formatted string with question and answer
+        """
+        return (f"Question: {self._question}\n"
+                f"Answer: {self._answer}\n")
