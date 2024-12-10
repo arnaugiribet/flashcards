@@ -9,7 +9,7 @@ from llm_client import LLMClient
 from django.http import HttpResponse
 
 def home(request):
-    return HttpResponse("Welcome to the Flashcards app!")
+    return render(request, "home.html")
 
 def flashcard_list(request):
     """
