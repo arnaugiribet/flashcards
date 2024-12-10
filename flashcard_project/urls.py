@@ -19,8 +19,14 @@ from django.contrib import admin
 from django.urls import path, include
 from flashcards import views
 
+# List of prefixes to apply
+prefixes = ["", "apm0074851-rnaseq-amer01/ag-scrna/port/8000/"]
+
+# Initialize the urlpatterns list
 urlpatterns = [
-    path("admin/", admin.site.urls),
-    path('flashcards/', include('flashcards.urls')),
-    path('', views.home, name='home'),
+    path("admin/", admin.site.urls)
 ]
+
+# Loop through each prefix and append the URL patterns to urlpatterns
+for prefix in prefixes:
+    urlpatterns.append(path(f'{prefix}', include('flashcards.urls')))  # Routes root path to flashcards app
