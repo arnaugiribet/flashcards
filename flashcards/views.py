@@ -1,27 +1,22 @@
 from django.shortcuts import render
 from django.conf import settings
 import os
+from flashcards.models import Flashcard
 
 # Import your existing backend classes
 from llm_client import LLMClient
-from flashcard_generator import FlashcardGenerator
-from flashcard_class import Flashcard
 
 from django.http import HttpResponse
 
 def home(request):
     return HttpResponse("Welcome to the Flashcards app!")
-    
-def generate_flashcards(request):
-    # Example of using your generator
-    api_key = os.getenv('OPENAI_API_KEY')  # Use environment variables!
-    llm_client = LLMClient(api_key)
-    generator = FlashcardGenerator(llm_client)
 
-    # You'll want to add form handling here to get text input
-    text_input = "Example study material..."
-    flashcards = generator.generate_flashcards(text_input)
-
-    return render(request, 'flashcards/generate.html', {
+def flashcard_list(request):
+    """
+    Retrieve all flashcards and render them in a template.
+    Can be extended to support filtering, pagination, etc.
+    """
+    flashcards = Flashcard.objects.all()
+    return render(request, 'flashcards/list_all_flashcards.html', {
         'flashcards': flashcards
     })
