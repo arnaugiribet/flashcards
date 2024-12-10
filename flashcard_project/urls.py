@@ -18,6 +18,7 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 from flashcards import views
+from django.contrib.auth.views import LoginView
 
 # List of prefixes to apply
 prefixes = ["", "apm0074851-rnaseq-amer01/ag-scrna/port/8000/"]
@@ -30,3 +31,4 @@ urlpatterns = [
 # Loop through each prefix and append the URL patterns to urlpatterns
 for prefix in prefixes:
     urlpatterns.append(path(f'{prefix}', include('flashcards.urls')))  # Routes root path to flashcards app
+    urlpatterns.append(path(f'{prefix}login/', LoginView.as_view(template_name='registration/login.html'), name='login'))
