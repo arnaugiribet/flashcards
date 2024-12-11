@@ -21,7 +21,10 @@ from flashcards import views
 from django.contrib.auth.views import LoginView
 
 # List of prefixes to apply
-prefixes = ["", "apm0074851-rnaseq-amer01/ag-scrna/port/8000/"]
+prefixes = [
+    "", 
+    # "apm0074851-rnaseq-amer01/ag-scrna/port/8000/",
+    ]
 
 # Initialize the urlpatterns list
 urlpatterns = [

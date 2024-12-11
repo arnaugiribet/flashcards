@@ -5,20 +5,46 @@
     <div class="login-container" style="background-color: white; padding: 2rem; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 100%; max-width: 400px;">
         <h2 style="color: #9daca2; text-align: center; margin-bottom: 1rem;">Log In</h2>
         
+        {% if form.non_field_errors %}
+        <div style="background-color: #ffebee; color: #c62828; padding: 0.8rem; border-radius: 5px; margin-bottom: 1rem; text-align: center;">
+            {% for error in form.non_field_errors %}
+                {{ error }}
+            {% endfor %}
+        </div>
+        {% endif %}
+        
         <form method="post">
             {% csrf_token %}
             <div class="form-group" style="margin-bottom: 1rem;">
                 <label for="id_username" style="color: #333; font-weight: bold;">Username</label>
                 {{ form.username }}
+                {% if form.username.errors %}
+                <div style="color: #c62828; font-size: 0.85rem; margin-top: 0.5rem;">
+                    {% for error in form.username.errors %}
+                        {{ error }}
+                    {% endfor %}
+                </div>
+                {% endif %}
             </div>
             <div class="form-group" style="margin-bottom: 1rem;">
                 <label for="id_password" style="color: #333; font-weight: bold;">Password</label>
                 {{ form.password }}
+                {% if form.password.errors %}
+                <div style="color: #c62828; font-size: 0.85rem; margin-top: 0.5rem;">
+                    {% for error in form.password.errors %}
+                        {{ error }}
+                    {% endfor %}
+                </div>
+                {% endif %}
             </div>
             <button type="submit" style="width: 100%; padding: 0.8rem; background-color: #9daca2; color: white; border: none; border-radius: 5px; cursor: pointer;">Log In</button>
         </form>
 
-        <p style="text-align: center; color: #9daca2;">Don't have an account? <a href="{% url 'signup' %}" style="color: #9daca2;">Sign up here</a></p>
+        <div style="margin-top: 1rem; text-align: center;">
+            <a href="{% url 'password_reset' %}" style="color: #9daca2; font-size: 0.9rem;">Forgot password?</a>
+        </div>
+
+        <p style="text-align: center; color: #9daca2; margin-top: 1rem;">Don't have an account? <a href="{% url 'signup' %}" style="color: #9daca2;">Sign up here</a></p>
     </div>
 </div>
 {% endblock %}

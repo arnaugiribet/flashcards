@@ -115,6 +115,9 @@ USE_I18N = True
 
 USE_TZ = True
 
+LANGUAGES = [
+    ('en', 'English'),
+]
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
@@ -125,3 +128,25 @@ STATIC_URL = "static/"
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# AUTHENTICACTION
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',
+]
+
+# LOGIN CONFIGURATION
+# Redirect to this page if login is required
+LOGIN_URL = '/login/'  # or name your login path appropriately in urls.py
+
+# Redirect to this page after logging out
+LOGOUT_REDIRECT_URL = '/'  # Typically the home page
+
+# This specifies where to redirect users after successful login
+LOGIN_REDIRECT_URL = '/'  # Or another page, e.g., '/dashboard/'
+
+# Email settings for password reset
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'  # For development
+# For production, replace with your actual email backend (e.g., SMTP)
+
+# Optional: Set a default from email
+DEFAULT_FROM_EMAIL = 'noreply@yourdomain.com'

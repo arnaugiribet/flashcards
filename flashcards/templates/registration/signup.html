@@ -5,24 +5,53 @@
     <div class="signup-container" style="background-color: white; padding: 2rem; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 100%; max-width: 400px;">
         <h2 style="color: #9daca2; text-align: center; margin-bottom: 1rem;">Sign Up</h2>
         
+        {% if form.non_field_errors %}
+        <div style="background-color: #ffebee; color: #c62828; padding: 0.8rem; border-radius: 5px; margin-bottom: 1rem; text-align: center;">
+            {% for error in form.non_field_errors %}
+                {{ error }}
+            {% endfor %}
+        </div>
+        {% endif %}
+        
         <form method="post">
             {% csrf_token %}
             <div class="form-group" style="margin-bottom: 1rem;">
                 <label for="id_username" style="color: #333; font-weight: bold;">Username</label>
                 {{ form.username }}
+                {% if form.username.errors %}
+                <div style="color: #c62828; font-size: 0.85rem; margin-top: 0.5rem;">
+                    {% for error in form.username.errors %}
+                        {{ error }}
+                    {% endfor %}
+                </div>
+                {% endif %}
             </div>
             <div class="form-group" style="margin-bottom: 1rem;">
                 <label for="id_password1" style="color: #333; font-weight: bold;">Password</label>
                 {{ form.password1 }}
+                {% if form.password1.errors %}
+                <div style="color: #c62828; font-size: 0.85rem; margin-top: 0.5rem;">
+                    {% for error in form.password1.errors %}
+                        {{ error }}
+                    {% endfor %}
+                </div>
+                {% endif %}
             </div>
             <div class="form-group" style="margin-bottom: 1rem;">
                 <label for="id_password2" style="color: #333; font-weight: bold;">Repeat Password</label>
                 {{ form.password2 }}
+                {% if form.password2.errors %}
+                <div style="color: #c62828; font-size: 0.85rem; margin-top: 0.5rem;">
+                    {% for error in form.password2.errors %}
+                        {{ error }}
+                    {% endfor %}
+                </div>
+                {% endif %}
             </div>
             <button type="submit" style="width: 100%; padding: 0.8rem; background-color: #9daca2; color: white; border: none; border-radius: 5px; cursor: pointer;">Sign Up</button>
         </form>
 
-        <p style="text-align: center; color: #9daca2;">Already have an account? <a href="{% url 'login' %}" style="color: #9daca2;">Log in here</a></p>
+        <p style="text-align: center; color: #9daca2; margin-top: 1rem;">Already have an account? <a href="{% url 'login' %}" style="color: #9daca2;">Log in here</a></p>
     </div>
 </div>
 {% endblock %}
