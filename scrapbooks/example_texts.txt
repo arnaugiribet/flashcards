@@ -1,0 +1,6 @@
+There are 12 rules in life.
+Most people need 8 hours of sleep everyday.
+Arnau was born in 1994, January the first, approximately at 4 pm in the afternoon. He was blond and his eyes were blue, but eventually they'd all turn brown.
+
+
+Can you split Arnau's question into several? One for dates and one for body characteristics.
