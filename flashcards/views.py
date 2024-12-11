@@ -24,6 +24,15 @@ def flashcard_list(request):
         'flashcards': flashcards
     })
 
+def account_settings(request):
+    return HttpResponse(status=204)
+    
+def add_flashcards(request):
+    return HttpResponse(status=204)
+    
+def study(request):
+    return HttpResponse(status=204)
+    
 def signup(request):
 
     if request.method == 'POST':

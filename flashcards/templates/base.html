@@ -1,40 +1,13 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}FlashApp{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            line-height: 1.6;
-            margin: 0;
-            padding: 0;
-            display: flex;
-            flex-direction: column;
-            min-height: 100vh;
-        }
-        .header {
-            background-color: #9daca2;
-            color: white;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0.5rem 2rem;
-        }
-        .header-left {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        .header-left a {
-            color: white;
-            text-decoration: none;
-            font-weight: bold;
-            display: flex;
-            align-items: center;
-        }
-        .logo {
+        .custom-logo {
             width: 30px;
             height: 30px;
             background-color: white;
@@ -43,58 +16,69 @@
             mask-size: cover;
             -webkit-mask-size: cover;
         }
-        .header-center {
-            display: flex;
-            gap: 20px;
-        }
-        .header-center a {
-            color: white;
-            text-decoration: none;
-        }
-        .header-right a {
-            color: white;
-            text-decoration: none;
-        }
-        .content {
-            flex: 1;
-            padding: 20px;
-        }
-        .footer {
-            background-color: #333;
-            color: white;
-            text-align: center;
-            padding: 1rem;
-        }
-        a:hover {
-            color: #f0f0f0;
-        }
     </style>
     {% block extra_css %}{% endblock %}
 </head>
-<body>
-    <header class="header">
-        <div class="header-left">
-            <a href="{% url 'home' %}">
-                <div class="logo"></div>
-                FlashApp
-            </a>
-        </div>
-        <div class="header-center">
-            <a href="{% url 'flashcard_list' %}">All Cards</a>
-            <a href="#">Add Card</a>
-            <a href="#">Study</a>
-        </div>
-        <div class="header-right">
-            <a href="{% url 'login' %}">Log In</a>
-        </div>
-    </header>
+<body class="flex flex-col min-h-screen">
+    <nav class="bg-[#9daca2] text-white" style="padding: 0.5rem 2rem;">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <!-- Left Section: Home Button -->
+                <div class="flex items-center">
+                    <a href="{% url 'home' %}" class="flex items-center text-white hover:text-gray-200">
+                        <div class="custom-logo mr-2"></div>
+                        FlashApp
+                    </a>
+                </div>
 
-    <main class="content">
+                <!-- Middle Section: Conditional Content -->
+                <div class="flex items-center space-x-4">
+                    {% if user.is_authenticated %}
+                        <a href="{% url 'flashcard_list' %}" class="text-white hover:text-gray-200">
+                            All Cards
+                        </a>
+                        <a href="{% url 'add_flashcards' %}" class="text-white hover:text-gray-200">
+                            Add Card
+                        </a>
+                        <a href="{% url 'study' %}" class="text-white hover:text-gray-200">
+                            Study
+                        </a>
+                    {% endif %}
+                </div>
+
+                <!-- Right Section: Authentication Links -->
+                <div class="flex items-center space-x-4">
+                    {% if not user.is_authenticated %}
+                        <a href="{% url 'login' %}" class="text-white hover:text-gray-200">
+                            Log In
+                        </a>
+                        <a href="{% url 'signup' %}" class="text-white hover:text-gray-200">
+                            Sign Up
+                        </a>
+                    {% else %}
+                        <a href="{% url 'account_settings' %}" class="text-white hover:text-gray-200">
+                            Account
+                        </a>
+                        <form action="{% url 'logout' %}" method="post" class="inline">
+                            {% csrf_token %}
+                            <button type="submit" class="bg-[#9daca2] text-white hover:bg-opacity-90 px-3 py-2 rounded-md text-sm font-medium">
+                                Log Out
+                            </button>
+                        </form>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Content Block -->
+    <main class="flex-grow px-4 py-6">
         {% block content %}
         {% endblock %}
     </main>
 
-    <footer class="footer">
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white text-center py-4">
         <p>&copy; 2024 FlashApp. All rights reserved.</p>
     </footer>
 
