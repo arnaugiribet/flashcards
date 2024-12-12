@@ -79,7 +79,7 @@ WSGI_APPLICATION = "flashcard_project.wsgi.application"
 
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.postgresql",
+        "ENGINE": "django.db.backends.postgresql_psycopg2",
         "NAME": os.getenv('AWS_FLASH_DB_NAME'),
         "USER": os.getenv('AWS_FLASH_DB_USER'),
         "PASSWORD": os.getenv('AWS_FLASH_DB_PASSWORD'),
