@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="flex flex-col items-center justify-center text-center max-w-xl mx-auto px-4 py-8">
+    <div class="bg-[#f4f6f5] p-8 rounded-lg shadow-md w-full">
+        <h1 class="text-[#9daca2] text-3xl mb-4">All Caught Up!</h1>
+        
+        <p class="text-gray-600 text-lg mb-6">
+            You have no flashcards due today. Great job staying on top of your studies!
+        </p>
+        
+        <div class="flex justify-center space-x-4">
+            <a href="{% url 'add_flashcards' %}" class="bg-[#9daca2] text-white px-4 py-2 rounded-md hover:bg-opacity-90">
+                Add New Flashcards
+            </a>
+            
+            <a href="{% url 'flashcard_list' %}" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-300">
+                View All Cards
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

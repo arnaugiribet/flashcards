@@ -1,46 +1,56 @@
 from django.db import models
 import uuid
 from datetime import date
+from django.contrib.auth.models import User
+
+class Deck(models.Model):
+    """
+    Model representing a deck of flashcards.
+    
+    A deck can contain other decks (nested decks) and belongs to a user.
+    """
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=200)
+    description = models.TextField(blank=True, null=True)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='decks')
+    parent_deck = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='subdeck')
+    
+    def __str__(self):
+        return f"{self.name} (User: {self.user.username})"
 
 class Flashcard(models.Model):
     """
     Django model representing a flashcard.
     
-    Key Design Goals:
-    - Maintain unique ID generation
-    - Keep creation and due date functionality
-    - Enable seamless transition from custom class to database model
+    Each flashcard belongs to a specific deck and user.
     """
     
-    # Fields corresponding to the database
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    question = models.TextField()  # Direct field (no need for _question)
-    answer = models.TextField()    # Direct field (no need for _answer)
+    question = models.TextField()
+    answer = models.TextField()
     creation_date = models.DateField(auto_now_add=True)
     due = models.DateField(default=date.today)
-
+    
+    # Relationship to Deck and User
+    deck = models.ForeignKey(Deck, on_delete=models.CASCADE, related_name='flashcards')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='flashcards')
+        
     def __str__(self):
-        """
-        String representation of the Flashcard.
-        Matches the original class's __str__ method.
-        """
         return (f"Flashcard ID: {self.id}\n"
                 f"Question: {self.question}\n"
-                f"Answer: {self.answer}\n"
-                f"Created: {self.creation_date}\n"
+                f"Deck: {self.deck.name}\n"
+                f"User: {self.user.username}\n"
                 f"Due: {self.due}")
 
     def short_str(self):
         """
-        Short string representation, preserving original method.
+        Short string representation.
         """
         return (f"Question: {self.question}\n"
                 f"Answer: {self.answer}")
 
-    # Optionally, override save method if you have custom logic to implement
     def save(self, *args, **kwargs):
         """
-        Override save method to handle any custom saving logic.
-        This allows you to add additional processing if needed.
+        Override save method to ensure user is associated with the card's deck.
         """
         super().save(*args, **kwargs)

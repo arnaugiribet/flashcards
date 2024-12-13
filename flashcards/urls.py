@@ -7,6 +7,7 @@ urlpatterns = [
     path('flashcards/', views.flashcard_list, name='flashcard_list'),
     path('add_flashcards/', views.add_flashcards, name='add_flashcards'),
     path('study/', views.study, name='study'),
+    path('study/review', views.review_card, name='review_card'),
     path('signup/', views.signup, name='signup'),
     path('login/', auth_views.LoginView.as_view(), name='login'),
     path('logout/', auth_views.LogoutView.as_view(), name='logout'),  # Redirect to home after logout
