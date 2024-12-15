@@ -9,6 +9,9 @@ from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
 from flashcards.models import Flashcard
 from django.utils.translation import activate
+import json
+from django.views.decorators.http import require_http_methods
+from django.core.exceptions import ValidationError
 
 # Import your existing backend classes
 from llm_client import LLMClient
@@ -63,54 +66,74 @@ def study(request):
     })
 
 @login_required
+@require_http_methods(["POST"])
 def review_card(request):
     """
-    Handle card review interactions.
-    
-    Expects a POST request with:
-    - card_id: ID of the card being reviewed
-    - result: 'correct' or 'incorrect'
+    Handle card review with optimized performance and detailed interval calculation.
     """
-    if request.method == 'POST':
-        card_id = request.POST.get('card_id')
-        result = request.POST.get('result')
+    try:
+        # Parse JSON data
+        data = json.loads(request.body)
+        card_id = data.get('card_id')
+        result = data.get('result')
         
-        try:
-            card = Flashcard.objects.get(id=card_id, user=request.user)
-            
-            # Logic for updating card's due date based on review result
-            if result == 'correct':
-                # Increase interval between reviews
-                card.due = timezone.now().date() + timedelta(days=1)  # Simple implementation
-            else:
-                # Reset to shorter interval if card is marked incorrect
-                card.due = timezone.now().date()
-            
-            card.save()
-            
-            # Get the next due card
-            next_card = Flashcard.objects.filter(
-                user=request.user, 
-                due__lte=timezone.now().date()
-            ).exclude(id=card_id).order_by('due').first()
-            
-            if next_card:
-                return JsonResponse({
-                    'status': 'success', 
-                    'next_card_id': str(next_card.id),
-                    'question': next_card.question,
-                    'answer': next_card.answer
-                })
-            else:
-                return JsonResponse({
-                    'status': 'completed',
-                    'message': 'No more cards to review'
-                })
+        # Validate input
+        if not card_id or result not in ['again', 'hard', 'good', 'easy']:
+            return JsonResponse({'status': 'error', 'message': 'Invalid input'}, status=400)
         
-        except Flashcard.DoesNotExist:
-            return JsonResponse({'status': 'error', 'message': 'Card not found'}, status=404)
+        # Fetch card with minimal fields
+        card = Flashcard.objects.only('id', 'user', 'due').get(
+            id=card_id, 
+            user=request.user
+        )
+        
+        # Calculate new due date based on review result
+        current_date = timezone.now().date()
+        
+        # Sophisticated interval calculation
+        interval_map = {
+            'again': timedelta(days=1),   # Reset to shortest interval
+            'hard': timedelta(days=3),    # Slightly longer interval
+            'good': timedelta(days=5),    # Moderate interval
+            'easy': timedelta(days=7)     # Longest interval
+        }
+        
+        # Update card's due date
+        card.due = current_date + interval_map[result]
+        card.save(update_fields=['due'])
+        
+        # Efficiently get remaining due cards
+        due_cards = Flashcard.objects.filter(
+            user=request.user, 
+            due__lte=current_date
+        ).order_by('due')
+        
+        # If no more cards due
+        if not due_cards.exists():
+            return JsonResponse({
+                'status': 'completed',
+                'message': 'No more cards to review'
+            })
+        
+        # Get next card
+        next_card = due_cards.first()
+        
+        return JsonResponse({
+            'status': 'success', 
+            'next_card_id': str(next_card.id),
+            'question': next_card.question,
+            'answer': next_card.answer,
+            'remaining_cards': due_cards.count()
+        })
     
-    return JsonResponse({'status': 'error', 'message': 'Invalid request'}, status=400)
+    except Flashcard.DoesNotExist:
+        return JsonResponse({'status': 'error', 'message': 'Card not found'}, status=404)
+    except json.JSONDecodeError:
+        return JsonResponse({'status': 'error', 'message': 'Invalid JSON'}, status=400)
+    except Exception as e:
+        # Log the error for debugging
+        logger.error(f"Unexpected error in review_card: {e}")
+        return JsonResponse({'status': 'error', 'message': 'Server error'}, status=500)
     
 def signup(request):
 
