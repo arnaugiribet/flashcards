@@ -9,7 +9,7 @@
                 <p class="text-gray-600">Cards remaining: <span id="cards-remaining">{{ total_due_cards }}</span></p>
             </div>
 
-            <div id="flashcard-container" class="bg-white rounded-lg p-6 shadow-inner mb-6">
+            <div id="flashcard-container" class="bg-white rounded-lg p-6 shadow-inner mb-6 transition-all duration-300">
                 <div id="question" class="text-xl text-gray-800 mb-4 min-h-[100px] flex items-center justify-center text-center">
                     {{ card.question }}
                 </div>
@@ -23,12 +23,18 @@
                         Show Answer
                     </button>
 
-                    <div id="review-buttons" class="hidden grid grid-cols-2 gap-4">
-                        <button class="review-btn bg-green-500 text-white py-3 rounded-md hover:bg-green-600 transition-colors" data-result="correct">
-                            Correct
+                    <div id="review-buttons" class="hidden grid grid-cols-4 gap-4">
+                        <button class="review-btn bg-[#d9b3b3] text-gray-700 py-3 rounded-md hover:opacity-90 transition-colors" data-result="again">
+                            Again
                         </button>
-                        <button class="review-btn bg-red-500 text-white py-3 rounded-md hover:bg-red-600 transition-colors" data-result="incorrect">
-                            Incorrect
+                        <button class="review-btn bg-[#e0c2a2] text-gray-700 py-3 rounded-md hover:opacity-90 transition-colors" data-result="hard">
+                            Hard
+                        </button>
+                        <button class="review-btn bg-[#b3d9b3] text-gray-700 py-3 rounded-md hover:opacity-90 transition-colors" data-result="good">
+                            Good
+                        </button>
+                        <button class="review-btn bg-[#b3c6d9] text-gray-700 py-3 rounded-md hover:opacity-90 transition-colors" data-result="easy">
+                            Easy
                         </button>
                     </div>
                 </div>
@@ -38,72 +44,121 @@
 </div>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const showAnswerBtn = document.getElementById('show-answer-btn');
-    const answerDiv = document.getElementById('answer');
-    const reviewButtons = document.getElementById('review-buttons');
-    const questionDiv = document.getElementById('question');
-    const cardsRemainingSpan = document.getElementById('cards-remaining');
-    
-    showAnswerBtn.addEventListener('click', function() {
-        answerDiv.classList.remove('hidden');
-        showAnswerBtn.classList.add('hidden');
-        reviewButtons.classList.remove('hidden');
-    });
-    
-    // Review button event listeners
-    document.querySelectorAll('.review-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
-            const result = this.getAttribute('data-result');
-            const cardId = '{{ card.id }}';
-            
-            fetch('{% url "review_card" %}', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                    'X-CSRFToken': '{{ csrf_token }}'
-                },
-                body: `card_id=${cardId}&result=${result}`
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.status === 'success') {
-                    // Update card content
-                    questionDiv.textContent = data.question;
-                    answerDiv.textContent = data.answer;
-                    
-                    // Update remaining cards count
-                    const currentCount = parseInt(cardsRemainingSpan.textContent);
-                    cardsRemainingSpan.textContent = currentCount - 1;
-                    
-                    // Reset UI
-                    answerDiv.classList.add('hidden');
-                    showAnswerBtn.classList.remove('hidden');
-                    reviewButtons.classList.add('hidden');
-                } else if (data.status === 'completed') {
-                    // All cards reviewed
-                    document.getElementById('flashcard-container').innerHTML = `
-                        <div class="text-center">
-                            <h3 class="text-[#9daca2] text-2xl mb-4">Congratulations!</h3>
-                            <p class="text-gray-600 mb-6">You've completed all your due cards for today.</p>
-                            <div class="flex justify-center space-x-4">
-                                <a href="{% url 'home' %}" class="bg-[#9daca2] text-white px-4 py-2 rounded-md hover:bg-opacity-90">
-                                    Back to Home
-                                </a>
-                                <a href="{% url 'add_flashcards' %}" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-300">
-                                    Add More Cards
-                                </a>
-                            </div>
-                        </div>
-                    `;
+    document.addEventListener('DOMContentLoaded', function() {
+        const showAnswerBtn = document.getElementById('show-answer-btn');
+        const answerDiv = document.getElementById('answer');
+        const reviewButtons = document.getElementById('review-buttons');
+        const questionDiv = document.getElementById('question');
+        const cardsRemainingSpan = document.getElementById('cards-remaining');
+        const flashcardContainer = document.getElementById('flashcard-container');
+
+        // CSRF token and URL for review
+        const reviewCardUrl = "{% url 'review_card' %}";
+        const csrfToken = "{{ csrf_token }}";
+        const cardId = "{{ card.id }}";
+
+        // Disable buttons during fetch to prevent multiple submissions
+        function setButtonsState(disabled) {
+            document.querySelectorAll('.review-btn, #show-answer-btn').forEach(btn => {
+                btn.disabled = disabled;
+                btn.classList.toggle('opacity-50', disabled);
+            });
+        }
+
+        showAnswerBtn.addEventListener('click', function() {
+            answerDiv.classList.remove('hidden');
+            showAnswerBtn.classList.add('hidden');
+            reviewButtons.classList.remove('hidden');
+        });
+        
+        // Centralized error handling
+        function handleError(error) {
+            console.error('Review error:', error);
+            setButtonsState(false);
+            flashcardContainer.classList.remove('opacity-50');
+            alert(`An error occurred: ${error.message || 'Unknown error'}`);
+        }
+
+        // Fetch next card
+        async function fetchNextCard(cardId, result) {
+            setButtonsState(true);
+            flashcardContainer.classList.add('opacity-50');
+
+            try {
+                const response = await fetch(reviewCardUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrfToken
+                    },
+                    body: JSON.stringify({
+                        card_id: cardId,
+                        result: result
+                    })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.message || 'Failed to fetch next card');
                 }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('An error occurred while processing your review.');
+
+                return data;
+            } catch (error) {
+                handleError(error);
+                throw error;
+            }
+        }
+
+        // Update card UI
+        function updateCardUI(data) {
+            setButtonsState(false);
+            flashcardContainer.classList.remove('opacity-50');
+
+            if (data.status === 'success') {
+                // Update card content
+                questionDiv.textContent = data.question;
+                answerDiv.textContent = data.answer;
+                
+                // Update remaining cards count
+                cardsRemainingSpan.textContent = data.remaining_cards;
+                
+                // Reset UI
+                answerDiv.classList.add('hidden');
+                showAnswerBtn.classList.remove('hidden');
+                reviewButtons.classList.add('hidden');
+            } else if (data.status === 'completed') {
+                // All cards reviewed
+                flashcardContainer.innerHTML = `
+                    <div class="text-center">
+                        <h3 class="text-[#9daca2] text-2xl mb-4">Congratulations!</h3>
+                        <p class="text-gray-600 mb-6">You've completed all your due cards for today.</p>
+                        <div class="flex justify-center space-x-4">
+                            <a href="{% url 'home' %}" class="bg-[#9daca2] text-white px-4 py-2 rounded-md hover:bg-opacity-90">
+                                Back to Home
+                            </a>
+                            <a href="{% url 'add_flashcards' %}" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-300">
+                                Add More Cards
+                            </a>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        // Review button event listeners
+        document.querySelectorAll('.review-btn').forEach(btn => {
+            btn.addEventListener('click', async function() {
+                const result = this.getAttribute('data-result');
+
+                try {
+                    const data = await fetchNextCard(cardId, result);
+                    updateCardUI(data);
+                } catch (error) {
+                    // Error already handled in fetchNextCard
+                }
             });
         });
     });
-});
 </script>
 {% endblock %}
