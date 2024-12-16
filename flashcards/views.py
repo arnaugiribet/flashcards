@@ -92,10 +92,10 @@ def review_card(request):
         
         # Sophisticated interval calculation
         interval_map = {
-            'again': timedelta(days=1),   # Reset to shortest interval
-            'hard': timedelta(days=3),    # Slightly longer interval
-            'good': timedelta(days=5),    # Moderate interval
-            'easy': timedelta(days=7)     # Longest interval
+            'again': timedelta(seconds=600),   # Reset to shortest interval
+            'hard': timedelta(days=1),    # Slightly longer interval
+            'good': timedelta(days=3),    # Moderate interval
+            'easy': timedelta(days=5)     # Longest interval
         }
         
         # Update card's due date
@@ -135,6 +135,33 @@ def review_card(request):
         logger.error(f"Unexpected error in review_card: {e}")
         return JsonResponse({'status': 'error', 'message': 'Server error'}, status=500)
     
+@login_required
+@require_http_methods(["GET"])
+def get_all_cards(request):
+    """
+    Fetch all cards for the user, both due and non-due.
+    """
+    try:
+        cards = Flashcard.objects.filter(user=request.user).order_by('due')
+        
+        # Serialize cards into JSON
+        card_list = [{
+            'id': card.id,
+            'question': card.question,
+            'answer': card.answer,
+            'due': card.due.isoformat(),  # Include due date for filtering later
+            'is_due': card.due <= timezone.now().date()  # Add a flag for due status
+        } for card in cards]
+        
+        return JsonResponse({
+            'status': 'success',
+            'cards': card_list
+        })
+    except Exception as e:
+        logger.error(f"Error fetching cards: {e}")
+        return JsonResponse({'status': 'error', 'message': 'Failed to fetch cards'}, status=500)
+
+
 def signup(request):
 
     if request.method == 'POST':

@@ -25,18 +25,18 @@
 
                     <div id="review-buttons" class="hidden grid grid-cols-4 gap-4">
                         <button class="review-btn bg-[#d9b3b3] text-gray-700 py-3 rounded-md hover:opacity-90 transition-colors" data-result="again">
-                            Again
+                            Again<br><span class="text-sm text-gray-600">(0 days)</span>
                         </button>
                         <button class="review-btn bg-[#e0c2a2] text-gray-700 py-3 rounded-md hover:opacity-90 transition-colors" data-result="hard">
-                            Hard
+                            Hard<br><span class="text-sm text-gray-600">(1 day)</span>
                         </button>
                         <button class="review-btn bg-[#b3d9b3] text-gray-700 py-3 rounded-md hover:opacity-90 transition-colors" data-result="good">
-                            Good
+                            Good<br><span class="text-sm text-gray-600">(3 days)</span>
                         </button>
                         <button class="review-btn bg-[#b3c6d9] text-gray-700 py-3 rounded-md hover:opacity-90 transition-colors" data-result="easy">
-                            Easy
+                            Easy<br><span class="text-sm text-gray-600">(5 days)</span>
                         </button>
-                    </div>
+                    </div>                
                 </div>
             </div>
         </div>
@@ -44,91 +44,67 @@
 </div>
 
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const showAnswerBtn = document.getElementById('show-answer-btn');
-        const answerDiv = document.getElementById('answer');
-        const reviewButtons = document.getElementById('review-buttons');
-        const questionDiv = document.getElementById('question');
-        const cardsRemainingSpan = document.getElementById('cards-remaining');
-        const flashcardContainer = document.getElementById('flashcard-container');
+    document.addEventListener('DOMContentLoaded', async function () {
+        const cards = [];
+        let dueCards = [];
+        let currentCardIndex = 0;
 
-        // CSRF token and URL for review
+        const fetchAllCardsUrl = "{% url 'get_all_cards' %}";
         const reviewCardUrl = "{% url 'review_card' %}";
         const csrfToken = "{{ csrf_token }}";
-        const cardId = "{{ card.id }}";
 
-        // Disable buttons during fetch to prevent multiple submissions
-        function setButtonsState(disabled) {
-            document.querySelectorAll('.review-btn, #show-answer-btn').forEach(btn => {
-                btn.disabled = disabled;
-                btn.classList.toggle('opacity-50', disabled);
-            });
-        }
+        const flashcardContainer = document.getElementById('flashcard-container');
+        const questionDiv = document.getElementById('question');
+        const answerDiv = document.getElementById('answer');
+        const showAnswerBtn = document.getElementById('show-answer-btn');
+        const reviewButtons = document.getElementById('review-buttons');
+        const cardsRemainingSpan = document.getElementById('cards-remaining');
 
-        showAnswerBtn.addEventListener('click', function() {
-            answerDiv.classList.remove('hidden');
-            showAnswerBtn.classList.add('hidden');
-            reviewButtons.classList.remove('hidden');
-        });
-        
-        // Centralized error handling
-        function handleError(error) {
-            console.error('Review error:', error);
-            setButtonsState(false);
-            flashcardContainer.classList.remove('opacity-50');
-            alert(`An error occurred: ${error.message || 'Unknown error'}`);
-        }
-
-        // Fetch next card
-        async function fetchNextCard(cardId, result) {
-            setButtonsState(true);
-            flashcardContainer.classList.add('opacity-50');
-
+        async function fetchAllCards() {
             try {
-                const response = await fetch(reviewCardUrl, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRFToken': csrfToken
-                    },
-                    body: JSON.stringify({
-                        card_id: cardId,
-                        result: result
-                    })
-                });
-
+                const response = await fetch(fetchAllCardsUrl, { method: 'GET' });
                 const data = await response.json();
 
-                if (!response.ok) {
-                    throw new Error(data.message || 'Failed to fetch next card');
+                if (response.ok && data.status === 'success') {
+                    return data.cards; // Array of all cards
+                } else {
+                    throw new Error(data.message || 'Failed to fetch cards');
                 }
-
-                return data;
             } catch (error) {
-                handleError(error);
-                throw error;
+                console.error('Error fetching cards:', error);
+                alert('Unable to load cards. Please refresh the page.');
             }
         }
 
-        // Update card UI
-        function updateCardUI(data) {
-            setButtonsState(false);
-            flashcardContainer.classList.remove('opacity-50');
+        function displayCard(card) {
+            questionDiv.textContent = card.question;
+            answerDiv.textContent = card.answer;
+            answerDiv.classList.add('hidden');
+            showAnswerBtn.classList.remove('hidden');
+            reviewButtons.classList.add('hidden');
+        }
 
-            if (data.status === 'success') {
-                // Update card content
-                questionDiv.textContent = data.question;
-                answerDiv.textContent = data.answer;
-                
-                // Update remaining cards count
-                cardsRemainingSpan.textContent = data.remaining_cards;
-                
-                // Reset UI
-                answerDiv.classList.add('hidden');
-                showAnswerBtn.classList.remove('hidden');
-                reviewButtons.classList.add('hidden');
-            } else if (data.status === 'completed') {
-                // All cards reviewed
+        async function updateCard(cardId, result) {
+            // Update the server asynchronously without waiting for the response
+            fetch(reviewCardUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken,
+                },
+                body: JSON.stringify({ card_id: cardId, result: result }),
+            }).catch(error => {
+                console.error('Error updating card:', error);
+            });
+        }
+
+        function moveToNextCard() {
+            currentCardIndex++;
+
+            if (currentCardIndex < dueCards.length) {
+                displayCard(dueCards[currentCardIndex]);
+                cardsRemainingSpan.textContent = dueCards.length - currentCardIndex;
+            } else {
                 flashcardContainer.innerHTML = `
                     <div class="text-center">
                         <h3 class="text-[#9daca2] text-2xl mb-4">Congratulations!</h3>
@@ -146,19 +122,40 @@
             }
         }
 
-        // Review button event listeners
-        document.querySelectorAll('.review-btn').forEach(btn => {
-            btn.addEventListener('click', async function() {
-                const result = this.getAttribute('data-result');
+        // Initialize the app
+        const allCards = await fetchAllCards();
+        dueCards = allCards.filter(card => card.is_due);  // Filter due cards only
+        if (dueCards.length > 0) {
+            displayCard(dueCards[currentCardIndex]);
+            cardsRemainingSpan.textContent = dueCards.length;
+        } else {
+            flashcardContainer.innerHTML = `
+                <div class="text-center">
+                    <h3 class="text-[#9daca2] text-2xl mb-4">No cards to review</h3>
+                    <p class="text-gray-600">You have completed all due cards!</p>
+                    <a href="{% url 'home' %}" class="bg-[#9daca2] text-white px-4 py-2 rounded-md hover:bg-opacity-90">
+                        Back to Home
+                    </a>
+                </div>
+            `;
+        }
 
-                try {
-                    const data = await fetchNextCard(cardId, result);
-                    updateCardUI(data);
-                } catch (error) {
-                    // Error already handled in fetchNextCard
-                }
+        // Event listeners
+        showAnswerBtn.addEventListener('click', function () {
+            answerDiv.classList.remove('hidden');
+            showAnswerBtn.classList.add('hidden');
+            reviewButtons.classList.remove('hidden');
+        });
+
+        document.querySelectorAll('.review-btn').forEach(btn => {
+            btn.addEventListener('click', function () {
+                const result = this.getAttribute('data-result');
+                const currentCard = dueCards[currentCardIndex];
+                updateCard(currentCard.id, result);
+                moveToNextCard();
             });
         });
     });
+
 </script>
 {% endblock %}
