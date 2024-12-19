@@ -6,9 +6,8 @@
         {% if decks %}
             <ul style="list-style: none; padding: 0;">
                 {% for deck in decks %}
-                    {% if not deck.parent_deck %}
                         <li>
-                            <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 0; border-bottom: 1px solid #e2e8e5;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 0; border-bottom: 1px solid #e2e8e5; padding-left: {{ deck.indentation_level|default:0 }}rem;">
                                 <div>
                                     <a href="{% url 'study' %}?deck_id={{ deck.id }}" 
                                        style="color: #6b8276; text-decoration: none; font-weight: bold; transition: color 0.2s;">
@@ -19,9 +18,7 @@
                                     {{ deck.due_cards_today }}
                                 </div>
                             </div>
-                            {% include 'home_decks/deck_children.html' with parent_deck=deck %}
                         </li>
-                    {% endif %}
                 {% endfor %}
             </ul>
         {% else %}

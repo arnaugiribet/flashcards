@@ -32,38 +32,66 @@ def add_flashcards(request):
 
 @login_required
 def user_decks(request):
-    today = timezone.now().date()
-    
-    user_decks = (
-        Deck.objects.filter(user=request.user)
-        .annotate(
-            due_cards_today=Count(
-                'flashcards', 
-                filter=Q(flashcards__due=today)
-            )
-        )
-        .select_related('parent_deck')
-        .prefetch_related(
-            Prefetch(
-                'subdeck',
-                queryset=Deck.objects.annotate(
-                    due_cards_today=Count(
-                        'flashcards',
-                        filter=Q(flashcards__due=today)
-                    )
-                )
-            )
-        )
-    )
 
-    # Accumulate due cards from children to parent
-    for deck in user_decks:
-        total_due_cards = deck.due_cards_today
-        for child in deck.subdeck.all():
-            total_due_cards += child.due_cards_today
-        deck.due_cards_today = total_due_cards  # Update parent's due cards count
-        
-    return render(request, 'home_decks/user_decks.html', {'decks': user_decks})
+    def order_decks(decks):
+        """
+        Orders decks such that children follow their parent decks.
+        """
+        ordered_decks = []
+
+        # A mapping from deck ID to deck object for quick lookups
+        deck_map = {deck.id: deck for deck in decks}
+
+        # Helper function to recursively add decks and their children
+        def add_deck_and_children(deck):
+            if deck not in ordered_decks:  # Avoid duplicates
+                ordered_decks.append(deck)
+                # Find all children of the current deck
+                children = [d for d in decks if d.parent_deck == deck]
+                # Sort children (optional, by name or another attribute)
+                children.sort(key=lambda d: d.name)
+                for child in children:
+                    add_deck_and_children(child)
+
+        # Start with root decks (parent_deck is None)
+        root_decks = [deck for deck in decks if deck.parent_deck is None]
+        root_decks.sort(key=lambda d: d.name)  # Sort roots by name, optional
+
+        for root_deck in root_decks:
+            add_deck_and_children(root_deck)
+
+        return ordered_decks
+
+    def set_indentation_level(deck, all_decks, level=0):
+        deck.indentation_level = level
+        # Recursively set levels for child decks
+        child_decks = [d for d in all_decks if d.parent_deck == deck]
+        for child_deck in child_decks:
+            set_indentation_level(child_deck, all_decks, level + 1)
+
+    today = timezone.now().date()
+
+    # Fetch the decks and convert the queryset to a list
+    decks_queryset = Deck.objects.filter(user=request.user).annotate(
+        flashcards_count=Count('flashcards')
+    ).select_related('parent_deck')
+
+    # Convert queryset to a list
+    decks = list(decks_queryset)
+
+    # Process decks and add indentation levels
+    root_decks = [deck for deck in decks if deck.parent_deck is None]
+    for root_deck in root_decks:
+        set_indentation_level(root_deck, decks, 0)
+
+    # Add due cards today count
+    for deck in decks:
+        deck.due_cards_today = deck.flashcards.filter(due=today).count()
+
+    ordered_decks = order_decks(decks)
+    # Pass the list to the template
+    return render(request, 'home_decks/user_decks.html', {'decks': ordered_decks})
+
 
 @login_required
 def study(request):
