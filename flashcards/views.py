@@ -12,6 +12,7 @@ from django.utils.translation import activate
 import json
 from django.views.decorators.http import require_http_methods
 from django.core.exceptions import ValidationError
+from django.db.models import Count, Q, Prefetch
 
 # Import your existing backend classes
 from llm_client import LLMClient
@@ -41,10 +42,30 @@ def add_flashcards(request):
 
 @login_required
 def user_decks(request):
-    """
-    Display all decks owned by the logged-in user.
-    """
-    user_decks = Deck.objects.filter(user=request.user).select_related('parent_deck')
+    today = timezone.now().date()
+    
+    user_decks = (
+        Deck.objects.filter(user=request.user)
+        .annotate(
+            due_cards_today=Count(
+                'flashcards', 
+                filter=Q(flashcards__due=today)
+            )
+        )
+        .select_related('parent_deck')
+        .prefetch_related(
+            Prefetch(
+                'subdeck',
+                queryset=Deck.objects.annotate(
+                    due_cards_today=Count(
+                        'flashcards',
+                        filter=Q(flashcards__due=today)
+                    )
+                )
+            )
+        )
+    )
+
     return render(request, 'home_decks/user_decks.html', {'decks': user_decks})
 
 @login_required

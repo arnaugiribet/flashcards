@@ -8,15 +8,18 @@
         <ul style="list-style: none; padding: 0;">
             {% for deck in decks %}
                 {% if not deck.parent_deck %}
-                    <li style="margin-bottom: 0.5rem;">
-                        <div style="margin-left: 0;">
+                    <li style="margin-bottom: 0.5rem; display: flex; justify-content: space-between; align-items: center;">
+                        <div>
                             <a href="{% url 'flashcard_list' %}?deck_id={{ deck.id }}" 
                                style="color: #333; text-decoration: none; font-weight: bold;">
                                 {{ deck.name }}
                             </a>
                         </div>
-                        {% include 'home_decks/deck_children.html' with parent_deck=deck %}
+                        <div style="color: #666; font-size: 0.9rem;">
+                            {{ deck.due_cards_today }}
+                        </div>
                     </li>
+                    {% include 'home_decks/deck_children.html' with parent_deck=deck %}
                 {% endif %}
             {% endfor %}
         </ul>
