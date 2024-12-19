@@ -4,12 +4,10 @@ from . import views
 
 urlpatterns = [
     path('', views.home, name='home'),  # Root path (e.g., '/')
-    path('flashcards/', views.flashcard_list, name='flashcard_list'),
     path('add_flashcards/', views.add_flashcards, name='add_flashcards'),
     path('decks/', views.user_decks, name='user_decks'),
     path('study/', views.study, name='study'),
     path('study/review', views.review_card, name='review_card'),
-    path('get_all_cards/', views.get_all_cards, name='get_all_cards'),
     path('signup/', views.signup, name='signup'),
     path('login/', auth_views.LoginView.as_view(), name='login'),
     path('logout/', auth_views.LogoutView.as_view(), name='logout'),  # Redirect to home after logout

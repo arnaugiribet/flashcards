@@ -24,16 +24,6 @@ def home(request):
         return redirect('user_decks')  # Redirect logged-in users to their decks
     return render(request, "home.html")  # Default home page for guests
 
-def flashcard_list(request):
-    """
-    Retrieve all flashcards and render them in a template.
-    Can be extended to support filtering, pagination, etc.
-    """
-    flashcards = Flashcard.objects.all()
-    return render(request, 'flashcards/list_all_flashcards.html', {
-        'flashcards': flashcards
-    })
-
 def account_settings(request):
     return HttpResponse(status=204)
     
@@ -71,16 +61,27 @@ def user_decks(request):
 @login_required
 def study(request):
     """
-    Study view that shows cards due today for the logged-in user.
-    
-    The view supports:
-    - Showing only cards due today
-    - Filtering cards by the logged-in user
-    - Handling card review interactions
+    Study view that shows cards due today for the logged-in user from a specific deck and its children.
     """
-    # Get cards due today for the current user
+    deck_id = request.GET.get('deck_id')
+    
+    if not deck_id:
+        return redirect('user_decks')
+    
+    # Get the deck and all its children
+    def get_all_child_deck_ids(deck_id):
+        deck_ids = [deck_id]
+        children = Deck.objects.filter(parent_deck_id=deck_id)
+        for child in children:
+            deck_ids.extend(get_all_child_deck_ids(child.id))
+        return deck_ids
+    
+    deck_ids = get_all_child_deck_ids(deck_id)
+    
+    # Get cards due today for the current user from the selected deck and its children
     due_cards = Flashcard.objects.filter(
-        user=request.user, 
+        user=request.user,
+        deck_id__in=deck_ids,
         due__lte=timezone.now().date()
     ).order_by('due')
     
@@ -93,7 +94,8 @@ def study(request):
     
     return render(request, 'study/study_mode.html', {
         'card': current_card,
-        'total_due_cards': due_cards.count()
+        'total_due_cards': due_cards.count(),
+        'deck_id': deck_id  # Pass the deck_id to maintain context
     })
 
 @login_required
@@ -166,33 +168,6 @@ def review_card(request):
         logger.error(f"Unexpected error in review_card: {e}")
         return JsonResponse({'status': 'error', 'message': 'Server error'}, status=500)
     
-@login_required
-@require_http_methods(["GET"])
-def get_all_cards(request):
-    """
-    Fetch all cards for the user, both due and non-due.
-    """
-    try:
-        cards = Flashcard.objects.filter(user=request.user).order_by('due')
-        
-        # Serialize cards into JSON
-        card_list = [{
-            'id': card.id,
-            'question': card.question,
-            'answer': card.answer,
-            'due': card.due.isoformat(),  # Include due date for filtering later
-            'is_due': card.due <= timezone.now().date()  # Add a flag for due status
-        } for card in cards]
-        
-        return JsonResponse({
-            'status': 'success',
-            'cards': card_list
-        })
-    except Exception as e:
-        logger.error(f"Error fetching cards: {e}")
-        return JsonResponse({'status': 'error', 'message': 'Failed to fetch cards'}, status=500)
-
-
 def signup(request):
 
     if request.method == 'POST':
