@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div style="max-width: 800px; margin: 0 auto; padding: 2rem;">
+    <h1 style="color: #9daca2; font-size: 2.5rem; margin-bottom: 1rem;">Decks</h1>
+
+    {% if decks %}
+        <ul style="list-style: none; padding: 0;">
+            {% for deck in decks %}
+                {% if not deck.parent_deck %}
+                    <li style="margin-bottom: 0.5rem;">
+                        <div style="margin-left: 0;">
+                            <a href="{% url 'flashcard_list' %}?deck_id={{ deck.id }}" 
+                               style="color: #333; text-decoration: none; font-weight: bold;">
+                                {{ deck.name }}
+                            </a>
+                        </div>
+                        {% include 'home_decks/deck_children.html' with parent_deck=deck %}
+                    </li>
+                {% endif %}
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p style="color: #666; font-size: 1.2rem;">
+            No decks available. Start by creating one!
+        </p>
+    {% endif %}
+</div>
+{% endblock %}

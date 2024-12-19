@@ -44,8 +44,8 @@ def user_decks(request):
     """
     Display all decks owned by the logged-in user.
     """
-    decks = Deck.objects.filter(user=request.user).order_by('name')  # Fetch and order by name
-    return render(request, 'user_decks.html', {'decks': decks})
+    user_decks = Deck.objects.filter(user=request.user).select_related('parent_deck')
+    return render(request, 'home_decks/user_decks.html', {'decks': user_decks})
 
 @login_required
 def study(request):
