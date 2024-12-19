@@ -69,6 +69,24 @@ def user_decks(request):
         for child_deck in child_decks:
             set_indentation_level(child_deck, all_decks, level + 1)
 
+    def aggregate_due_count(decks):
+        """
+        Aggregates the `due_cards_today` count from child decks to their parent decks.
+        """
+        # Sort decks by descending indentation level to start from the bottom
+        decks.sort(key=lambda deck: deck.indentation_level, reverse=True)
+
+        # A mapping of deck IDs for quick lookup
+        deck_map = {deck.id: deck for deck in decks}
+
+        for deck in decks:
+            if deck.parent_deck:
+                parent_deck = deck_map.get(deck.parent_deck.id)
+                if parent_deck:
+                    parent_deck.due_cards_today += deck.due_cards_today
+
+        return decks
+
     today = timezone.now().date()
 
     # Fetch the decks and convert the queryset to a list
@@ -88,7 +106,12 @@ def user_decks(request):
     for deck in decks:
         deck.due_cards_today = deck.flashcards.filter(due=today).count()
 
+    # Order the decks hierarchically
     ordered_decks = order_decks(decks)
+
+    # Aggregate due cards count from children to parents
+    decks = aggregate_due_count(decks)
+
     # Pass the list to the template
     return render(request, 'home_decks/user_decks.html', {'decks': ordered_decks})
 
