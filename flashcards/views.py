@@ -56,6 +56,13 @@ def user_decks(request):
         )
     )
 
+    # Accumulate due cards from children to parent
+    for deck in user_decks:
+        total_due_cards = deck.due_cards_today
+        for child in deck.subdeck.all():
+            total_due_cards += child.due_cards_today
+        deck.due_cards_today = total_due_cards  # Update parent's due cards count
+        
     return render(request, 'home_decks/user_decks.html', {'decks': user_decks})
 
 @login_required
