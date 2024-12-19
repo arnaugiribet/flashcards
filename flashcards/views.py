@@ -7,7 +7,7 @@ from django.conf import settings
 from django.contrib.auth import login, authenticate
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
-from flashcards.models import Flashcard
+from flashcards.models import Flashcard, Deck
 from django.utils.translation import activate
 import json
 from django.views.decorators.http import require_http_methods
@@ -19,7 +19,9 @@ from llm_client import LLMClient
 from django.http import HttpResponse
 
 def home(request):
-    return render(request, "home.html")
+    if request.user.is_authenticated:
+        return redirect('user_decks')  # Redirect logged-in users to their decks
+    return render(request, "home.html")  # Default home page for guests
 
 def flashcard_list(request):
     """
@@ -36,7 +38,15 @@ def account_settings(request):
     
 def add_flashcards(request):
     return HttpResponse(status=204)
-    
+
+@login_required
+def user_decks(request):
+    """
+    Display all decks owned by the logged-in user.
+    """
+    decks = Deck.objects.filter(user=request.user).order_by('name')  # Fetch and order by name
+    return render(request, 'user_decks.html', {'decks': decks})
+
 @login_required
 def study(request):
     """
