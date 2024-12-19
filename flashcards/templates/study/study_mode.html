@@ -46,7 +46,6 @@
 </div>
 {% endblock %}
 
-
 {% block extra_js %}
 <script>
     document.addEventListener('DOMContentLoaded', function() {
@@ -56,14 +55,16 @@
         const questionDiv = document.getElementById('question');
         const cardsRemaining = document.getElementById('cards-remaining');
 
+        // Get the deck_id from the template
+        const deckId = "{{ deck_id }}";
+        let currentCardId = "{{ card.id }}";  // Track the current card ID
+
         // Show the answer when the "Show Answer" button is clicked
         showAnswerBtn.addEventListener('click', function() {
-            answerDiv.classList.remove('hidden');  // Show the answer
-            questionDiv.classList.add('hidden');  // Hide the question
-            reviewButtons.classList.remove('hidden');  // Show review buttons
-
-            // Hide the "Show Answer" button after it is clicked
-            showAnswerBtn.classList.add('hidden');  // Hide the button
+            answerDiv.classList.remove('hidden');
+            questionDiv.classList.add('hidden');
+            reviewButtons.classList.remove('hidden');
+            showAnswerBtn.classList.add('hidden');
         });
 
         // Handle the review buttons
@@ -71,7 +72,6 @@
         reviewBtns.forEach(button => {
             button.addEventListener('click', function() {
                 const result = button.getAttribute('data-result');
-                const cardId = "{{ card.id }}";  // Card ID passed from view
                 
                 // Send the review result to the backend
                 fetch("{% url 'review_card' %}", {
@@ -81,14 +81,18 @@
                         'X-CSRFToken': '{{ csrf_token }}'
                     },
                     body: JSON.stringify({
-                        card_id: cardId,
+                        card_id: currentCardId,  // Use the tracked card ID
+                        deck_id: deckId,
                         result: result
                     })
                 })
                 .then(response => response.json())
                 .then(data => {
                     if (data.status === 'success') {
-                        // Update the UI with the new next card question
+                        // Update the current card ID with the new one
+                        currentCardId = data.next_card_id;
+                        
+                        // Update the UI with the new card
                         questionDiv.textContent = data.question;
                         answerDiv.textContent = data.answer;
                         cardsRemaining.textContent = data.remaining_cards;
@@ -97,15 +101,11 @@
                         answerDiv.classList.add('hidden');
                         questionDiv.classList.remove('hidden');
                         reviewButtons.classList.add('hidden');
-
-                        // Show the "Show Answer" button again for the next card
                         showAnswerBtn.classList.remove('hidden');
                     } else if (data.status === 'completed') {
-                        // Show a message when no more cards are due
                         alert(data.message);
-                        window.location.href = "{% url 'user_decks' %}";  // Redirect to the decks page
+                        window.location.href = "{% url 'user_decks' %}";
                     } else {
-                        // Handle error if any
                         alert("Error: " + data.message);
                     }
                 })

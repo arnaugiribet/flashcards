@@ -13,6 +13,7 @@ import json
 from django.views.decorators.http import require_http_methods
 from django.core.exceptions import ValidationError
 from django.db.models import Count, Q, Prefetch
+import random
 
 # Import your existing backend classes
 from llm_client import LLMClient
@@ -156,6 +157,8 @@ def study(request):
         'deck_id': deck_id  # Pass the deck_id to maintain context
     })
 
+import random  # Add this import
+
 @login_required
 @require_http_methods(["POST"])
 def review_card(request):
@@ -167,15 +170,28 @@ def review_card(request):
         data = json.loads(request.body)
         card_id = data.get('card_id')
         result = data.get('result')
+        deck_id = data.get('deck_id')  # Get the deck_id from the request
         
         # Validate input
-        if not card_id or result not in ['again', 'hard', 'good', 'easy']:
+        if not card_id or result not in ['again', 'hard', 'good', 'easy'] or not deck_id:
             return JsonResponse({'status': 'error', 'message': 'Invalid input'}, status=400)
         
-        # Fetch card with minimal fields
-        card = Flashcard.objects.only('id', 'user', 'due').get(
-            id=card_id, 
-            user=request.user
+        # Fetch the deck and all its child decks
+        def get_all_child_deck_ids(deck_id):
+            deck_ids = [deck_id]
+            children = Deck.objects.filter(parent_deck_id=deck_id)
+            for child in children:
+                deck_ids.extend(get_all_child_deck_ids(child.id))
+            return deck_ids
+        
+        # Get all deck IDs that belong to the parent deck and its children
+        deck_ids = get_all_child_deck_ids(deck_id)
+        
+        # Fetch the flashcard for review based on the card_id and deck_id (and its children)
+        card = Flashcard.objects.only('id', 'user', 'deck_id', 'question', 'answer', 'due').get(
+            id=card_id,
+            user=request.user,
+            deck_id__in=deck_ids  # Make sure the card belongs to the specified deck or its children
         )
         
         # Calculate new due date based on review result
@@ -192,29 +208,46 @@ def review_card(request):
         # Update card's due date
         card.due = current_date + interval_map[result]
         card.save(update_fields=['due'])
-        
-        # Efficiently get remaining due cards
+
+        # Efficiently get remaining due cards for the current deck and its children
         due_cards = Flashcard.objects.filter(
-            user=request.user, 
+            user=request.user,
+            deck_id__in=deck_ids,  # Filter by deck_id and its children
             due__lte=current_date
         ).order_by('due')
-        
-        # If no more cards due
-        if not due_cards.exists():
+
+        # If there is more than one card in the due cards list, handle the "again" card
+        if due_cards.count() > 1 and card in due_cards:
+            # Convert to a list to allow manipulation
+            due_cards = list(due_cards)
+            # Remove the reviewed card
+            print(f"\nremoving card {card}")
+            due_cards.remove(card)
+            # Add it back to the end of the list
+            due_cards.append(card)
+            # Shuffle the cards from position 2 onward (to ensure the "again" card isn't the first)
+            random.shuffle(due_cards[1:])
+            print(f"\nthese are the due cards: {due_cards}")
+
+        # If there are no more cards to review
+        if not due_cards:
             return JsonResponse({
                 'status': 'completed',
                 'message': 'No more cards to review'
             })
         
-        # Get next card
-        next_card = due_cards.first()
-        
+        # Get the next due card (first in the list)
+        next_card = due_cards[0]  # The first card now is not the "again" card
+
+        print(f"\nNext card should be: {next_card}")
+
+        # Return the response
         return JsonResponse({
             'status': 'success', 
             'next_card_id': str(next_card.id),
             'question': next_card.question,
             'answer': next_card.answer,
-            'remaining_cards': due_cards.count()
+            'remaining_cards': len(due_cards)
         })
     
     except Flashcard.DoesNotExist:
@@ -225,6 +258,7 @@ def review_card(request):
         # Log the error for debugging
         logger.error(f"Unexpected error in review_card: {e}")
         return JsonResponse({'status': 'error', 'message': 'Server error'}, status=500)
+
     
 def signup(request):
 
