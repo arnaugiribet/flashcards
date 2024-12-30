@@ -114,6 +114,12 @@ def user_decks(request):
     # Pass the list to the template
     return render(request, 'home_decks/user_decks.html', {'decks': ordered_decks})
 
+@login_required
+def no_cards_due(request):
+    """
+    View that shows the message when there are no cards due for review.
+    """
+    return render(request, 'study/no_cards_due.html')
 
 @login_required
 def study(request):

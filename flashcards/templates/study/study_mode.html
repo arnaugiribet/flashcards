@@ -39,7 +39,7 @@
                     <button class="review-btn bg-[#b3c6d9] text-gray-700 py-3 rounded-md hover:opacity-90 transition-colors" data-result="easy">
                         Easy<br><span class="text-sm text-gray-600">(5 days)</span>
                     </button>
-                </div>                
+                </div>             
             </div>
         </div>
     </div>
@@ -103,8 +103,7 @@
                         reviewButtons.classList.add('hidden');
                         showAnswerBtn.classList.remove('hidden');
                     } else if (data.status === 'completed') {
-                        alert(data.message);
-                        window.location.href = "{% url 'user_decks' %}";
+                        window.location.href = "{% url 'no_cards_due' %}";
                     } else {
                         alert("Error: " + data.message);
                     }
