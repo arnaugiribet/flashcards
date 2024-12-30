@@ -7,11 +7,13 @@ from django.conf import settings
 from django.contrib.auth import login, authenticate
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
-from flashcards.models import Flashcard
+from flashcards.models import Flashcard, Deck
 from django.utils.translation import activate
 import json
 from django.views.decorators.http import require_http_methods
 from django.core.exceptions import ValidationError
+from django.db.models import Count, Q, Prefetch
+import random
 
 # Import your existing backend classes
 from llm_client import LLMClient
@@ -19,37 +21,126 @@ from llm_client import LLMClient
 from django.http import HttpResponse
 
 def home(request):
-    return render(request, "home.html")
-
-def flashcard_list(request):
-    """
-    Retrieve all flashcards and render them in a template.
-    Can be extended to support filtering, pagination, etc.
-    """
-    flashcards = Flashcard.objects.all()
-    return render(request, 'flashcards/list_all_flashcards.html', {
-        'flashcards': flashcards
-    })
+    if request.user.is_authenticated:
+        return redirect('user_decks')  # Redirect logged-in users to their decks
+    return render(request, "home.html")  # Default home page for guests
 
 def account_settings(request):
     return HttpResponse(status=204)
     
 def add_flashcards(request):
     return HttpResponse(status=204)
-    
+
+@login_required
+def user_decks(request):
+
+    def order_decks(decks):
+        """
+        Orders decks such that children follow their parent decks.
+        """
+        ordered_decks = []
+
+        # A mapping from deck ID to deck object for quick lookups
+        deck_map = {deck.id: deck for deck in decks}
+
+        # Helper function to recursively add decks and their children
+        def add_deck_and_children(deck):
+            if deck not in ordered_decks:  # Avoid duplicates
+                ordered_decks.append(deck)
+                # Find all children of the current deck
+                children = [d for d in decks if d.parent_deck == deck]
+                # Sort children (optional, by name or another attribute)
+                children.sort(key=lambda d: d.name)
+                for child in children:
+                    add_deck_and_children(child)
+
+        # Start with root decks (parent_deck is None)
+        root_decks = [deck for deck in decks if deck.parent_deck is None]
+        root_decks.sort(key=lambda d: d.name)  # Sort roots by name, optional
+
+        for root_deck in root_decks:
+            add_deck_and_children(root_deck)
+
+        return ordered_decks
+
+    def set_indentation_level(deck, all_decks, level=0):
+        deck.indentation_level = level
+        # Recursively set levels for child decks
+        child_decks = [d for d in all_decks if d.parent_deck == deck]
+        for child_deck in child_decks:
+            set_indentation_level(child_deck, all_decks, level + 1)
+
+    def aggregate_due_count(decks):
+        """
+        Aggregates the `due_cards_today` count from child decks to their parent decks.
+        """
+        # Sort decks by descending indentation level to start from the bottom
+        decks.sort(key=lambda deck: deck.indentation_level, reverse=True)
+
+        # A mapping of deck IDs for quick lookup
+        deck_map = {deck.id: deck for deck in decks}
+
+        for deck in decks:
+            if deck.parent_deck:
+                parent_deck = deck_map.get(deck.parent_deck.id)
+                if parent_deck:
+                    parent_deck.due_cards_today += deck.due_cards_today
+
+        return decks
+
+    today = timezone.now().date()
+
+    # Fetch the decks and convert the queryset to a list
+    decks_queryset = Deck.objects.filter(user=request.user).annotate(
+        flashcards_count=Count('flashcards')
+    ).select_related('parent_deck')
+
+    # Convert queryset to a list
+    decks = list(decks_queryset)
+
+    # Process decks and add indentation levels
+    root_decks = [deck for deck in decks if deck.parent_deck is None]
+    for root_deck in root_decks:
+        set_indentation_level(root_deck, decks, 0)
+
+    # Add due cards today count
+    for deck in decks:
+        deck.due_cards_today = deck.flashcards.filter(due__lte=today).count()
+
+    # Order the decks hierarchically
+    ordered_decks = order_decks(decks)
+
+    # Aggregate due cards count from children to parents
+    decks = aggregate_due_count(decks)
+
+    # Pass the list to the template
+    return render(request, 'home_decks/user_decks.html', {'decks': ordered_decks})
+
+
 @login_required
 def study(request):
     """
-    Study view that shows cards due today for the logged-in user.
-    
-    The view supports:
-    - Showing only cards due today
-    - Filtering cards by the logged-in user
-    - Handling card review interactions
+    Study view that shows cards due today for the logged-in user from a specific deck and its children.
     """
-    # Get cards due today for the current user
+    deck_id = request.GET.get('deck_id')
+    
+    if not deck_id:
+        return redirect('user_decks')
+    
+    # Get the deck and all its children
+    def get_all_child_deck_ids(deck_id):
+        deck_ids = [deck_id]
+        children = Deck.objects.filter(parent_deck_id=deck_id)
+        for child in children:
+            deck_ids.extend(get_all_child_deck_ids(child.id))
+        return deck_ids
+    
+    deck_ids = get_all_child_deck_ids(deck_id)
+    
+    # Get cards due today for the current user from the selected deck and its children
     due_cards = Flashcard.objects.filter(
-        user=request.user, 
+        user=request.user,
+        deck_id__in=deck_ids,
         due__lte=timezone.now().date()
     ).order_by('due')
     
@@ -62,8 +153,11 @@ def study(request):
     
     return render(request, 'study/study_mode.html', {
         'card': current_card,
-        'total_due_cards': due_cards.count()
+        'total_due_cards': due_cards.count(),
+        'deck_id': deck_id  # Pass the deck_id to maintain context
     })
+
+import random  # Add this import
 
 @login_required
 @require_http_methods(["POST"])
@@ -76,15 +170,28 @@ def review_card(request):
         data = json.loads(request.body)
         card_id = data.get('card_id')
         result = data.get('result')
+        deck_id = data.get('deck_id')  # Get the deck_id from the request
         
         # Validate input
-        if not card_id or result not in ['again', 'hard', 'good', 'easy']:
+        if not card_id or result not in ['again', 'hard', 'good', 'easy'] or not deck_id:
             return JsonResponse({'status': 'error', 'message': 'Invalid input'}, status=400)
         
-        # Fetch card with minimal fields
-        card = Flashcard.objects.only('id', 'user', 'due').get(
-            id=card_id, 
-            user=request.user
+        # Fetch the deck and all its child decks
+        def get_all_child_deck_ids(deck_id):
+            deck_ids = [deck_id]
+            children = Deck.objects.filter(parent_deck_id=deck_id)
+            for child in children:
+                deck_ids.extend(get_all_child_deck_ids(child.id))
+            return deck_ids
+        
+        # Get all deck IDs that belong to the parent deck and its children
+        deck_ids = get_all_child_deck_ids(deck_id)
+        
+        # Fetch the flashcard for review based on the card_id and deck_id (and its children)
+        card = Flashcard.objects.only('id', 'user', 'deck_id', 'question', 'answer', 'due').get(
+            id=card_id,
+            user=request.user,
+            deck_id__in=deck_ids  # Make sure the card belongs to the specified deck or its children
         )
         
         # Calculate new due date based on review result
@@ -101,29 +208,46 @@ def review_card(request):
         # Update card's due date
         card.due = current_date + interval_map[result]
         card.save(update_fields=['due'])
-        
-        # Efficiently get remaining due cards
+
+        # Efficiently get remaining due cards for the current deck and its children
         due_cards = Flashcard.objects.filter(
-            user=request.user, 
+            user=request.user,
+            deck_id__in=deck_ids,  # Filter by deck_id and its children
             due__lte=current_date
         ).order_by('due')
-        
-        # If no more cards due
-        if not due_cards.exists():
+
+        # If there is more than one card in the due cards list, handle the "again" card
+        if due_cards.count() > 1 and card in due_cards:
+            # Convert to a list to allow manipulation
+            due_cards = list(due_cards)
+            # Remove the reviewed card
+            print(f"\nremoving card {card}")
+            due_cards.remove(card)
+            # Add it back to the end of the list
+            due_cards.append(card)
+            # Shuffle the cards from position 2 onward (to ensure the "again" card isn't the first)
+            random.shuffle(due_cards[1:])
+            print(f"\nthese are the due cards: {due_cards}")
+
+        # If there are no more cards to review
+        if not due_cards:
             return JsonResponse({
                 'status': 'completed',
                 'message': 'No more cards to review'
             })
         
-        # Get next card
-        next_card = due_cards.first()
-        
+        # Get the next due card (first in the list)
+        next_card = due_cards[0]  # The first card now is not the "again" card
+
+        print(f"\nNext card should be: {next_card}")
+
+        # Return the response
         return JsonResponse({
             'status': 'success', 
             'next_card_id': str(next_card.id),
             'question': next_card.question,
             'answer': next_card.answer,
-            'remaining_cards': due_cards.count()
+            'remaining_cards': len(due_cards)
         })
     
     except Flashcard.DoesNotExist:
@@ -134,34 +258,8 @@ def review_card(request):
         # Log the error for debugging
         logger.error(f"Unexpected error in review_card: {e}")
         return JsonResponse({'status': 'error', 'message': 'Server error'}, status=500)
+
     
-@login_required
-@require_http_methods(["GET"])
-def get_all_cards(request):
-    """
-    Fetch all cards for the user, both due and non-due.
-    """
-    try:
-        cards = Flashcard.objects.filter(user=request.user).order_by('due')
-        
-        # Serialize cards into JSON
-        card_list = [{
-            'id': card.id,
-            'question': card.question,
-            'answer': card.answer,
-            'due': card.due.isoformat(),  # Include due date for filtering later
-            'is_due': card.due <= timezone.now().date()  # Add a flag for due status
-        } for card in cards]
-        
-        return JsonResponse({
-            'status': 'success',
-            'cards': card_list
-        })
-    except Exception as e:
-        logger.error(f"Error fetching cards: {e}")
-        return JsonResponse({'status': 'error', 'message': 'Failed to fetch cards'}, status=500)
-
-
 def signup(request):
 
     if request.method == 'POST':

@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div style="max-width: 800px; margin: 2rem auto; padding: 2rem;">
+    <div style="background-color: #f4f6f5; padding: 2rem; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+        {% if decks %}
+            <ul style="list-style: none; padding: 0;">
+                {% for deck in decks %}
+                        <li>
+                            <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 0; border-bottom: 1px solid #e2e8e5; padding-left: {{ deck.indentation_level|default:0 }}rem;">
+                                <div>
+                                    <a href="{% url 'study' %}?deck_id={{ deck.id }}" 
+                                       style="color: #6b8276; text-decoration: none; font-weight: bold; transition: color 0.2s;">
+                                        {{ deck.name }}
+                                    </a>
+                                </div>
+                                <div style="color: #9daca2; font-size: 0.9rem; font-weight: 500;">
+                                    {{ deck.due_cards_today }}
+                                </div>
+                            </div>
+                        </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p style="color: #666; font-size: 1.2rem;">
+                No decks available. Start by creating one!
+            </p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
