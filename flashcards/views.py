@@ -105,7 +105,7 @@ def user_decks(request):
 
     # Add due cards today count
     for deck in decks:
-        deck.due_cards_today = deck.flashcards.filter(due=today).count()
+        deck.due_cards_today = deck.flashcards.filter(due__lte=today).count()
 
     # Order the decks hierarchically
     ordered_decks = order_decks(decks)
