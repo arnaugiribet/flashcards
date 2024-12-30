@@ -5,6 +5,7 @@ from datetime import timedelta
 from django.http import JsonResponse
 from django.conf import settings
 from django.contrib.auth import login, authenticate
+from django.contrib import messages
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
 from flashcards.models import Flashcard, Deck
@@ -26,9 +27,6 @@ def home(request):
     return render(request, "home.html")  # Default home page for guests
 
 def account_settings(request):
-    return HttpResponse(status=204)
-    
-def add_flashcards(request):
     return HttpResponse(status=204)
 
 @login_required
@@ -281,3 +279,46 @@ def signup(request):
     else:
         form = UserCreationForm()
     return render(request, 'registration/signup.html', {'form': form})
+
+@login_required
+def add_flashcards(request):
+    """
+    Display the options to create flashcards manually or automatically.
+    """
+    return render(request, 'add_cards/add_flashcards.html')
+
+@login_required
+def create_manually(request):
+    """
+    View to handle manual creation of flashcards.
+    """
+    if request.method == "POST":
+        deck_id = request.POST.get('deck_id')
+        question = request.POST.get('question')
+        answer = request.POST.get('answer')
+
+        # Ensure all required fields are present
+        if not (deck_id and question and answer):
+            return render(request, 'add_cards/create_manually.html', {'error': 'All fields are required.'})
+
+        try:
+            # Validate and create flashcard
+            deck = Deck.objects.get(id=deck_id, user=request.user)
+            Flashcard.objects.create(deck=deck, question=question, answer=answer, user=request.user)
+            # Add success message
+            messages.success(request, 'Card successfully created.')
+            # Return to the same create manually page
+            return redirect('create_manually')
+        except Deck.DoesNotExist:
+            return render(request, 'add_cards/create_manually.html', {'error': 'Invalid deck selected.'})
+
+    # Fetch user's decks to display in the form
+    decks = Deck.objects.filter(user=request.user)
+    return render(request, 'add_cards/create_manually.html', {'decks': decks})
+
+@login_required
+def create_automatically(request):
+    """
+    View for automatic flashcard creation (currently empty).
+    """
+    return render(request, 'add_cards/create_automatically.html')
