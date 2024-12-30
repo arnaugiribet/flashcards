@@ -322,3 +322,31 @@ def create_automatically(request):
     View for automatic flashcard creation (currently empty).
     """
     return render(request, 'add_cards/create_automatically.html')
+
+@login_required
+def create_deck(request):
+    if request.method == "POST":
+        deck_name = request.POST.get('deck_name')
+        parent_deck_id = request.POST.get('parent_deck')
+
+        # Ensure that the deck name is provided
+        if not deck_name:
+            return JsonResponse({"success": False, "message": "Deck name is required."})
+
+        parent_deck = None
+        if parent_deck_id:
+            try:
+                parent_deck = Deck.objects.get(id=parent_deck_id, user=request.user)
+            except Deck.DoesNotExist:
+                return JsonResponse({"success": False, "message": "Invalid parent deck."})
+
+        # Create the new deck
+        new_deck = Deck.objects.create(
+            name=deck_name,
+            user=request.user,
+            parent_deck=parent_deck,
+        )
+
+        return JsonResponse({"success": True, "message": "Deck created successfully."})
+
+    return JsonResponse({"success": False, "message": "Invalid request method."})
