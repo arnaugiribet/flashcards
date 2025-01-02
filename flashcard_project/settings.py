@@ -170,7 +170,7 @@ LOGGING = {
             'level': 'INFO',  # Adjust to 'DEBUG' for more detailed logs
             'propagate': True,
         },
-        'flashcards.utils.spaced_repetition': {
+        'flashcards': {
             'handlers': ['console'],
             'level': 'INFO',
             'propagate': True,

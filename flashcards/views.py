@@ -15,12 +15,14 @@ from django.views.decorators.http import require_http_methods
 from django.core.exceptions import ValidationError
 from django.db.models import Count, Q, Prefetch
 import random
-from .utils.spaced_repetition import spaced_repetition
+import logging
 
 # Import your existing backend classes
 from llm_client import LLMClient
 
 from django.http import HttpResponse
+
+logger = logging.getLogger(__name__)
 
 def home(request):
     if request.user.is_authenticated:
@@ -199,10 +201,11 @@ def review_card(request):
             deck_id__in=deck_ids  # Make sure the card belongs to the specified deck or its children
         )
         
-        # Call the spaced_repetition function to update the due date based on the review result
+        # Update the due date based on the review result
         try:
-            spaced_repetition(card, result)
+            card.update_review(result)
         except ValueError as e:
+            logger.error(f"Error in review_card: {str(e)}", exc_info=True)
             return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
 
         # Get current date
@@ -237,8 +240,8 @@ def review_card(request):
         
         # Get the next due card (first in the list)
         next_card = due_cards[0]  # The first card now is not the "again" card
-
-        print(f"\nNext card should be: {next_card}")
+    
+        logger.info(f"\nNext card should be: {next_card}")
 
         # Return the response
         return JsonResponse({
