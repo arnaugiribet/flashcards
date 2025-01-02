@@ -15,6 +15,7 @@ from django.views.decorators.http import require_http_methods
 from django.core.exceptions import ValidationError
 from django.db.models import Count, Q, Prefetch
 import random
+from .utils.spaced_repetition import spaced_repetition
 
 # Import your existing backend classes
 from llm_client import LLMClient
@@ -198,21 +199,15 @@ def review_card(request):
             deck_id__in=deck_ids  # Make sure the card belongs to the specified deck or its children
         )
         
-        # Calculate new due date based on review result
+        # Call the spaced_repetition function to update the due date based on the review result
+        try:
+            spaced_repetition(card, result)
+        except ValueError as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
+
+        # Get current date
         current_date = timezone.now().date()
         
-        # Sophisticated interval calculation
-        interval_map = {
-            'again': timedelta(seconds=600),   # Reset to shortest interval
-            'hard': timedelta(days=1),    # Slightly longer interval
-            'good': timedelta(days=3),    # Moderate interval
-            'easy': timedelta(days=5)     # Longest interval
-        }
-        
-        # Update card's due date
-        card.due = current_date + interval_map[result]
-        card.save(update_fields=['due'])
-
         # Efficiently get remaining due cards for the current deck and its children
         due_cards = Flashcard.objects.filter(
             user=request.user,
