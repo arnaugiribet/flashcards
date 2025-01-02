@@ -80,10 +80,10 @@ WSGI_APPLICATION = "flashcard_project.wsgi.application"
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql_psycopg2",
-        "NAME": os.getenv('AWS_FLASH_DB_NAME'),
-        "USER": os.getenv('AWS_FLASH_DB_USER'),
-        "PASSWORD": os.getenv('AWS_FLASH_DB_PASSWORD'),
-        "HOST": os.getenv('AWS_FLASH_DB_ENDPOINT'),
+        "NAME": os.getenv('HEROKU_FLASH_DB_NAME'),
+        "USER": os.getenv('HEROKU_FLASH_DB_USER'),
+        "PASSWORD": os.getenv('HEROKU_FLASH_DB_PASSWORD'),
+        "HOST": os.getenv('HEROKU_FLASH_DB_ENDPOINT'),
         "PORT": "5432",
     }
 }
@@ -170,7 +170,7 @@ LOGGING = {
             'level': 'INFO',  # Adjust to 'DEBUG' for more detailed logs
             'propagate': True,
         },
-        'flashcards.utils.spaced_repetition': {
+        'flashcards': {
             'handlers': ['console'],
             'level': 'INFO',
             'propagate': True,
