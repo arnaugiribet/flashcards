@@ -261,7 +261,28 @@ def review_card(request):
         logger.error(f"Unexpected error in review_card: {e}")
         return JsonResponse({'status': 'error', 'message': 'Server error'}, status=500)
 
-    
+@login_required
+@require_http_methods(["POST"])
+def process_file_and_context(request):
+    """
+    View to handle the file and context submission for creating flashcards.
+    """
+    # Logic for handling file and context
+    file = request.FILES.get('file')
+    context = request.POST.get('context', '')
+
+    if file:
+        logger.debug(f"File is provided. Starting process file...")
+        pass
+
+    if context:
+        pass
+
+    # TODO: Generate flashcards
+    flashcards = []  # Placeholder
+
+    return JsonResponse({"success": True, "flashcards": flashcards})
+
 def signup(request):
 
     if request.method == 'POST':

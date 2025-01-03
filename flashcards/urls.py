@@ -11,6 +11,7 @@ urlpatterns = [
     path('study/no_cards_due', views.no_cards_due, name='no_cards_due'),
     path('add_flashcards/manual/', views.create_manually, name='create_manually'),
     path('add_flashcards/automatic/', views.create_automatically, name='create_automatically'),
+    path('process_file_and_context/', views.process_file_and_context, name='process_file_and_context'),
     path('signup/', views.signup, name='signup'),
     path('login/', auth_views.LoginView.as_view(), name='login'),
     path('logout/', auth_views.LogoutView.as_view(), name='logout'),  # Redirect to home after logout

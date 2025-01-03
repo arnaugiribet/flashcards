@@ -172,7 +172,7 @@ LOGGING = {
         },
         'flashcards': {
             'handlers': ['console'],
-            'level': 'INFO',
+            'level': 'DEBUG',
             'propagate': True,
         },
     },
