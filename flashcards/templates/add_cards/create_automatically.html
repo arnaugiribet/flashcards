@@ -1,8 +1,81 @@
-{% extends 'base.html' %}
+{% extends "base.html" %}
+
+{% block title %}Create Flashcards - FlashApp{% endblock %}
 
 {% block content %}
-<div class="container mx-auto mt-8 p-4 max-w-lg bg-white shadow-md rounded-lg">
-    <h1 class="text-xl font-semibold text-center mb-4">Create Flashcards Automatically</h1>
-    <p class="text-center text-gray-600">This feature is under construction. Please check back later!</p>
+<div style="max-width: 800px; margin: 2rem auto; padding: 2rem;">
+    <div style="background-color: #f4f6f5; padding: 2rem; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+        <h1 class="text-2xl font-semibold text-center mb-6" style="color: #6b8276;">Create Flashcards Automatically</h1>
+
+        <form action="{% url 'process_file_and_context' %}" method="post" enctype="multipart/form-data" class="space-y-6">
+            {% csrf_token %}
+
+            <div>
+                <div class="relative flex items-center">
+                    <input 
+                        type="file" 
+                        name="file" 
+                        id="file" 
+                        accept=".txt,.pdf,.doc,.docx,.ppt,.pptx" 
+                        required
+                        class="hidden"
+                    >
+                    <button 
+                        type="button"
+                        onclick="document.getElementById('file').click()" 
+                        class="px-4 py-2 rounded-md text-sm font-medium text-white"
+                        style="background-color: #9daca2; width: fit-content;"
+                    >
+                        Upload a File
+                    </button>
+                    <span id="file-label" class="text-sm ml-3" style="color: #666;">
+                        No file selected
+                    </span>
+                </div>
+            </div>
+
+            <div>
+                <label for="context" class="block text-sm font-medium" style="color: #6b8276;">Provide Context (Optional)</label>
+                <textarea 
+                    name="context" 
+                    id="context" 
+                    rows="3"
+                    placeholder="Provide any additional context for your flashcards..."
+                    class="mt-1 block w-full text-sm border-gray-300 rounded-md shadow-sm focus:ring-[#9daca2] focus:border-[#9daca2] p-2"
+                ></textarea>
+            </div>
+
+            <div class="flex justify-center">
+                <button 
+                    type="submit" 
+                    id="generate-button"
+                    disabled
+                    class="px-4 py-2 rounded-md text-sm font-medium text-white"
+                    style="background-color: #9daca2; opacity: 0.5; pointer-events: none;"
+                >
+                    Generate Cards
+                </button>
+            </div>
+        </form>
+    </div>
 </div>
+
+<script>
+    document.getElementById('file').addEventListener('change', function (event) {
+        const fileLabel = document.getElementById('file-label');
+        const generateButton = document.getElementById('generate-button');
+        
+        if (event.target.files.length > 0) {
+            fileLabel.textContent = event.target.files[0].name;
+            generateButton.disabled = false;
+            generateButton.style.opacity = '1';
+            generateButton.style.pointerEvents = 'auto';
+        } else {
+            fileLabel.textContent = 'No file selected';
+            generateButton.disabled = true;
+            generateButton.style.opacity = '0.5';
+            generateButton.style.pointerEvents = 'none';
+        }
+    });
+</script>
 {% endblock %}
