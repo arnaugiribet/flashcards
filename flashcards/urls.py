@@ -4,13 +4,11 @@ from . import views
 
 urlpatterns = [
     path('', views.home, name='home'),  # Root path (e.g., '/')
-    path('add_flashcards/', views.add_flashcards, name='add_flashcards'),
     path('decks/', views.user_decks, name='user_decks'),
     path('create_deck/', views.create_deck, name='create_deck'),
     path('study/', views.study, name='study'),
     path('study/review', views.review_card, name='review_card'),
     path('study/no_cards_due', views.no_cards_due, name='no_cards_due'),
-    path('add_flashcards/', views.add_flashcards, name='add_flashcards'),
     path('add_flashcards/manual/', views.create_manually, name='create_manually'),
     path('add_flashcards/automatic/', views.create_automatically, name='create_automatically'),
     path('signup/', views.signup, name='signup'),

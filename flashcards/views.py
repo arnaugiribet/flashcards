@@ -285,13 +285,6 @@ def signup(request):
     return render(request, 'registration/signup.html', {'form': form})
 
 @login_required
-def add_flashcards(request):
-    """
-    Display the options to create flashcards manually or automatically.
-    """
-    return render(request, 'add_cards/add_flashcards.html')
-
-@login_required
 def create_manually(request):
     """
     View to handle manual creation of flashcards.
