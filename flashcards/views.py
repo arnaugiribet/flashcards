@@ -157,14 +157,23 @@ def study(request):
     
     # Prepare the first card for study
     current_card = due_cards.first()
-    
+
+    try:
+        # Get predicted review intervals for each quality level
+        intervals, ease_factors = current_card.get_next_intervals_ease_factors()
+    except Exception as e:
+        logger.error(f"Error calculating intervals for card ID {current_card.id}: {e}")
+        # Optionally, redirect to an error page or provide a fallback
+        return render(request, 'study/error.html', {
+            'error_message': 'There was an error calculating the review intervals. Please try again later.'
+        })
+
     return render(request, 'study/study_mode.html', {
         'card': current_card,
         'total_due_cards': due_cards.count(),
-        'deck_id': deck_id  # Pass the deck_id to maintain context
+        'deck_id': deck_id,
+        'intervals': intervals
     })
-
-import random  # Add this import
 
 @login_required
 @require_http_methods(["POST"])
@@ -223,13 +232,13 @@ def review_card(request):
             # Convert to a list to allow manipulation
             due_cards = list(due_cards)
             # Remove the reviewed card
-            print(f"\nremoving card {card}")
+            logger.debug(f"\nremoving card {card}")
             due_cards.remove(card)
             # Add it back to the end of the list
             due_cards.append(card)
             # Shuffle the cards from position 2 onward (to ensure the "again" card isn't the first)
             random.shuffle(due_cards[1:])
-            print(f"\nthese are the due cards: {due_cards}")
+            logger.debug(f"\nthese are the due cards: {due_cards}")
 
         # If there are no more cards to review
         if not due_cards:
@@ -241,7 +250,7 @@ def review_card(request):
         # Get the next due card (first in the list)
         next_card = due_cards[0]  # The first card now is not the "again" card
     
-        logger.info(f"\nNext card should be: {next_card}")
+        logger.debug(f"\nNext card should be: {next_card}")
 
         # Return the response
         return JsonResponse({
