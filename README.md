@@ -67,7 +67,7 @@
 
    Your list of apps names' can be found with bash: heroku apps
 
-5. **Further date settings.py**
+5. **Further update settings.py**
    
    ```python
    # Add info about database connection:
@@ -94,6 +94,35 @@
    git add .
    git commit -m "Prepare app for deployment"
    git push origin main
+   ```
+
+8. **Link Heroku app to GitHub repo**
+   In dashboard, under deploy, select GitHub.
+
+   Once the repository has been linked, you can deploy from there directly.
+
+9. **Deploying with bash**
+
+   Alternatively, deploying can be done with:
+
+   ```bash
+   git push heroku main
+   ```
+
+   Make sure heroku has been added as a remote. Check with
+   ```bash
+   git remote -v
+   ```
+   Something like this should appear:
+   heroku  https://git.heroku.com/flash-app.git (fetch)
+   heroku  https://git.heroku.com/flash-app.git (push)
+   origin  https://github.com/arnaugiribet/flashcards.git (fetch)
+   origin  https://github.com/arnaugiribet/flashcards.git (push)
+
+   If heroku is not there, add it with:
+
+   ```bash
+   git remote add heroku https://git.heroku.com/flash-app.git
    ```
    
    
