@@ -62,7 +62,7 @@
    ```bash
    heroku config:set ALLOWED_HOSTS=flash-app-040306dc86e6.herokuapp.com --app flash-app
    ```
-   
+
    The app's domain is found with bash: heroku apps:info --app {YOUR_APP_NAME}
 
    Your list of apps names' can be found with bash: heroku apps
@@ -82,13 +82,13 @@
    STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
    ```
 
-5. **Collect Static Files**
+6. **Collect Static Files**
 
    ```bash
    python manage.py collectstatic
    ```
 
-6. **Commit and push the changes to GitHub**
+7. **Commit and push the changes to GitHub**
 
    ```bash
    git add .
