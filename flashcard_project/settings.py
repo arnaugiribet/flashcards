@@ -14,11 +14,8 @@ from pathlib import Path
 import os
 import sys
 import dj_database_url
-import environ
 
 # Initialize the environment values
-env = environ.Env()
-environ.Env.read_env() # read the .env file
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -34,7 +31,7 @@ SECRET_KEY = os.getenv('SECRET_KEY')
 DEBUG = True
 
 # Get it from the .env file for local development.
-ALLOWED_HOSTS = env.list('ALLOWED_HOSTS')
+ALLOWED_HOSTS = [os.getenv('ALLOWED_HOSTS')]
 
 # Application definition
 
