@@ -24,6 +24,9 @@ sys.path.append(str(BASE_DIR / 'src' / 'backend'))
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
+# LLM key for card generation
+LLM_API_KEY = os.getenv('LLM_API_KEY')
+
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.getenv('SECRET_KEY')
 
