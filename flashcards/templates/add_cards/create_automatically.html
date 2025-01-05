@@ -7,7 +7,7 @@
     <div style="background-color: #f4f6f5; padding: 2rem; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
         <h1 class="text-2xl font-semibold text-center mb-6" style="color: #6b8276;">Create Flashcards Automatically</h1>
 
-        <form action="{% url 'process_file_and_context' %}" method="post" enctype="multipart/form-data" class="space-y-6">
+        <form id="flashcard-form" action="{% url 'process_file_and_context' %}" method="post" enctype="multipart/form-data" class="space-y-6">
             {% csrf_token %}
 
             <div>
@@ -58,9 +58,18 @@
             </div>
         </form>
     </div>
+
+    <!-- Flashcards Display Section -->
+    <div id="flashcards-container" class="mt-8 hidden">
+        <h2 class="text-xl font-semibold mb-4" style="color: #6b8276;">Your Flashcards</h2>
+        <div id="flashcards-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- Flashcards will be inserted here -->
+        </div>
+    </div>
 </div>
 
 <script>
+    // File input handler
     document.getElementById('file').addEventListener('change', function (event) {
         const fileLabel = document.getElementById('file-label');
         const generateButton = document.getElementById('generate-button');
@@ -77,5 +86,130 @@
             generateButton.style.pointerEvents = 'none';
         }
     });
+
+    // Form submission handler
+    document.getElementById('flashcard-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const formData = new FormData(this);
+        const generateButton = document.getElementById('generate-button');
+        
+        // Disable the button and show loading state
+        generateButton.disabled = true;
+        generateButton.textContent = 'Generating...';
+        generateButton.style.opacity = '0.5';
+
+        fetch(this.action, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                displayFlashcards(data.flashcards);
+            } else {
+                alert(data.error || 'An error occurred while generating flashcards.');
+            }
+        })
+        .catch(error => {
+            alert('An error occurred while generating flashcards.');
+            console.error('Error:', error);
+        })
+        .finally(() => {
+            // Reset button state
+            generateButton.disabled = false;
+            generateButton.textContent = 'Generate Cards';
+            generateButton.style.opacity = '1';
+        });
+    });
+
+    function displayFlashcards(flashcards) {
+        const container = document.getElementById('flashcards-container');
+        const grid = document.getElementById('flashcards-grid');
+        
+        // Clear previous flashcards
+        grid.innerHTML = '';
+        
+        // Create and append flashcard elements
+        flashcards.forEach((card, index) => {
+            const flashcardElement = document.createElement('div');
+            flashcardElement.className = 'flashcard';
+            flashcardElement.innerHTML = `
+                <div class="card-header">
+                    <span class="card-number">${index + 1}</span>
+                    <span class="card-label">Question</span>
+                </div>
+                <div class="card-content question">${card.question}</div>
+                <div class="card-label answer-label">Answer</div>
+                <div class="card-content answer">${card.answer}</div>
+            `;
+            grid.appendChild(flashcardElement);
+        });
+
+        // Show the container
+        container.classList.remove('hidden');
+    }
 </script>
+
+<style>
+    .flashcard {
+        background-color: #fff;
+        border-radius: 10px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        padding: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .card-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 0.5rem;
+    }
+
+    .card-number {
+        background-color: #9daca2;
+        color: white;
+        width: 24px;
+        height: 24px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.8rem;
+        margin-right: 0.5rem;
+    }
+
+    .card-label {
+        color: #6b8276;
+        font-weight: 600;
+        font-size: 0.9rem;
+    }
+
+    .answer-label {
+        color: #6b8276;
+        font-weight: 600;
+        font-size: 0.9rem;
+        margin-top: 1rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .card-content {
+        color: #4a5568;
+        padding: 0.5rem;
+        background-color: #f8f9f8;
+        border-radius: 6px;
+        margin-bottom: 0.5rem;
+        word-wrap: break-word;
+    }
+
+    .card-content.question {
+        border-left: 3px solid #9daca2;
+    }
+
+    .card-content.answer {
+        border-left: 3px solid #6b8276;
+    }
+</style>
 {% endblock %}
