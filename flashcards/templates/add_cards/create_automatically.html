@@ -65,6 +65,7 @@
             <h2 class="text-2xl font-semibold text-center" style="color: #6b8276;">Generated Flashcards</h2>
             <div class="flex space-x-2 mt-5 justify-center">
                 <button 
+                    id="add-all-btn"
                     class="px-4 py-2 rounded-md text-sm font-medium text-white flex items-center" 
                     style="background-color: #a2b8d0;"
                 >
@@ -86,6 +87,11 @@
                 <!-- Flashcards will be inserted here -->
             </div>
         </div>
+
+        <!-- Add a message for when no cards are available -->
+        <div id="no-cards-message" class="text-center text-xl text-gray-600 mt-8 hidden">
+            No generated cards left to manage.
+        </div>
     </div>
 </div>
 
@@ -104,6 +110,10 @@
 
 
 <script>
+
+    // Shared array to store flashcards
+    let flashcards = [];
+
     // File input handler
     document.getElementById('file').addEventListener('change', function (event) {
         const fileLabel = document.getElementById('file-label');
@@ -143,7 +153,11 @@
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                displayFlashcards(data.flashcards);
+                // Update the shared flashcards array
+                flashcards = data.flashcards;
+                
+                // Display the updated flashcards
+                displayFlashcards();
             } else {
                 alert(data.error || 'An error occurred while generating flashcards.');
             }
@@ -160,55 +174,91 @@
         });
     });
 
-    function displayFlashcards(flashcards) {
+    function displayFlashcards() {
+        console.log('Flashcards in array:', flashcards);
         const container = document.getElementById('flashcards-container');
         const grid = document.getElementById('flashcards-grid');
-        
-        // Clear previous flashcards
+        const addAllBtn = document.getElementById('add-all-btn');
+        const discardAllBtn = document.getElementById('discard-all-btn');
+        const noCardsMessage = document.getElementById('no-cards-message') || document.createElement('div');
+        const flashcardsBox = document.getElementById('flashcards-box');
+        const actionButtons = document.querySelector('.flex.space-x-2.mt-5.justify-center');
+
+        // Create the "no cards" message if it doesn't exist
+        if (!noCardsMessage.id) {
+            noCardsMessage.id = 'no-cards-message';
+            noCardsMessage.className = 'text-center mt-4 text-gray-600';
+            noCardsMessage.style.display = 'none';
+            noCardsMessage.textContent = 'No generated cards left to manage.';
+            container.appendChild(noCardsMessage);
+        }
+
+        // Clear the grid before displaying updated cards
         grid.innerHTML = '';
-        
-        // Create and append flashcard elements
-        flashcards.forEach((card, index) => {
-            const flashcardElement = document.createElement('div');
-            flashcardElement.className = 'flashcard';
-            flashcardElement.innerHTML = ` 
-                <div class="card-header">
-                    <div class="flex items-center">
+
+        if (flashcards.length > 0) {
+            // Show the flashcards box and action buttons
+            flashcardsBox.style.display = 'block';
+            actionButtons.style.display = 'flex';
+
+            // Hide the cards message
+            noCardsMessage.style.display = 'none';
+
+            // Show the action buttons
+            addAllBtn.style.display = 'block';
+            discardAllBtn.style.display = 'block';
+
+            flashcards.forEach((card, index) => {
+                const flashcardElement = document.createElement('div');
+                flashcardElement.className = 'flashcard';
+                flashcardElement.innerHTML = `
+                    <div class="card-header">
                         <span class="card-label">Question</span>
+                        <div class="card-controls">
+                            <button class="control-btn delete-btn">
+                                <i class="fas fa-minus"></i>
+                            </button>
+                        </div>
                     </div>
-                    <div class="card-controls">
-                        <button class="control-btn add-btn">
-                            <i class="fas fa-plus"></i>
-                        </button>
-                        <button class="control-btn delete-btn">
-                            <i class="fas fa-minus"></i>
-                        </button>
-                    </div>
-                </div>
-                <div class="card-content question">${card.question}</div>
-                <div class="card-label answer-label">Answer</div>
-                <div class="card-content answer">${card.answer}</div>
-            `;
+                    <div class="card-content question">${card.question}</div>
+                    <div class="card-label answer-label">Answer</div>
+                    <div class="card-content answer">${card.answer}</div>
+                `;
 
-            // Add an event listener for the delete button (discard the flashcard)
-            const deleteButton = flashcardElement.querySelector('.delete-btn');
-            deleteButton.addEventListener('click', function() {
-                // Remove the flashcard element from the grid
-                grid.removeChild(flashcardElement);
-                // Remove the flashcard from the flashcards array
-                flashcards.splice(index, 1);
+                // Add event listener to delete individual flashcard
+                const deleteButton = flashcardElement.querySelector('.delete-btn');
+                deleteButton.addEventListener('click', () => {
+                    flashcards.splice(index, 1); // Remove the flashcard from the array
+                    displayFlashcards(); // Refresh the UI
+                });
+
+                grid.appendChild(flashcardElement);
             });
-
-            grid.appendChild(flashcardElement);
-        });
+        } else {
+            showNoCardsMessage()
+        }
 
         // Show the container
         container.classList.remove('hidden');
     }
 
+    // Function to show the "No cards" message when all cards are deleted
+    function showNoCardsMessage() {
+        const flashcardsBox = document.getElementById('flashcards-box');
+        const noCardsMessage = document.getElementById('no-cards-message');
+        const actionButtons = document.querySelector('.flex.space-x-2.mt-5.justify-center'); // Add All, Discard All buttons
+
+        // Hide the flashcard list and action buttons
+        flashcardsBox.style.display = 'none';
+        actionButtons.style.display = 'none';
+
+        // Show the "No cards" message
+        noCardsMessage.style.display = 'block';
+    }
+
     // Discard All button handler
-    document.getElementById('discard-all-btn').addEventListener('click', function() {
-        // Show the custom modal
+    document.getElementById('discard-all-btn').addEventListener('click', function () {
+        // Show the confirmation modal
         document.getElementById('discard-modal').classList.remove('hidden');
     });
 
@@ -219,18 +269,15 @@
 
     // Confirm button (Delete all flashcards)
     document.getElementById('confirm-discard').addEventListener('click', function() {
-        // Logic to discard all flashcards
-        console.log("All cards discarded.");
+        // Clear the flashcards array
+        flashcards = [];
         
-        // Optionally, hide the flashcards container or reset the grid
-        document.getElementById('flashcards-grid').innerHTML = '';
-        document.getElementById('flashcards-container').classList.add('hidden');
-        
+        // Update the display
+        displayFlashcards();
+
         // Close the modal
         document.getElementById('discard-modal').classList.add('hidden');
     });
-
-
 </script>
 
 <style>
