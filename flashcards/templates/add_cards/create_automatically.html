@@ -63,7 +63,7 @@
      <div id="flashcards-container" class="mt-8 hidden">
         <div class="flex flex-col mb-4">
             <h2 class="text-2xl font-semibold text-center" style="color: #6b8276;">Generated Flashcards</h2>
-            <div class="flex space-x-2 mt-4 justify-center">
+            <div class="flex space-x-2 mt-5 justify-center">
                 <button 
                     class="px-4 py-2 rounded-md text-sm font-medium text-white flex items-center" 
                     style="background-color: #a2b8d0;"
@@ -71,6 +71,7 @@
                     Add All
                 </button>
                 <button 
+                    id="discard-all-btn"
                     class="px-4 py-2 rounded-md text-sm font-medium text-white flex items-center" 
                     style="background-color: #d4a8a8;"
                 >
@@ -87,6 +88,20 @@
         </div>
     </div>
 </div>
+
+<!-- Custom Confirmation Modal -->
+<div id="discard-modal" class="fixed inset-0 bg-gray-800 bg-opacity-50 flex justify-center items-center hidden">
+    <div class="bg-white rounded-lg p-6 w-96 shadow-lg">
+        <h2 class="text-xl font-semibold text-center text-gray-700 mb-4">Discard all generated cards?</h2>
+        <p class="text-center text-gray-600 mb-6">This will delete all the generated flashcards. This action cannot be undone.</p>
+        <div class="flex justify-center gap-4">
+            <button id="cancel-discard" class="btn cancel-btn px-4 py-2 bg-gray-300 rounded-md text-sm text-gray-800 hover:bg-gray-400 transition">Cancel</button>
+            <button id="confirm-discard" class="btn discard-btn px-4 py-2 text-white rounded-md text-sm hover:bg-[#9daca2] transition">Discard</button>
+        </div>
+    </div>
+</div>
+
+
 
 <script>
     // File input handler
@@ -180,6 +195,32 @@
         // Show the container
         container.classList.remove('hidden');
     }
+
+    // Discard All button handler
+    document.getElementById('discard-all-btn').addEventListener('click', function() {
+        // Show the custom modal
+        document.getElementById('discard-modal').classList.remove('hidden');
+    });
+
+    // Cancel button (Close the modal)
+    document.getElementById('cancel-discard').addEventListener('click', function() {
+        document.getElementById('discard-modal').classList.add('hidden');
+    });
+
+    // Confirm button (Delete all flashcards)
+    document.getElementById('confirm-discard').addEventListener('click', function() {
+        // Logic to discard all flashcards
+        console.log("All cards discarded.");
+        
+        // Optionally, hide the flashcards container or reset the grid
+        document.getElementById('flashcards-grid').innerHTML = '';
+        document.getElementById('flashcards-container').classList.add('hidden');
+        
+        // Close the modal
+        document.getElementById('discard-modal').classList.add('hidden');
+    });
+
+
 </script>
 
 <style>
@@ -301,6 +342,39 @@
     .delete-btn {
         background-color: #d4a8a8;
     }
+
+    #discard-modal {
+        transition: opacity 0.3s ease;
+    }
+
+    /* Modal buttons */
+    #discard-modal button {
+        transition: background-color 0.3s ease;
+        cursor: pointer;
+        transform: scale(1.05);
+    }
+
+    /* Hover effect for Cancel button */
+    #discard-modal .bg-gray-300 {
+        background-color: #f4f6f5; /* Similar to the light background of the app */
+        color: #666;
+    }
+
+    /* Hover color for Cancel */
+    #discard-modal button:hover {
+        background-color: #e1e5e1;
+    }
+
+    /* Discard Button with Green Hover */
+    #discard-modal .discard-btn {
+        background-color: #d4a8a8;
+    }
+
+    #discard-modal .discard-btn:hover {
+        background-color: #9daca2; /* Green hover color */
+    }
+
+    
 
 </style>
 {% endblock %}
