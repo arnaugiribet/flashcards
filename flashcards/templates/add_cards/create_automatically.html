@@ -189,6 +189,16 @@
                 <div class="card-label answer-label">Answer</div>
                 <div class="card-content answer">${card.answer}</div>
             `;
+
+            // Add an event listener for the delete button (discard the flashcard)
+            const deleteButton = flashcardElement.querySelector('.delete-btn');
+            deleteButton.addEventListener('click', function() {
+                // Remove the flashcard element from the grid
+                grid.removeChild(flashcardElement);
+                // Remove the flashcard from the flashcards array
+                flashcards.splice(index, 1);
+            });
+
             grid.appendChild(flashcardElement);
         });
 
