@@ -59,9 +59,25 @@
         </form>
     </div>
 
-    <!-- Flashcards Display Section -->
-    <div id="flashcards-container" class="mt-8 hidden">
-        <h2 class="text-xl font-semibold mb-4" style="color: #6b8276;">Your Flashcards</h2>
+     <!-- Flashcards Display Section -->
+     <div id="flashcards-container" class="mt-8 hidden">
+        <div class="flex flex-col mb-4">
+            <h2 class="text-xl font-semibold text-center" style="color: #6b8276;">Generated Flashcards</h2>
+            <div class="flex space-x-2 mt-4 justify-center">
+                <button 
+                    class="px-4 py-2 rounded-md text-sm font-medium text-white flex items-center" 
+                    style="background-color: #a2b8d0;"
+                >
+                    Add All
+                </button>
+                <button 
+                    class="px-4 py-2 rounded-md text-sm font-medium text-white flex items-center" 
+                    style="background-color: #d4a8a8;"
+                >
+                    Discard All
+                </button>
+            </div>
+        </div>
         <div id="flashcards-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <!-- Flashcards will be inserted here -->
         </div>
@@ -138,8 +154,17 @@
             flashcardElement.className = 'flashcard';
             flashcardElement.innerHTML = `
                 <div class="card-header">
-                    <span class="card-number">${index + 1}</span>
-                    <span class="card-label">Question</span>
+                    <div class="flex items-center">
+                        <span class="card-label">Question</span>
+                    </div>
+                    <div class="card-controls">
+                        <button class="control-btn add-btn">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                        <button class="control-btn delete-btn">
+                            <i class="fas fa-minus"></i>
+                        </button>
+                    </div>
                 </div>
                 <div class="card-content question">${card.question}</div>
                 <div class="card-label answer-label">Answer</div>
@@ -165,6 +190,7 @@
     .card-header {
         display: flex;
         align-items: center;
+        justify-content: space-between;
         margin-bottom: 0.5rem;
     }
 
@@ -210,6 +236,42 @@
 
     .card-content.answer {
         border-left: 3px solid #6b8276;
+    }
+
+    .card-controls {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .control-btn {
+        background-color: #9daca2;
+        border: none;
+        color: white;
+        border-radius: 50%;
+        width: 30px;
+        height: 30px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        transition: background-color 0.3s;
+    }
+
+    .control-btn:hover {
+        background-color: #6b8276;
+        cursor: pointer;
+    }
+
+    .add-btn {
+        background-color: #a2b8d0;
+    }
+
+    .delete-btn {
+        background-color: #d4a8a8;
+    }
+
+    .control-btn:hover {
+        opacity: 0.9;
     }
 </style>
 {% endblock %}
