@@ -7,7 +7,7 @@
     <div style="background-color: #f4f6f5; padding: 2rem; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
         <h1 class="text-2xl font-semibold text-center mb-6" style="color: #6b8276;">Create Flashcards Automatically</h1>
 
-        <form action="{% url 'process_file_and_context' %}" method="post" enctype="multipart/form-data" class="space-y-6">
+        <form id="flashcard-form" action="{% url 'process_file_and_context' %}" method="post" enctype="multipart/form-data" class="space-y-6">
             {% csrf_token %}
 
             <div>
@@ -58,9 +58,38 @@
             </div>
         </form>
     </div>
+
+     <!-- Flashcards Display Section -->
+     <div id="flashcards-container" class="mt-8 hidden">
+        <div class="flex flex-col mb-4">
+            <h2 class="text-2xl font-semibold text-center" style="color: #6b8276;">Generated Flashcards</h2>
+            <div class="flex space-x-2 mt-4 justify-center">
+                <button 
+                    class="px-4 py-2 rounded-md text-sm font-medium text-white flex items-center" 
+                    style="background-color: #a2b8d0;"
+                >
+                    Add All
+                </button>
+                <button 
+                    class="px-4 py-2 rounded-md text-sm font-medium text-white flex items-center" 
+                    style="background-color: #d4a8a8;"
+                >
+                    Discard All
+                </button>
+            </div>
+        </div>
+
+        <!-- Flashcards Box with Horizontal Scroll -->
+        <div id="flashcards-box" class="overflow-x-auto py-4">
+            <div id="flashcards-grid" class="flex space-x-4">
+                <!-- Flashcards will be inserted here -->
+            </div>
+        </div>
+    </div>
 </div>
 
 <script>
+    // File input handler
     document.getElementById('file').addEventListener('change', function (event) {
         const fileLabel = document.getElementById('file-label');
         const generateButton = document.getElementById('generate-button');
@@ -77,5 +106,201 @@
             generateButton.style.pointerEvents = 'none';
         }
     });
+
+    // Form submission handler
+    document.getElementById('flashcard-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const formData = new FormData(this);
+        const generateButton = document.getElementById('generate-button');
+        
+        // Disable the button and show loading state
+        generateButton.disabled = true;
+        generateButton.textContent = 'Generating...';
+        generateButton.style.opacity = '0.5';
+
+        fetch(this.action, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                displayFlashcards(data.flashcards);
+            } else {
+                alert(data.error || 'An error occurred while generating flashcards.');
+            }
+        })
+        .catch(error => {
+            alert('An error occurred while generating flashcards.');
+            console.error('Error:', error);
+        })
+        .finally(() => {
+            // Reset button state
+            generateButton.disabled = false;
+            generateButton.textContent = 'Generate Cards';
+            generateButton.style.opacity = '1';
+        });
+    });
+
+    function displayFlashcards(flashcards) {
+        const container = document.getElementById('flashcards-container');
+        const grid = document.getElementById('flashcards-grid');
+        
+        // Clear previous flashcards
+        grid.innerHTML = '';
+        
+        // Create and append flashcard elements
+        flashcards.forEach((card, index) => {
+            const flashcardElement = document.createElement('div');
+            flashcardElement.className = 'flashcard';
+            flashcardElement.innerHTML = ` 
+                <div class="card-header">
+                    <div class="flex items-center">
+                        <span class="card-label">Question</span>
+                    </div>
+                    <div class="card-controls">
+                        <button class="control-btn add-btn">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                        <button class="control-btn delete-btn">
+                            <i class="fas fa-minus"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="card-content question">${card.question}</div>
+                <div class="card-label answer-label">Answer</div>
+                <div class="card-content answer">${card.answer}</div>
+            `;
+            grid.appendChild(flashcardElement);
+        });
+
+        // Show the container
+        container.classList.remove('hidden');
+    }
 </script>
+
+<style>
+
+    #flashcards-container {
+        background-color: #f4f6f5; /* Similar background color */
+        padding: 2rem;
+        border-radius: 10px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        margin-top: 2rem;
+    }
+
+    /* Reset container margins and ensure proper width */
+    #flashcards-box {
+        max-height: 500px;
+        overflow-y: auto;
+        overflow-x: hidden; /* Prevent horizontal scroll */
+        margin: 0;
+        padding: 1rem;
+        width: 100%;
+        box-sizing: border-box;
+        padding-right: 1.5rem;
+    }
+
+    /* Grid container with proper spacing */
+    #flashcards-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 1rem;
+        width: 100%;
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+    }
+
+    /* Individual flashcard styling */
+    .flashcard {
+        background-color: #fff;
+        border-radius: 10px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        padding: 1rem;
+        width: 100%;
+        box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+        margin: 0; /* Remove any margin */
+    }
+
+    .card-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 0.5rem;
+        width: 100%;
+    }
+
+    .card-label {
+        color: #6b8276;
+        font-weight: 600;
+        font-size: 0.9rem;
+    }
+
+    .answer-label {
+        color: #6b8276;
+        font-weight: 600;
+        font-size: 0.9rem;
+        margin-top: 1rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .card-content {
+        color: #4a5568;
+        padding: 0.5rem;
+        background-color: #f8f9f8;
+        border-radius: 6px;
+        margin-bottom: 0.5rem;
+        word-wrap: break-word;
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    .card-content.question {
+        border-left: 3px solid #9daca2;
+    }
+
+    .card-content.answer {
+        border-left: 3px solid #6b8276;
+    }
+
+    .card-controls {
+        display: flex;
+        gap: 0.5rem;
+        margin-top: auto;
+    }
+
+    .control-btn {
+        background-color: #9daca2;
+        border: none;
+        color: white;
+        border-radius: 50%;
+        width: 30px;
+        height: 30px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        transition: background-color 0.3s;
+    }
+
+    .control-btn:hover {
+        background-color: #6b8276;
+        cursor: pointer;
+    }
+
+    .add-btn {
+        background-color: #a2b8d0;
+    }
+
+    .delete-btn {
+        background-color: #d4a8a8;
+    }
+
+</style>
 {% endblock %}

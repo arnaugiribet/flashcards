@@ -11,6 +11,7 @@ from django.contrib.auth.models import User
 from flashcards.models import Flashcard, Deck
 from django.utils.translation import activate
 import json
+from .services import generate_flashcards
 from django.views.decorators.http import require_http_methods
 from django.core.exceptions import ValidationError
 from django.db.models import Count, Q, Prefetch
@@ -274,23 +275,22 @@ def review_card(request):
 @require_http_methods(["POST"])
 def process_file_and_context(request):
     """
-    View to handle the file and context submission for creating flashcards.
+    View to handle file and context submission for creating flashcards.
     """
-    # Logic for handling file and context
     file = request.FILES.get('file')
     context = request.POST.get('context', '')
 
-    if file:
-        logger.debug(f"File is provided. Starting process file...")
-        pass
-
-    if context:
-        pass
-
-    # TODO: Generate flashcards
-    flashcards = []  # Placeholder
-
-    return JsonResponse({"success": True, "flashcards": flashcards})
+    try:
+        # Call the service function
+        flashcards = generate_flashcards(file, context)
+        flashcards_data = [
+            {"question": fc.question, "answer": fc.answer} for fc in flashcards
+        ]
+        return JsonResponse({"success": True, "flashcards": flashcards_data})
+    except ValueError as ve:
+        return JsonResponse({"success": False, "error": str(ve)}, status=400)
+    except RuntimeError as re:
+        return JsonResponse({"success": False, "error": "Internal error"}, status=500)
 
 def signup(request):
 
