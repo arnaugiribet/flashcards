@@ -201,8 +201,6 @@
 
     // Function to handle adding a flashcard to the database
     function handleAddCard(card, index) {
-        // Logic to upload the card to the database
-        // Replace with your actual upload logic here, e.g. using fetch to POST data
         uploadCardToDatabase(card)
             .then(() => {
                 // Remove the card from the local array after successfully uploading
@@ -211,17 +209,45 @@
             })
             .catch((error) => {
                 console.error('Error uploading card:', error);
+                alert('Failed to save flashcard: ' + error.message);
             });
     }
 
-    // Example function for uploading to the database (replace with actual logic)
     function uploadCardToDatabase(card) {
-        return new Promise((resolve, reject) => {
-            // Simulate an upload with a timeout
-            setTimeout(() => {
-                console.log('Card uploaded:', card);
-                resolve();
-            }, 500); // Simulate network delay
+        // Get the selected deck ID from the deck selector
+        const deckId = document.getElementById('deck-selector').value;
+        
+        // Get the CSRF token from the form
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        
+        // Create form data for the request
+        const formData = new FormData();
+        formData.append('deck_id', deckId);
+        formData.append('question', card.question);
+        formData.append('answer', card.answer);
+
+        // Return a promise that resolves when the card is uploaded
+        return fetch('/add_flashcards/automatic/', {  
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': csrfToken
+            },
+            body: formData
+        })
+        .then(response => {
+            if (!response.ok) {
+                return response.json().then(data => {
+                    throw new Error(data.error || '01. Failed to save flashcard');
+                });
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (!data.success) {
+                throw new Error(data.error || '02. Failed to save flashcard');
+            }
+            console.log('Card uploaded successfully:', card);
+            return data;
         });
     }
 

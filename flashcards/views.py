@@ -317,21 +317,31 @@ def create_manually(request):
 @login_required
 def create_automatically(request):
     """
-    View for automatic flashcard creation (currently empty).
+    View for automatic flashcard creation with the ability to save a single flashcard.
     """
-
-    # Fetch the decks and convert the queryset to a list
+    if request.method == "POST":
+        # Extract data from POST request
+        deck_id = request.POST.get('deck_id')
+        question = request.POST.get('question')
+        answer = request.POST.get('answer')
+        # Ensure all required fields are present
+        if not (deck_id and question and answer):
+            return JsonResponse({'success': False, 'error': 'All fields (deck, question, answer) are required.'}, status=400)
+        try:
+            # Validate the deck and create the flashcard
+            deck = Deck.objects.get(id=deck_id, user=request.user)
+            Flashcard.objects.create(deck=deck, question=question, answer=answer, user=request.user)
+            return JsonResponse({'success': True, 'message': 'Flashcard saved successfully.'})
+        except Deck.DoesNotExist:
+            return JsonResponse({'success': False, 'error': 'Invalid deck selected.'}, status=400)
+    # Handle GET request to fetch decks for the template
     decks_queryset = Deck.objects.filter(user=request.user)
-    
-    # Convert queryset to a list
     decks = list(decks_queryset)
-
-    # Order the decks hierarchically using the class method
     ordered_decks = Deck.order_decks(decks)
-
     return render(request, 'add_cards/create_automatically.html', {
         'ordered_decks': ordered_decks
     })
+
 
 @login_required
 def create_deck(request):
