@@ -319,7 +319,19 @@ def create_automatically(request):
     """
     View for automatic flashcard creation (currently empty).
     """
-    return render(request, 'add_cards/create_automatically.html')
+
+    # Fetch the decks and convert the queryset to a list
+    decks_queryset = Deck.objects.filter(user=request.user)
+    
+    # Convert queryset to a list
+    decks = list(decks_queryset)
+
+    # Order the decks hierarchically using the class method
+    ordered_decks = Deck.order_decks(decks)
+
+    return render(request, 'add_cards/create_automatically.html', {
+        'ordered_decks': ordered_decks
+    })
 
 @login_required
 def create_deck(request):

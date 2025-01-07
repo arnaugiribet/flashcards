@@ -72,8 +72,13 @@
             <select 
                 id="deck-selector" 
                 class="text-sm border-gray-300 rounded-md shadow-sm focus:ring-[#9daca2] focus:border-[#9daca2] p-2"
+                required 
             >
-                <option value="" selected disabled></option> <!-- Placeholder text -->
+                {% for deck in ordered_decks %}
+                    <option value="{{ deck.id }}" {% if forloop.first %}selected{% endif %}>
+                        {{ deck.name }}
+                    </option>
+                {% endfor %}
             </select>
             </div>
             <!-- Add All and Discard All buttons -->
@@ -273,6 +278,12 @@
         // Show the "No cards" message
         noCardsMessage.style.display = 'block';
     }
+
+    // Detect deck-selector changes
+    document.getElementById('deck-selector').addEventListener('change', function() {
+        const selectedDeckId = this.value;
+        console.log('Selected Deck ID:', selectedDeckId);
+    });
 
     // Discard All button handler
     document.getElementById('discard-all-btn').addEventListener('click', function () {
