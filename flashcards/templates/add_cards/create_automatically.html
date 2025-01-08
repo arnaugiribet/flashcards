@@ -63,14 +63,35 @@
      <div id="flashcards-container" class="mt-8 hidden">
         <div class="flex flex-col mb-4">
             <h2 class="text-2xl font-semibold text-center" style="color: #6b8276;">Generated Flashcards</h2>
-            <div class="flex space-x-2 mt-4 justify-center">
+            <!-- Deck Selector -->
+            <div 
+                class="flex items-center justify-center space-x-2 mt-4"
+                id="deck-selector-container"
+            >
+            <label for="deck-selector" class="text-sm font-medium" style="color: #6b8276;">Select Deck:</label>
+            <select 
+                id="deck-selector" 
+                class="text-sm border-gray-300 rounded-md shadow-sm focus:ring-[#9daca2] focus:border-[#9daca2] p-2"
+                required 
+            >
+                {% for deck in ordered_decks %}
+                    <option value="{{ deck.id }}" {% if forloop.first %}selected{% endif %}>
+                        {{ deck.name }}
+                    </option>
+                {% endfor %}
+            </select>
+            </div>
+            <!-- Add All and Discard All buttons -->
+            <div class="flex space-x-2 mt-5 justify-center">
                 <button 
+                    id="add-all-btn"
                     class="px-4 py-2 rounded-md text-sm font-medium text-white flex items-center" 
                     style="background-color: #a2b8d0;"
                 >
                     Add All
                 </button>
                 <button 
+                    id="discard-all-btn"
                     class="px-4 py-2 rounded-md text-sm font-medium text-white flex items-center" 
                     style="background-color: #d4a8a8;"
                 >
@@ -85,10 +106,33 @@
                 <!-- Flashcards will be inserted here -->
             </div>
         </div>
+
+        <!-- Add a message for when no cards are available -->
+        <div id="no-cards-message" class="text-center text-xl text-gray-600 mt-8 hidden">
+            No generated cards left to manage.
+        </div>
     </div>
 </div>
 
+<!-- Custom Confirmation Modal -->
+<div id="discard-modal" class="fixed inset-0 bg-gray-800 bg-opacity-50 flex justify-center items-center hidden">
+    <div class="bg-white rounded-lg p-6 w-96 shadow-lg">
+        <h2 class="text-xl font-semibold text-center text-gray-700 mb-4">Discard all generated cards?</h2>
+        <p class="text-center text-gray-600 mb-6">This will delete all the generated flashcards. This action cannot be undone.</p>
+        <div class="flex justify-center gap-4">
+            <button id="cancel-discard" class="btn cancel-btn px-4 py-2 bg-gray-300 rounded-md text-sm text-gray-800 hover:bg-gray-400 transition">Cancel</button>
+            <button id="confirm-discard" class="btn discard-btn px-4 py-2 text-white rounded-md text-sm hover:bg-[#9daca2] transition">Discard</button>
+        </div>
+    </div>
+</div>
+
+
+
 <script>
+
+    // Shared array to store flashcards
+    let flashcards = [];
+
     // File input handler
     document.getElementById('file').addEventListener('change', function (event) {
         const fileLabel = document.getElementById('file-label');
@@ -128,7 +172,11 @@
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                displayFlashcards(data.flashcards);
+                // Update the shared flashcards array
+                flashcards = data.flashcards;
+                
+                // Display the updated flashcards
+                displayFlashcards();
             } else {
                 alert(data.error || 'An error occurred while generating flashcards.');
             }
@@ -145,41 +193,227 @@
         });
     });
 
-    function displayFlashcards(flashcards) {
+    // Function to handle the deletion of a flashcard
+    function handleDeleteCard(index) {
+        flashcards.splice(index, 1); // Remove the flashcard from the array
+        displayFlashcards(); // Refresh the UI
+    }
+
+    // Function to handle adding a flashcard to the database
+    function handleAddCard(card, index) {
+        uploadCardToDatabase(card)
+            .then(() => {
+                // Get the selected deck name from the deck selector
+                const deckSelector = document.getElementById('deck-selector');
+                const selectedDeckName = deckSelector.options[deckSelector.selectedIndex].text;
+
+                // Remove the card from the local array after successfully uploading
+                flashcards.splice(index, 1);
+                displayFlashcards(); // Refresh the UI
+
+                // Show a success notification with the deck name
+                showNotification(`Card added to ${selectedDeckName}`, 'success');
+            })
+            .catch((error) => {
+                console.error('Error uploading card:', error);
+                alert('Failed to save flashcard: ' + error.message);
+
+                // Show an error notification
+                showNotification('Failed to upload flashcard: ' + error.message, 'error');
+            });
+    }
+
+    // Function to handle adding all the flashcards to the database
+    async function handleAddAllCards() {
+        try {
+            await Promise.all(flashcards.map((card, index) => uploadCardToDatabase(card)));
+            flashcards = []; // Clear all cards after success
+            displayFlashcards(); // Refresh UI
+            // Get the selected deck name from the deck selector
+            const deckSelector = document.getElementById('deck-selector');
+            const selectedDeckName = deckSelector.options[deckSelector.selectedIndex].text;
+            showNotification(`All cards added to ${selectedDeckName}`, 'success');
+        } catch (error) {
+            console.error('Error uploading cards:', error);
+            showNotification('Failed to upload some cards.', 'error');
+        }
+    }
+
+    // Attach the click event to the Add All button
+    document.getElementById('add-all-btn').addEventListener('click', handleAddAllCards);
+
+
+    function uploadCardToDatabase(card) {
+        // Get the selected deck ID from the deck selector
+        const deckId = document.getElementById('deck-selector').value;
+        
+        // Get the CSRF token from the form
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        
+        // Create form data for the request
+        const formData = new FormData();
+        formData.append('deck_id', deckId);
+        formData.append('question', card.question);
+        formData.append('answer', card.answer);
+
+        // Return a promise that resolves when the card is uploaded
+        return fetch('/add_flashcards/automatic/', {  
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': csrfToken
+            },
+            body: formData
+        })
+        .then(response => {
+            if (!response.ok) {
+                return response.json().then(data => {
+                    throw new Error(data.error || '01. Failed to save flashcard');
+                });
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (!data.success) {
+                throw new Error(data.error || '02. Failed to save flashcard');
+            }
+            console.log('Card uploaded successfully:', card);
+            return data;
+        });
+    }
+
+    function showNotification(message, type = 'success') {
+        const container = document.getElementById('flashcards-container');
+
+        const notification = document.createElement('div');
+        notification.className = `notification ${type}`;
+        notification.textContent = message;
+
+        container.appendChild(notification);
+
+        // Listen for the `animationend` event to remove the element
+        notification.addEventListener('animationend', () => {
+            container.removeChild(notification);
+        });
+    }
+
+    // Function to display the flashcards
+    function displayFlashcards() {
+        console.log('Flashcards in array:', flashcards);
         const container = document.getElementById('flashcards-container');
         const grid = document.getElementById('flashcards-grid');
-        
-        // Clear previous flashcards
+        const deckSelector = document.getElementById('deck-selector-container');
+        const addAllBtn = document.getElementById('add-all-btn');
+        const discardAllBtn = document.getElementById('discard-all-btn');
+        const noCardsMessage = document.getElementById('no-cards-message') || document.createElement('div');
+        const flashcardsBox = document.getElementById('flashcards-box');
+        const actionButtons = document.querySelector('.flex.space-x-2.mt-5.justify-center');
+
+        // Create the "no cards" message if it doesn't exist
+        if (!noCardsMessage.id) {
+            noCardsMessage.id = 'no-cards-message';
+            noCardsMessage.className = 'text-center mt-4 text-gray-600';
+            noCardsMessage.style.display = 'none';
+            noCardsMessage.textContent = 'No generated cards left to manage.';
+            container.appendChild(noCardsMessage);
+        }
+
+        // Clear the grid before displaying updated cards
         grid.innerHTML = '';
-        
-        // Create and append flashcard elements
-        flashcards.forEach((card, index) => {
-            const flashcardElement = document.createElement('div');
-            flashcardElement.className = 'flashcard';
-            flashcardElement.innerHTML = ` 
-                <div class="card-header">
-                    <div class="flex items-center">
+
+        if (flashcards.length > 0) {
+            // Show the flashcards box and action buttons
+            flashcardsBox.style.display = 'block';
+            deckSelector.style.display = 'flex';
+            actionButtons.style.display = 'flex';
+
+            // Hide the cards message
+            noCardsMessage.style.display = 'none';
+
+            // Show the action buttons
+            addAllBtn.style.display = 'block';
+            discardAllBtn.style.display = 'block';
+
+            flashcards.forEach((card, index) => {
+                const flashcardElement = document.createElement('div');
+                flashcardElement.className = 'flashcard';
+                flashcardElement.innerHTML = `
+                    <div class="card-header">
                         <span class="card-label">Question</span>
+                        <div class="card-controls">
+                            <button class="control-btn add-btn">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                            <button class="control-btn delete-btn">
+                                <i class="fas fa-minus"></i>
+                            </button>
+                        </div>
                     </div>
-                    <div class="card-controls">
-                        <button class="control-btn add-btn">
-                            <i class="fas fa-plus"></i>
-                        </button>
-                        <button class="control-btn delete-btn">
-                            <i class="fas fa-minus"></i>
-                        </button>
-                    </div>
-                </div>
-                <div class="card-content question">${card.question}</div>
-                <div class="card-label answer-label">Answer</div>
-                <div class="card-content answer">${card.answer}</div>
-            `;
-            grid.appendChild(flashcardElement);
-        });
+                    <div class="card-content question">${card.question}</div>
+                    <div class="card-label answer-label">Answer</div>
+                    <div class="card-content answer">${card.answer}</div>
+                `;
+
+                // Attach event listeners for add and delete buttons
+                const deleteButton = flashcardElement.querySelector('.delete-btn');
+                deleteButton.addEventListener('click', () => handleDeleteCard(index));
+
+                const addButton = flashcardElement.querySelector('.add-btn');
+                addButton.addEventListener('click', () => handleAddCard(card, index));
+
+                grid.appendChild(flashcardElement);
+            });
+        } else {
+            showNoCardsMessage();
+        }
 
         // Show the container
         container.classList.remove('hidden');
     }
+
+    // Function to show the "No cards" message when all cards are deleted
+    function showNoCardsMessage() {
+        const flashcardsBox = document.getElementById('flashcards-box');
+        const noCardsMessage = document.getElementById('no-cards-message');
+        const actionButtons = document.querySelector('.flex.space-x-2.mt-5.justify-center'); // Add All, Discard All buttons
+        const deckSelector = document.getElementById('deck-selector-container');
+        
+        // Hide the flashcard list and action buttons
+        flashcardsBox.style.display = 'none';
+        actionButtons.style.display = 'none';
+        deckSelector.style.display = 'none';
+
+        // Show the "No cards" message
+        noCardsMessage.style.display = 'block';
+    }
+
+    // Detect deck-selector changes
+    document.getElementById('deck-selector').addEventListener('change', function() {
+        const selectedDeckId = this.value;
+        console.log('Selected Deck ID:', selectedDeckId);
+    });
+
+    // Discard All button handler
+    document.getElementById('discard-all-btn').addEventListener('click', function () {
+        // Show the confirmation modal
+        document.getElementById('discard-modal').classList.remove('hidden');
+    });
+
+    // Cancel button (Close the modal)
+    document.getElementById('cancel-discard').addEventListener('click', function() {
+        document.getElementById('discard-modal').classList.add('hidden');
+    });
+
+    // Confirm button (Delete all flashcards)
+    document.getElementById('confirm-discard').addEventListener('click', function() {
+        // Clear the flashcards array
+        flashcards = [];
+        
+        // Update the display
+        displayFlashcards();
+
+        // Close the modal
+        document.getElementById('discard-modal').classList.add('hidden');
+    });
 </script>
 
 <style>
@@ -301,6 +535,72 @@
     .delete-btn {
         background-color: #d4a8a8;
     }
+
+    #discard-modal {
+        transition: opacity 0.3s ease;
+    }
+
+    /* Modal buttons */
+    #discard-modal button {
+        transition: background-color 0.3s ease;
+        cursor: pointer;
+        transform: scale(1.05);
+    }
+
+    /* Hover effect for Cancel button */
+    #discard-modal .bg-gray-300 {
+        background-color: #f4f6f5; /* Similar to the light background of the app */
+        color: #666;
+    }
+
+    /* Hover color for Cancel */
+    #discard-modal button:hover {
+        background-color: #e1e5e1;
+    }
+
+    /* Discard Button with Green Hover */
+    #discard-modal .discard-btn {
+        background-color: #d4a8a8;
+    }
+
+    #discard-modal .discard-btn:hover {
+        background-color: #9daca2; /* Green hover color */
+    }
+
+    .notification {
+        position: fixed; /* Keep fixed positioning if needed */
+        top: 10px;
+        left: 20%;
+        transform: translateX(-50%);
+        z-index: 1000;
+        background-color: #a2b8d0; /* Light blue for success */
+        color: white;
+        padding: 10px 20px;
+        border-radius: 5px;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        animation: fade-in-out 2s ease-in-out;
+        text-align: center;
+        max-width: 80%;
+        display: flex; /* Align for potential multiple elements */
+        flex-direction: column;
+        gap: 10px;
+        align-items: center;
+    }
+
+
+    .notification.error {
+        background-color: #d4a8a8; /* Light red for error */
+    }
+
+    @keyframes fade-in-out {
+        0%, 90% {
+            opacity: 1;
+        }
+        100% {
+            opacity: 0;
+        }
+    }
+
 
 </style>
 {% endblock %}

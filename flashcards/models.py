@@ -21,6 +21,37 @@ class Deck(models.Model):
     
     def __str__(self):
         return f"{self.name} (User: {self.user.username})"
+ 
+    @classmethod
+    def order_decks(cls, decks):
+        """
+        Orders decks such that children follow their parent decks.
+        """
+        ordered_decks = []
+
+        # A mapping from deck ID to deck object for quick lookups
+        deck_map = {deck.id: deck for deck in decks}
+
+        # Helper function to recursively add decks and their children
+        def add_deck_and_children(deck):
+            if deck not in ordered_decks:  # Avoid duplicates
+                ordered_decks.append(deck)
+                # Find all children of the current deck
+                children = [d for d in decks if d.parent_deck == deck]
+                # Sort children (optional, by name or another attribute)
+                children.sort(key=lambda d: d.name)
+                for child in children:
+                    add_deck_and_children(child)
+
+        # Start with root decks (parent_deck is None)
+        root_decks = [deck for deck in decks if deck.parent_deck is None]
+        root_decks.sort(key=lambda d: d.name)  # Sort roots by name, optional
+
+        for root_deck in root_decks:
+            add_deck_and_children(root_deck)
+
+        return ordered_decks
+
 
 class Flashcard(models.Model):
     """
@@ -161,4 +192,3 @@ class Flashcard(models.Model):
 
         # Save the updated state
         self.save()
-

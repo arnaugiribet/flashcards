@@ -36,35 +36,6 @@ def account_settings(request):
 @login_required
 def user_decks(request):
 
-    def order_decks(decks):
-        """
-        Orders decks such that children follow their parent decks.
-        """
-        ordered_decks = []
-
-        # A mapping from deck ID to deck object for quick lookups
-        deck_map = {deck.id: deck for deck in decks}
-
-        # Helper function to recursively add decks and their children
-        def add_deck_and_children(deck):
-            if deck not in ordered_decks:  # Avoid duplicates
-                ordered_decks.append(deck)
-                # Find all children of the current deck
-                children = [d for d in decks if d.parent_deck == deck]
-                # Sort children (optional, by name or another attribute)
-                children.sort(key=lambda d: d.name)
-                for child in children:
-                    add_deck_and_children(child)
-
-        # Start with root decks (parent_deck is None)
-        root_decks = [deck for deck in decks if deck.parent_deck is None]
-        root_decks.sort(key=lambda d: d.name)  # Sort roots by name, optional
-
-        for root_deck in root_decks:
-            add_deck_and_children(root_deck)
-
-        return ordered_decks
-
     def set_indentation_level(deck, all_decks, level=0):
         deck.indentation_level = level
         # Recursively set levels for child decks
@@ -109,8 +80,8 @@ def user_decks(request):
     for deck in decks:
         deck.due_cards_today = deck.flashcards.filter(due__lte=today).count()
 
-    # Order the decks hierarchically
-    ordered_decks = order_decks(decks)
+    # Order the decks hierarchically using the class method
+    ordered_decks = Deck.order_decks(decks)
 
     # Aggregate due cards count from children to parents
     decks = aggregate_due_count(decks)
@@ -346,9 +317,31 @@ def create_manually(request):
 @login_required
 def create_automatically(request):
     """
-    View for automatic flashcard creation (currently empty).
+    View for automatic flashcard creation with the ability to save a single flashcard.
     """
-    return render(request, 'add_cards/create_automatically.html')
+    if request.method == "POST":
+        # Extract data from POST request
+        deck_id = request.POST.get('deck_id')
+        question = request.POST.get('question')
+        answer = request.POST.get('answer')
+        # Ensure all required fields are present
+        if not (deck_id and question and answer):
+            return JsonResponse({'success': False, 'error': 'All fields (deck, question, answer) are required.'}, status=400)
+        try:
+            # Validate the deck and create the flashcard
+            deck = Deck.objects.get(id=deck_id, user=request.user)
+            Flashcard.objects.create(deck=deck, question=question, answer=answer, user=request.user)
+            return JsonResponse({'success': True, 'message': 'Flashcard saved successfully.'})
+        except Deck.DoesNotExist:
+            return JsonResponse({'success': False, 'error': 'Invalid deck selected.'}, status=400)
+    # Handle GET request to fetch decks for the template
+    decks_queryset = Deck.objects.filter(user=request.user)
+    decks = list(decks_queryset)
+    ordered_decks = Deck.order_decks(decks)
+    return render(request, 'add_cards/create_automatically.html', {
+        'ordered_decks': ordered_decks
+    })
+
 
 @login_required
 def create_deck(request):
