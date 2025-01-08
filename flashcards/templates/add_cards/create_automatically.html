@@ -223,6 +223,26 @@
             });
     }
 
+    // Function to handle adding all the flashcards to the database
+    async function handleAddAllCards() {
+        try {
+            await Promise.all(flashcards.map((card, index) => uploadCardToDatabase(card)));
+            flashcards = []; // Clear all cards after success
+            displayFlashcards(); // Refresh UI
+            // Get the selected deck name from the deck selector
+            const deckSelector = document.getElementById('deck-selector');
+            const selectedDeckName = deckSelector.options[deckSelector.selectedIndex].text;
+            showNotification(`All cards added to ${selectedDeckName}`, 'success');
+        } catch (error) {
+            console.error('Error uploading cards:', error);
+            showNotification('Failed to upload some cards.', 'error');
+        }
+    }
+
+    // Attach the click event to the Add All button
+    document.getElementById('add-all-btn').addEventListener('click', handleAddAllCards);
+
+
     function uploadCardToDatabase(card) {
         // Get the selected deck ID from the deck selector
         const deckId = document.getElementById('deck-selector').value;
