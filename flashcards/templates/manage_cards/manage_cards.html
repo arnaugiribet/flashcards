@@ -25,30 +25,40 @@
                     <th class="border border-gray-300 px-4 py-2">
                         <a href="?sort_by=creation_date" class="hover:text-blue-600">Creation Date</a>
                     </th>
-                    <th class="border border-gray-300 px-4 py-2">Actions</th>
+                    <th class="border border-gray-300 px-4 py-2">Delete</th>
                 </tr>
             </thead>
             <tbody>
                 {% for card in cards %}
                 <tr class="hover:bg-gray-100">
-                    <td class="border border-gray-300 px-4 py-2">{{ card.question }}</td>
-                    <td class="border border-gray-300 px-4 py-2">{{ card.answer }}</td>
-                    <td class="border border-gray-300 px-4 py-2">{{ card.deck.name }}</td>
+                    <!-- Editable Question Column -->
+                    <td class="border border-gray-300 px-4 py-2">
+                        <input type="text" value="{{ card.question }}" class="edit-field w-full" data-card-id="{{ card.id }}" data-field="question">
+                    </td>
+                    
+                    <!-- Editable Answer Column -->
+                    <td class="border border-gray-300 px-4 py-2">
+                        <input type="text" value="{{ card.answer }}" class="edit-field w-full" data-card-id="{{ card.id }}" data-field="answer">
+                    </td>
+                    
+                    <!-- Editable Deck Column -->
+                    <td class="border border-gray-300 px-4 py-2">
+                        <select class="edit-deck w-full" data-card-id="{{ card.id }}" data-field="deck">
+                            {% for deck in decks %}
+                                <option value="{{ deck.id }}" {% if card.deck.id == deck.id %}selected{% endif %}>
+                                    {{ deck.name }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </td>
+                    
                     <td class="border border-gray-300 px-4 py-2">{{ card.due }}</td>
                     <td class="border border-gray-300 px-4 py-2">{{ card.creation_date }}</td>
                     <td class="border border-gray-300 px-4 py-2 text-center">
-                        <div class="relative inline-block">
-                            <!-- Three Dots Button -->
-                            <button class="text-gray-600 hover:text-gray-900 p-1 rounded">
-                                &#8226;&#8226;&#8226;
-                            </button>
-
-                            <!-- Popup Menu -->
-                            <div class="fixed z-50 w-32 bg-white border border-gray-300 rounded-md shadow-lg hidden">
-                                <button onclick="alert('Edit functionality coming soon!')" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Edit</button>
-                                <button onclick="deleteCard('{{ card.id }}')" class="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-100">Delete</button>
-                            </div>
-                        </div>
+                        <!-- Delete Button -->
+                        <button onclick="deleteCard('{{ card.id }}')" class="text-red-600 hover:text-red-800 py-1 px-3 rounded bg-gray-200 hover:bg-gray-300">
+                            Delete
+                        </button>
                     </td>
                 </tr>
                 {% empty %}
@@ -63,41 +73,63 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Get all action buttons and popups
-        const actionButtons = document.querySelectorAll('.relative.inline-block > button');
-        const popups = document.querySelectorAll('.relative.inline-block > div');
+        // Get all editable input fields (Question, Answer, Deck)
+        const editFields = document.querySelectorAll('.edit-field');
+        const editDecks = document.querySelectorAll('.edit-deck');
+        
+        // Add event listener for input field changes (Question and Answer)
+        editFields.forEach(field => {
+            field.addEventListener('blur', function() {
+                const cardId = this.getAttribute('data-card-id');
+                const fieldName = this.getAttribute('data-field');
+                const fieldValue = this.value;
 
-        // Add click event listener to each action button
-        actionButtons.forEach((button, index) => {
-            button.addEventListener('click', function(e) {
-                e.stopPropagation();
-                
-                // Hide all other popups first
-                popups.forEach(popup => popup.classList.add('hidden'));
-                
-                // Toggle current popup
-                const popup = this.nextElementSibling;
-                
-                if (popup.classList.contains('hidden')) {
-                    // Position popup relative to button
-                    const rect = this.getBoundingClientRect();
-                    popup.style.top = `${rect.bottom + window.scrollY + 5}px`;
-                    popup.style.left = `${rect.left + window.scrollX - 100}px`; // Offset to the left
-                    popup.classList.remove('hidden');
-                } else {
-                    popup.classList.add('hidden');
-                }
+                // Send the updated field value to the server
+                updateCardField(cardId, fieldName, fieldValue);
             });
         });
 
-        // Close popup when clicking outside
-        document.addEventListener('click', function(e) {
-            if (!e.target.closest('.relative.inline-block')) {
-                popups.forEach(popup => popup.classList.add('hidden'));
-            }
+        // Add event listener for deck dropdown change
+        editDecks.forEach(field => {
+            field.addEventListener('change', function() {
+                const cardId = this.getAttribute('data-card-id');
+                const fieldName = this.getAttribute('data-field');
+                const fieldValue = this.value;
+
+                // Send the updated field value to the server
+                updateCardField(cardId, fieldName, fieldValue);
+            });
         });
+
+        // Function to update the card field via AJAX
+        function updateCardField(cardId, fieldName, fieldValue) {
+            const csrfToken = document.querySelector('[name="csrfmiddlewaretoken"]').value;
+
+            fetch(`/update_card_field/${cardId}/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrfToken,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    field: fieldName,
+                    value: fieldValue
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    console.log('Card updated successfully');
+                } else {
+                    console.error('Failed to update card:', data.message);
+                }
+            })
+            .catch(err => console.error('Error updating card:', err));
+        }
+
     });
 
+    // Function to delete a card
     function deleteCard(cardId) {
         const csrfToken = document.querySelector('[name="csrfmiddlewaretoken"]').value;
 
@@ -117,7 +149,5 @@
         })
         .catch(err => console.error('Error deleting card:', err));
     }
-
-
 </script>
 {% endblock %}

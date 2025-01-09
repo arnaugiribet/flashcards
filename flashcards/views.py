@@ -36,6 +36,8 @@ def account_settings(request):
 @login_required
 def manage_cards(request):
     user_flashcards = Flashcard.objects.filter(user=request.user).select_related('deck')
+    user_decks = Deck.objects.filter(user=request.user)
+    ordered_decks = Deck.order_decks(user_decks)
 
     # Handle sorting
     sort_by = request.GET.get('sort_by', 'due')  # Default sort by 'due'
@@ -44,8 +46,32 @@ def manage_cards(request):
 
     context = {
         'cards': user_flashcards,
+        'decks': ordered_decks,
     }
     return render(request, "manage_cards/manage_cards.html", context)
+
+@login_required
+def update_card_field(request, card_id):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        field = data.get('field')
+        value = data.get('value')
+
+        try:
+            card = Flashcard.objects.get(id=card_id)
+            if field == 'deck':
+                deck = Deck.objects.get(id=value)
+                card.deck = deck
+            else:
+                setattr(card, field, value)
+            card.save()
+            return JsonResponse({'success': True})
+        except Flashcard.DoesNotExist:
+            return JsonResponse({'success': False, 'message': 'Card not found.'})
+        except Deck.DoesNotExist:
+            return JsonResponse({'success': False, 'message': 'Deck not found.'})
+
+    return JsonResponse({'success': False, 'message': 'Invalid method.'})
 
 @login_required
 def delete_card(request, card_id):
