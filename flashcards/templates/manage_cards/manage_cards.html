@@ -24,6 +24,7 @@
                     <th class="border border-gray-300 px-4 py-2">
                         <a href="?sort_by=creation_date" class="hover:text-blue-600">Creation Date</a>
                     </th>
+                    <th class="border border-gray-300 px-4 py-2">Actions</th>
                 </tr>
             </thead>
             <tbody>
@@ -34,14 +35,66 @@
                     <td class="border border-gray-300 px-4 py-2">{{ card.deck.name }}</td>
                     <td class="border border-gray-300 px-4 py-2">{{ card.due }}</td>
                     <td class="border border-gray-300 px-4 py-2">{{ card.creation_date }}</td>
+                    <td class="border border-gray-300 px-4 py-2 text-center">
+                        <div class="relative inline-block">
+                            <!-- Three Dots Button -->
+                            <button class="text-gray-600 hover:text-gray-900 p-1 rounded">
+                                &#8226;&#8226;&#8226;
+                            </button>
+
+                            <!-- Popup Menu -->
+                            <div class="fixed z-50 w-32 bg-white border border-gray-300 rounded-md shadow-lg hidden">
+                                <button onclick="alert('Edit functionality coming soon!')" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Edit</button>
+                                <button onclick="alert('Delete functionality coming soon!')" class="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-100">Delete</button>
+                            </div>
+                        </div>
+                    </td>
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="5" class="text-center border border-gray-300 px-4 py-2">No flashcards found.</td>
+                    <td colspan="6" class="text-center border border-gray-300 px-4 py-2">No flashcards found.</td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Get all action buttons and popups
+        const actionButtons = document.querySelectorAll('.relative.inline-block > button');
+        const popups = document.querySelectorAll('.relative.inline-block > div');
+
+        // Add click event listener to each action button
+        actionButtons.forEach((button, index) => {
+            button.addEventListener('click', function(e) {
+                e.stopPropagation();
+                
+                // Hide all other popups first
+                popups.forEach(popup => popup.classList.add('hidden'));
+                
+                // Toggle current popup
+                const popup = this.nextElementSibling;
+                
+                if (popup.classList.contains('hidden')) {
+                    // Position popup relative to button
+                    const rect = this.getBoundingClientRect();
+                    popup.style.top = `${rect.bottom + window.scrollY + 5}px`;
+                    popup.style.left = `${rect.left + window.scrollX - 100}px`; // Offset to the left
+                    popup.classList.remove('hidden');
+                } else {
+                    popup.classList.add('hidden');
+                }
+            });
+        });
+
+        // Close popup when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.relative.inline-block')) {
+                popups.forEach(popup => popup.classList.add('hidden'));
+            }
+        });
+    });
+</script>
 {% endblock %}
