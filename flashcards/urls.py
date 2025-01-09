@@ -6,6 +6,7 @@ urlpatterns = [
     path('', views.home, name='home'),  # Root path (e.g., '/')
     path('decks/', views.user_decks, name='user_decks'),
     path('manage_cards/', views.manage_cards, name='manage_cards'),    
+    path('delete_card/<uuid:card_id>/', views.delete_card, name='delete_card'),
     path('create_deck/', views.create_deck, name='create_deck'),
     path('study/', views.study, name='study'),
     path('study/review', views.review_card, name='review_card'),

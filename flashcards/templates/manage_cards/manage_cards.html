@@ -2,6 +2,7 @@
 
 {% block content %}
 <div class="container mx-auto mt-8">
+    <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
     <h1 class="text-2xl font-bold mb-4">Manage Your Flashcards</h1>
 
     <!-- Table to Display Flashcards -->
@@ -45,7 +46,7 @@
                             <!-- Popup Menu -->
                             <div class="fixed z-50 w-32 bg-white border border-gray-300 rounded-md shadow-lg hidden">
                                 <button onclick="alert('Edit functionality coming soon!')" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Edit</button>
-                                <button onclick="alert('Delete functionality coming soon!')" class="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-100">Delete</button>
+                                <button onclick="deleteCard('{{ card.id }}')" class="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-100">Delete</button>
                             </div>
                         </div>
                     </td>
@@ -96,5 +97,27 @@
             }
         });
     });
+
+    function deleteCard(cardId) {
+        const csrfToken = document.querySelector('[name="csrfmiddlewaretoken"]').value;
+
+        fetch(`/delete_card/${cardId}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': csrfToken,
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload(); // Reload the page to update the list
+            } else {
+                console.error('Delete failed:', data.message);
+            }
+        })
+        .catch(err => console.error('Error deleting card:', err));
+    }
+
+
 </script>
 {% endblock %}

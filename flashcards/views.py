@@ -48,6 +48,17 @@ def manage_cards(request):
     return render(request, "manage_cards/manage_cards.html", context)
 
 @login_required
+def delete_card(request, card_id):
+    if request.method == 'POST':
+        try:
+            card = Flashcard.objects.get(id=card_id)  # Attempt to retrieve the card
+            card.delete()  # Delete the card
+            return JsonResponse({'success': True})
+        except Flashcard.DoesNotExist:
+            raise Http404("Card not found")  # Raise a 404 if the card doesn't exist
+    return JsonResponse({'success': False, 'message': 'Invalid request method'}, status=400)
+
+@login_required
 def user_decks(request):
 
     def set_indentation_level(deck, all_decks, level=0):
