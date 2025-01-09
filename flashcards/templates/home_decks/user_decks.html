@@ -14,8 +14,13 @@
                                     {{ deck.name }}
                                 </a>
                             </div>
-                            <div style="color: #9daca2; font-size: 0.9rem; font-weight: 500;">
-                                {{ deck.due_cards_today }}
+                            <div style="display: flex; align-items: center; gap: 1rem;">
+                                <span style="color: #9daca2; font-size: 0.9rem; font-weight: 500;">
+                                    {{ deck.due_cards_today }}
+                                </span>
+                                <button style="background: none; border: none; color: #9daca2; font-size: 1.2rem; cursor: pointer;">
+                                    &#8942;
+                                </button>
                             </div>
                         </div>
                     </li>
