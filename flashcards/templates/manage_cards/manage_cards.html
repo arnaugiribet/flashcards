@@ -3,57 +3,64 @@
 {% block content %}
 <div class="container mx-auto mt-8">
     <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
-    <h1 class="text-2xl font-bold mb-4">Manage Your Flashcards</h1>
+    <h1 class="text-2xl font-bold mb-8 text-[#9daca2]">Manage Your Flashcards</h1>
 
-    <!-- Table to Display Flashcards -->
     <div class="overflow-x-auto">
-        <table class="table-auto w-full border-collapse border border-gray-300">
-            <thead class="bg-gray-200">
+        <table class="table-auto w-full">
+            <thead class="bg-[#a2b8d0] text-white">
                 <tr>
-                    <th class="border border-gray-300 px-4 py-2">
-                        <a href="?sort_by=question" class="hover:text-blue-600">Card Question</a>
+                    <th class="px-4 py-2 text-left w-6/20">
+                        <a href="?sort_by=question" class="hover:text-[#7f8c8d]">Card Question</a>
                     </th>
-                    <th class="border border-gray-300 px-4 py-2">
-                        <a href="?sort_by=answer" class="hover:text-blue-600">Card Answer</a>
+                    <th class="px-4 py-2 text-left w-6/20">
+                        <a href="?sort_by=answer" class="hover:text-[#7f8c8d]">Card Answer</a>
                     </th>
-                    <th class="border border-gray-300 px-4 py-2">
-                        <a href="?sort_by=deck" class="hover:text-blue-600">Deck</a>
+                    <th class="px-4 py-2 text-left w-3/20 max-w-xs overflow-hidden">
+                        <a href="?sort_by=deck" class="hover:text-[#7f8c8d]">Deck</a>
                     </th>
-                    <th class="border border-gray-300 px-4 py-2">
-                        <a href="?sort_by=due" class="hover:text-blue-600">Due Date</a>
+                    <th class="px-4 py-2 text-left w-3/20">
+                        <a href="?sort_by=due" class="hover:text-[#7f8c8d]">Due Date</a>
                     </th>
-                    <th class="border border-gray-300 px-4 py-2">
-                        <a href="?sort_by=creation_date" class="hover:text-blue-600">Creation Date</a>
+                    <th class="px-4 py-2 text-left w-2/20">
+                        <a href="?sort_by=creation_date" class="hover:text-[#7f8c8d]">Creation Date</a>
                     </th>
-                    <th class="border border-gray-300 px-4 py-2">Actions</th>
-                </tr>
+                    <th class="px-4 py-2 w-12"></th>
+                </tr>                
             </thead>
             <tbody>
                 {% for card in cards %}
-                <tr class="hover:bg-gray-100">
-                    <td class="border border-gray-300 px-4 py-2">{{ card.question }}</td>
-                    <td class="border border-gray-300 px-4 py-2">{{ card.answer }}</td>
-                    <td class="border border-gray-300 px-4 py-2">{{ card.deck.name }}</td>
-                    <td class="border border-gray-300 px-4 py-2">{{ card.due }}</td>
-                    <td class="border border-gray-300 px-4 py-2">{{ card.creation_date }}</td>
-                    <td class="border border-gray-300 px-4 py-2 text-center">
-                        <div class="relative inline-block">
-                            <!-- Three Dots Button -->
-                            <button class="text-gray-600 hover:text-gray-900 p-1 rounded">
-                                &#8226;&#8226;&#8226;
-                            </button>
+                <tr class="bg-[#f4f6f5] hover:bg-gray-100">
+                    <td class="px-4 py-2">
+                        <input type="text" value="{{ card.question }}" class="edit-field w-full" data-card-id="{{ card.id }}" data-field="question">
+                    </td>
+                    <td class="px-4 py-2">
+                        <input type="text" value="{{ card.answer }}" class="edit-field w-full" data-card-id="{{ card.id }}" data-field="answer">
+                    </td>
+                    <td class="px-4 py-2">
+                        <select class="edit-deck w-full" data-card-id="{{ card.id }}" data-field="deck">
+                            {% for deck in decks %}
+                                <option value="{{ deck.id }}" {% if card.deck.id == deck.id %}selected{% endif %}>
+                                    {{ deck.name }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </td>
+                    <td class="px-4 py-2">{{ card.due }}</td>
+                    <td class="px-4 py-2">{{ card.creation_date }}</td>
+                    <td class="px-4 py-2 text-center">
+                        <button onclick="openMenu('{{ card.id }}', this)" class="text-gray-600 hover:text-gray-800 py-1 px-3 rounded">
+                            &#8942;
+                        </button>
 
-                            <!-- Popup Menu -->
-                            <div class="fixed z-50 w-32 bg-white border border-gray-300 rounded-md shadow-lg hidden">
-                                <button onclick="alert('Edit functionality coming soon!')" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Edit</button>
-                                <button onclick="deleteCard('{{ card.id }}')" class="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-100">Delete</button>
-                            </div>
+                        <!-- Modal (hidden by default) -->
+                        <div id="optionsModal_{{ card.id }}" class="options-modal hidden absolute bg-white shadow-lg p-4 rounded mt-2 z-10">
+                            <button onclick="deleteCard('{{ card.id }}')" class="bg-[#d4a8a8] text-white px-4 py-2 rounded">Delete</button>
                         </div>
                     </td>
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="6" class="text-center border border-gray-300 px-4 py-2">No flashcards found.</td>
+                    <td colspan="6" class="text-center px-4 py-2">No flashcards found.</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -61,43 +68,123 @@
     </div>
 </div>
 
+<style>
+    .options-modal {
+        display: none;
+        position: absolute;
+        top: 100%;
+        left: 0;
+        z-index: 10;
+        width: max-content;
+    }
+
+    .options-modal.hidden {
+        display: none;
+    }
+
+    .options-modal.show {
+        display: block;
+    }
+</style>
+
+
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Get all action buttons and popups
-        const actionButtons = document.querySelectorAll('.relative.inline-block > button');
-        const popups = document.querySelectorAll('.relative.inline-block > div');
+        // Get all editable input fields (Question, Answer, Deck)
+        const editFields = document.querySelectorAll('.edit-field');
+        const editDecks = document.querySelectorAll('.edit-deck');
+        
+        // Add event listener for input field changes (Question and Answer)
+        editFields.forEach(field => {
+            field.addEventListener('blur', function() {
+                const cardId = this.getAttribute('data-card-id');
+                const fieldName = this.getAttribute('data-field');
+                const fieldValue = this.value;
 
-        // Add click event listener to each action button
-        actionButtons.forEach((button, index) => {
-            button.addEventListener('click', function(e) {
-                e.stopPropagation();
-                
-                // Hide all other popups first
-                popups.forEach(popup => popup.classList.add('hidden'));
-                
-                // Toggle current popup
-                const popup = this.nextElementSibling;
-                
-                if (popup.classList.contains('hidden')) {
-                    // Position popup relative to button
-                    const rect = this.getBoundingClientRect();
-                    popup.style.top = `${rect.bottom + window.scrollY + 5}px`;
-                    popup.style.left = `${rect.left + window.scrollX - 100}px`; // Offset to the left
-                    popup.classList.remove('hidden');
-                } else {
-                    popup.classList.add('hidden');
-                }
+                // Send the updated field value to the server
+                updateCardField(cardId, fieldName, fieldValue);
             });
         });
 
-        // Close popup when clicking outside
-        document.addEventListener('click', function(e) {
-            if (!e.target.closest('.relative.inline-block')) {
-                popups.forEach(popup => popup.classList.add('hidden'));
+        // Add event listener for deck dropdown change
+        editDecks.forEach(field => {
+            field.addEventListener('change', function() {
+                const cardId = this.getAttribute('data-card-id');
+                const fieldName = this.getAttribute('data-field');
+                const fieldValue = this.value;
+
+                // Send the updated field value to the server
+                updateCardField(cardId, fieldName, fieldValue);
+            });
+        });
+
+        // Function to update the card field via AJAX
+        function updateCardField(cardId, fieldName, fieldValue) {
+            const csrfToken = document.querySelector('[name="csrfmiddlewaretoken"]').value;
+
+            fetch(`/update_card_field/${cardId}/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrfToken,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    field: fieldName,
+                    value: fieldValue
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    console.log('Card updated successfully');
+                } else {
+                    console.error('Failed to update card:', data.message);
+                }
+            })
+            .catch(err => console.error('Error updating card:', err));
+        }
+
+    });
+
+
+    // Open the modal at the position of the clicked button
+    function openMenu(cardId, button) {
+        // Find all modals
+        const modals = document.querySelectorAll('.options-modal');
+    
+        // Close all other modals
+        modals.forEach(modal => {
+            if (!modal.classList.contains('hidden')) {
+                modal.classList.add('hidden');
+                modal.classList.remove('show');
+            }
+        });
+
+        // Get clicked
+        const modal = document.getElementById(`optionsModal_${cardId}`);
+        
+        // Toggle modal visibility by toggling the 'show' class
+        modal.classList.toggle('hidden');
+        modal.classList.toggle('show');
+
+        // Position the modal right below the button (three dots)
+        const buttonRect = button.getBoundingClientRect();
+        modal.style.left = `${buttonRect.right - modal.offsetWidth}px`; // Position it aligned to the right
+        modal.style.top = `${buttonRect.top + window.scrollY - modal.offsetHeight - 5}px`; // Position it above the button, with a 5px margin
+    }
+
+    // Close the modal when clicking outside of it
+    document.addEventListener('click', function(event) {
+        const modals = document.querySelectorAll('.options-modal');
+        modals.forEach(modal => {
+            if (!modal.contains(event.target) && !event.target.closest('button[onclick^="openMenu"]')) {
+                modal.classList.add('hidden');
+                modal.classList.remove('show');
             }
         });
     });
 
+    // Function to delete a card
     function deleteCard(cardId) {
         const csrfToken = document.querySelector('[name="csrfmiddlewaretoken"]').value;
 
@@ -117,7 +204,5 @@
         })
         .catch(err => console.error('Error deleting card:', err));
     }
-
-
 </script>
 {% endblock %}
