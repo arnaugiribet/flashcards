@@ -34,6 +34,20 @@ def account_settings(request):
     return HttpResponse(status=204)
 
 @login_required
+def manage_cards(request):
+    user_flashcards = Flashcard.objects.filter(user=request.user).select_related('deck')
+
+    # Handle sorting
+    sort_by = request.GET.get('sort_by', 'due')  # Default sort by 'due'
+    if sort_by in ['question', 'answer', 'deck__name', 'due', 'creation_date']:
+        user_flashcards = user_flashcards.order_by(sort_by)
+
+    context = {
+        'cards': user_flashcards,
+    }
+    return render(request, "manage_cards/manage_cards.html", context)
+
+@login_required
 def user_decks(request):
 
     def set_indentation_level(deck, all_decks, level=0):

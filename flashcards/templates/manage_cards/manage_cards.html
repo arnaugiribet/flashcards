@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mx-auto mt-8">
+    <h1 class="text-2xl font-bold mb-4">Manage Your Flashcards</h1>
+
+    <!-- Table to Display Flashcards -->
+    <div class="overflow-x-auto">
+        <table class="table-auto w-full border-collapse border border-gray-300">
+            <thead class="bg-gray-200">
+                <tr>
+                    <th class="border border-gray-300 px-4 py-2">
+                        <a href="?sort_by=question" class="hover:text-blue-600">Card Question</a>
+                    </th>
+                    <th class="border border-gray-300 px-4 py-2">
+                        <a href="?sort_by=answer" class="hover:text-blue-600">Card Answer</a>
+                    </th>
+                    <th class="border border-gray-300 px-4 py-2">
+                        <a href="?sort_by=deck" class="hover:text-blue-600">Deck</a>
+                    </th>
+                    <th class="border border-gray-300 px-4 py-2">
+                        <a href="?sort_by=due" class="hover:text-blue-600">Due Date</a>
+                    </th>
+                    <th class="border border-gray-300 px-4 py-2">
+                        <a href="?sort_by=creation_date" class="hover:text-blue-600">Creation Date</a>
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for card in cards %}
+                <tr class="hover:bg-gray-100">
+                    <td class="border border-gray-300 px-4 py-2">{{ card.question }}</td>
+                    <td class="border border-gray-300 px-4 py-2">{{ card.answer }}</td>
+                    <td class="border border-gray-300 px-4 py-2">{{ card.deck.name }}</td>
+                    <td class="border border-gray-300 px-4 py-2">{{ card.due }}</td>
+                    <td class="border border-gray-300 px-4 py-2">{{ card.creation_date }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="text-center border border-gray-300 px-4 py-2">No flashcards found.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
