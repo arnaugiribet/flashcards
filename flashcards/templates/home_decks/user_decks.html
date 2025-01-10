@@ -14,8 +14,23 @@
                                     {{ deck.name }}
                                 </a>
                             </div>
-                            <div style="color: #9daca2; font-size: 0.9rem; font-weight: 500;">
-                                {{ deck.due_cards_today }}
+                            <div style="display: flex; align-items: center; gap: 1rem;">
+                                <span style="color: #9daca2; font-size: 0.9rem; font-weight: 500;">
+                                    {{ deck.due_cards_today }}
+                                </span>
+                                <!-- Three dots button to open the menu -->
+                                <button onclick="openMenu('{{ deck.id }}', this)" style="background: none; border: none; color: #9daca2; font-size: 1.2rem; cursor: pointer;">
+                                    &#8942;
+                                </button>
+
+                                <!-- Hidden Modal (Menu) -->
+                                <div id="optionsModal_{{ deck.id }}" class="options-modal hidden absolute" 
+                                    style="background-color: rgba(240, 240, 240, 0.5); shadow-lg p-4 rounded mt-2 z-10;">
+                                    <button onclick="alert('Delete Deck')"
+                                        style="display: block; padding: 0.5rem; background-color: #9daca2; color: white; border: none; border-radius: 5px; width: 100%; margin-bottom: 0.5rem; text-align: center; font-family: Arial, sans-serif; font-size: 1rem; cursor: pointer; transition: background-color 0.3s ease, transform 0.2s ease;">
+                                        Delete Deck
+                                </button>
+                                </div>
                             </div>
                         </div>
                     </li>
@@ -99,8 +114,59 @@
 
 {% endblock %}
 
+<style>
+
+    .options-modal.hidden {
+        display: none;
+    }
+
+    .options-modal.show {
+        display: block;
+        transition: all 0.3s ease;
+    }
+</style>
+
 {% block extra_js %}
 <script>
+
+    // Open the modal at the position of the clicked button
+    function openMenu(deckId, button) {
+        // Find all modals
+        const modals = document.querySelectorAll('.options-modal');
+    
+        // Close all other modals
+        modals.forEach(modal => {
+            if (!modal.classList.contains('hidden')) {
+                modal.classList.add('hidden');
+                modal.classList.remove('show');
+            }
+        });
+
+        // Get the clicked modal
+        const modal = document.getElementById(`optionsModal_${deckId}`);
+        
+        // Toggle modal visibility by toggling the 'hidden' and 'show' classes
+        modal.classList.toggle('hidden');
+        modal.classList.toggle('show');
+
+        // Position the modal right below the button (three dots)
+        const buttonRect = button.getBoundingClientRect();
+        modal.style.left = `${buttonRect.right - modal.offsetWidth}px`;  // Align it to the right of the button
+        modal.style.top = `${buttonRect.top + window.scrollY - modal.offsetHeight - 5}px`;  // Position it above the button, with a 5px margin
+    }
+
+    // Detect clicks outside the modal to close it
+    document.addEventListener("click", function(event) {
+        const modals = document.querySelectorAll('.options-modal');
+        modals.forEach(modal => {
+            // If the click is outside the modal and the button
+            if (!modal.contains(event.target) && !event.target.closest('button')) {
+                modal.classList.add('hidden');
+                modal.classList.remove('show');
+            }
+        });
+    });
+
     // Show the Create Deck popup when the button is clicked
     document.getElementById("createDeckButton").addEventListener("click", function() {
         document.getElementById("createDeckPopup").style.display = "flex";
