@@ -51,7 +51,17 @@ class Deck(models.Model):
             add_deck_and_children(root_deck)
 
         return ordered_decks
-
+        
+    def get_descendants(self):
+        """
+        Recursively retrieve all descendant decks (children, grandchildren, etc.).
+        """
+        descendants = []
+        children = self.subdeck.all()  # Get immediate sub-decks
+        for child in children:
+            descendants.append(child)
+            descendants.extend(child.get_descendants())  # Recursive call for deeper levels
+        return descendants
 
 class Flashcard(models.Model):
     """

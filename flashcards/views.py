@@ -84,6 +84,37 @@ def delete_card(request, card_id):
             raise Http404("Card not found")  # Raise a 404 if the card doesn't exist
     return JsonResponse({'success': False, 'message': 'Invalid request method'}, status=400)
 
+
+@login_required
+def delete_deck(request, deck_id):
+    """
+    View to delete a deck and all its nested sub-decks along with their flashcards.
+    """
+    logger.debug("Deleting deck...")
+    if request.method == 'POST':
+        try:
+            # Attempt to retrieve the deck
+            deck = Deck.objects.get(id=deck_id, user=request.user)
+            
+            # Get all descendant decks and include the current deck
+            all_decks = deck.get_descendants()
+            all_decks.append(deck)
+
+            # Collect all flashcards associated with these decks
+            flashcards_to_delete = Flashcard.objects.filter(deck__in=all_decks)
+
+            # Delete all collected flashcards and decks
+            flashcards_to_delete.delete()
+            for d in all_decks:
+                d.delete()
+
+            return JsonResponse({'success': True})
+
+        except Deck.DoesNotExist:
+            raise Http404("Deck not found")  # Raise a 404 if the deck doesn't exist
+
+    return JsonResponse({'success': False, 'message': 'Invalid request method'}, status=400)
+
 @login_required
 def user_decks(request):
 

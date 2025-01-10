@@ -2,6 +2,7 @@
 
 {% block content %}
 <div style="max-width: 800px; margin: 2rem auto; padding: 2rem;">
+    <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
     <div style="background-color: #f4f6f5; padding: 2rem; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
         {% if decks %}
             <ul style="list-style: none; padding: 0;">
@@ -26,7 +27,7 @@
                                 <!-- Hidden Modal (Menu) -->
                                 <div id="optionsModal_{{ deck.id }}" class="options-modal hidden absolute" 
                                     style="background-color: rgba(240, 240, 240, 0.5); shadow-lg p-4 rounded mt-2 z-10;">
-                                    <button onclick="alert('Delete Deck')"
+                                    <button onclick="deleteDeck('{{ deck.id }}')"
                                         style="display: block; padding: 0.5rem; background-color: #9daca2; color: white; border: none; border-radius: 5px; width: 100%; margin-bottom: 0.5rem; text-align: center; font-family: Arial, sans-serif; font-size: 1rem; cursor: pointer; transition: background-color 0.3s ease, transform 0.2s ease;">
                                         Delete Deck
                                 </button>
@@ -166,6 +167,29 @@
             }
         });
     });
+
+    // Delete deck
+    function deleteDeck(deckId) {
+        const csrfToken = document.querySelector('[name="csrfmiddlewaretoken"]').value;
+        fetch(`/delete_deck/${deckId}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': csrfToken,
+            },
+        })
+        .then(response => {
+            if (response.ok) {
+                location.reload();
+            } else {
+                response.json().then(data => {
+                    console.error('Delete failed:', data.message);
+                });
+            }
+        })
+        .catch(error => {
+            console.error("Error deleting deck:", error);
+        });
+    }
 
     // Show the Create Deck popup when the button is clicked
     document.getElementById("createDeckButton").addEventListener("click", function() {
