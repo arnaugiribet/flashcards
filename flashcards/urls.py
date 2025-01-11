@@ -7,6 +7,7 @@ urlpatterns = [
     path('decks/', views.user_decks, name='user_decks'),
     path('manage_cards/', views.manage_cards, name='manage_cards'),    
     path('delete_card/<uuid:card_id>/', views.delete_card, name='delete_card'),
+    path('delete_deck/<uuid:deck_id>/', views.delete_deck, name='delete_deck'),
     path('update_card_field/<uuid:card_id>/', views.update_card_field, name='update_card_field'),
     path('create_deck/', views.create_deck, name='create_deck'),
     path('study/', views.study, name='study'),
