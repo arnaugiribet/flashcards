@@ -27,10 +27,10 @@
                                 <!-- Hidden Modal (Menu) -->
                                 <div id="optionsModal_{{ deck.id }}" class="options-modal hidden absolute" 
                                     style="background-color: rgba(240, 240, 240, 0.5); shadow-lg p-4 rounded mt-2 z-10;">
-                                    <button onclick="deleteDeck('{{ deck.id }}')"
+                                    <button onclick="showDeleteModal('{{ deck.id }}')"
                                         style="display: block; padding: 0.5rem; background-color: #9daca2; color: white; border: none; border-radius: 5px; width: 100%; margin-bottom: 0.5rem; text-align: center; font-family: Arial, sans-serif; font-size: 1rem; cursor: pointer; transition: background-color 0.3s ease, transform 0.2s ease;">
                                         Delete Deck
-                                </button>
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -113,6 +113,18 @@
     </div>
 </div>
 
+<!-- Custom Confirmation Modal -->
+<div id="delete-deck-modal" class="fixed inset-0 bg-gray-800 bg-opacity-50 flex justify-center items-center hidden">
+    <div class="bg-white rounded-lg p-6 w-96 shadow-lg">
+        <h2 class="text-xl font-semibold text-center text-gray-700 mb-4">Delete deck, subdecks and all of their flashcards?</h2>
+        <p class="text-center text-gray-600 mb-6">This will delete all of the flashcards inside the deck and any subdecks inside. Do you wish to proceed?</p>
+        <div class="flex justify-center gap-4">
+            <button id="cancel-delete" class="btn cancel-btn px-4 py-2 bg-gray-300 rounded-md text-sm text-gray-800 hover:bg-gray-400 transition">Cancel</button>
+            <button id="confirm-delete" class="btn delete-deck-btn px-4 py-2 text-white rounded-md text-sm bg-[#d4a8a8] hover:bg-[#9daca2] transition">Delete</button>
+        </div>
+    </div>
+</div>
+
 {% endblock %}
 
 <style>
@@ -125,16 +137,17 @@
         display: block;
         transition: all 0.3s ease;
     }
+
 </style>
 
 {% block extra_js %}
 <script>
 
-    // Open the modal at the position of the clicked button
-    function openMenu(deckId, button) {
+    // Function to close all modals
+    function closeAllOptionModals() {
         // Find all modals
         const modals = document.querySelectorAll('.options-modal');
-    
+            
         // Close all other modals
         modals.forEach(modal => {
             if (!modal.classList.contains('hidden')) {
@@ -142,6 +155,13 @@
                 modal.classList.remove('show');
             }
         });
+    }
+
+    // Open the modal at the position of the clicked button
+    function openMenu(deckId, button) {
+        
+        // Close other option modals
+        closeAllOptionModals()
 
         // Get the clicked modal
         const modal = document.getElementById(`optionsModal_${deckId}`);
@@ -156,8 +176,8 @@
         modal.style.top = `${buttonRect.top + window.scrollY - modal.offsetHeight - 5}px`;  // Position it above the button, with a 5px margin
     }
 
-    // Detect clicks outside the modal to close it
-    document.addEventListener("click", function(event) {
+    // function to hide the options modal
+    function hideOtherOptionsModal(event) {
         const modals = document.querySelectorAll('.options-modal');
         modals.forEach(modal => {
             // If the click is outside the modal and the button
@@ -166,30 +186,81 @@
                 modal.classList.remove('show');
             }
         });
-    });
+    }
+
+    // Detect clicks outside the modal to close it
+    document.addEventListener("click", hideOtherOptionsModal);
+
+    // Attach event listeners to the confirmation and cancel buttons in the modal
+    document.getElementById('cancel-delete').addEventListener('click', hideDeleteModal);
+    document.getElementById('confirm-delete').addEventListener('click', confirmDelete);
+
+    // Reference to the deck ID that will be deleted
+    let deckToDeleteId = null;
+
+    // Function to show the delete confirmation modal
+    function showDeleteModal(deckId) {
+        deckToDeleteId = deckId; // Store the ID of the deck to delete
+        closeAllOptionModals() // close all the options modals
+        document.getElementById('delete-deck-modal').classList.remove('hidden');
+    }
+
+    // Function to hide the delete confirmation modal
+    function hideDeleteModal() {
+        deckToDeleteId = null; // Reset the deck ID
+        document.getElementById('delete-deck-modal').classList.add('hidden');
+    }
+
+    // Function to handle the delete confirmation logic
+    function confirmDelete() {
+        if (deckToDeleteId) {
+            const csrfToken = document.querySelector('[name="csrfmiddlewaretoken"]').value;
+
+            fetch(`/delete_deck/${deckToDeleteId}/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrfToken,
+                },
+            })
+            .then(response => {
+                if (response.ok) {
+                    location.reload(); // Reload the page after successful deletion
+                } else {
+                    response.json().then(data => {
+                        console.error('Delete failed:', data.message);
+                    });
+                }
+            })
+            .catch(error => {
+                console.error("Error deleting deck:", error);
+            });
+
+            hideDeleteModal(); // Close the modal after clicking confirm
+        }
+    }
 
     // Delete deck
-    function deleteDeck(deckId) {
-        const csrfToken = document.querySelector('[name="csrfmiddlewaretoken"]').value;
-        fetch(`/delete_deck/${deckId}/`, {
-            method: 'POST',
-            headers: {
-                'X-CSRFToken': csrfToken,
-            },
-        })
-        .then(response => {
-            if (response.ok) {
-                location.reload();
-            } else {
-                response.json().then(data => {
-                    console.error('Delete failed:', data.message);
-                });
-            }
-        })
-        .catch(error => {
-            console.error("Error deleting deck:", error);
-        });
-    }
+    // function deleteDeck(deckId) {
+    //     const csrfToken = document.querySelector('[name="csrfmiddlewaretoken"]').value;
+    //     fetch(`/delete_deck/${deckId}/`, {
+    //         method: 'POST',
+    //         headers: {
+    //             'X-CSRFToken': csrfToken,
+    //         },
+    //     })
+    //     .then(response => {
+    //         if (response.ok) {
+    //             location.reload();
+    //         } else {
+    //             response.json().then(data => {
+    //                 console.error('Delete failed:', data.message);
+    //             });
+    //         }
+    //     })
+    //     .catch(error => {
+    //         console.error("Error deleting deck:", error);
+    //     });
+    // }
 
     // Show the Create Deck popup when the button is clicked
     document.getElementById("createDeckButton").addEventListener("click", function() {
