@@ -15,6 +15,7 @@
         
         <form method="post">
             {% csrf_token %}
+            <!-- Username Field -->
             <div class="form-group" style="margin-bottom: 1rem;">
                 <label for="id_username" style="color: #333; font-weight: bold;">Username</label>
                 {{ form.username }}
@@ -26,6 +27,19 @@
                 </div>
                 {% endif %}
             </div>
+            <!-- Email Field -->
+            <div class="form-group" style="margin-bottom: 1rem;">
+                <label for="id_email" style="color: #333; font-weight: bold;">Email</label>
+                {{ form.email }}
+                {% if form.email.errors %}
+                <div style="color: #c62828; font-size: 0.85rem; margin-top: 0.5rem;">
+                    {% for error in form.email.errors %}
+                        {{ error }}
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+            <!-- Password Field -->
             <div class="form-group" style="margin-bottom: 1rem;">
                 <label for="id_password1" style="color: #333; font-weight: bold;">Password</label>
                 {{ form.password1 }}
@@ -37,6 +51,7 @@
                 </div>
                 {% endif %}
             </div>
+            <!-- Repeat Password Field -->
             <div class="form-group" style="margin-bottom: 1rem;">
                 <label for="id_password2" style="color: #333; font-weight: bold;">Repeat Password</label>
                 {{ form.password2 }}
@@ -54,4 +69,16 @@
         <p style="text-align: center; color: #9daca2; margin-top: 1rem;">Already have an account? <a href="{% url 'login' %}" style="color: #9daca2;">Log in here</a></p>
     </div>
 </div>
+
+<style>
+input[type="text"],
+input[type="email"],
+input[type="password"] {
+    border: 1px solid #9daca2;
+    padding: 8px;
+    width: 100%;
+    border-radius: 4px;
+}
+</style>
+
 {% endblock %}

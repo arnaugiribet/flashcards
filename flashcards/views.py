@@ -12,6 +12,7 @@ from flashcards.models import Flashcard, Deck
 from django.utils.translation import activate
 import json
 from .services import generate_flashcards
+from .forms import CustomUserCreationForm
 from django.views.decorators.http import require_http_methods
 from django.core.exceptions import ValidationError
 from django.db.models import Count, Q, Prefetch
@@ -348,14 +349,8 @@ def process_file_and_context(request):
 def signup(request):
 
     if request.method == 'POST':
-        form = UserCreationForm(request.POST)
+        form = CustomUserCreationForm(request.POST)
         if form.is_valid():
-            # Check if username already exists
-            username = form.cleaned_data.get('username')
-            if User.objects.filter(username=username).exists():
-                form.add_error('username', 'A user with that username already exists.')
-                return render(request, 'registration/signup.html', {'form': form})
-            
             # Save the new user
             user = form.save()
             login(request, user)
@@ -364,7 +359,7 @@ def signup(request):
             activate('en')
             return redirect('home')
     else:
-        form = UserCreationForm()
+        form = CustomUserCreationForm()
     return render(request, 'registration/signup.html', {'form': form})
 
 @login_required
