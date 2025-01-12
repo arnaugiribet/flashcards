@@ -73,15 +73,21 @@ def change_password(request):
         form = PasswordChangeForm(request.user)
     return render(request, 'account/change_password.html', {'form': form})
     
-@login_required
 def delete_account(request):
-    if request.method == "POST":
-        user = request.user
-        logout(request)  # Log the user out
-        user.delete()    # Delete the user
-        messages.success(request, "Your account has been deleted.")
-        return redirect("home")  # Redirect to the homepage or another page
-    return redirect("account_settings")  # Redirect to account settings if not POST
+    if request.method == 'POST':
+        password = request.POST.get('password')
+        # Authenticate the user with the provided password
+        user = authenticate(username=request.user.username, password=password)
+        if user is not None:
+            # Password is correct, proceed with account deletion
+            request.user.delete()
+            messages.success(request, "Your account has been deleted.")
+            return redirect('home')  # Or wherever you want to redirect after deletion
+        else:
+            # Invalid password, show an error
+            messages.error(request, "The password you entered is incorrect.")
+    
+    return redirect('account_settings')  # Render the template with the form
 
 @login_required
 def manage_cards(request):
