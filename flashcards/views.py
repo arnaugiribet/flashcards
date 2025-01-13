@@ -70,21 +70,20 @@ def change_password(request):
         form = PasswordChangeForm(request.user)
     return render(request, 'account/change_password.html', {'form': form})
     
+# views.py
+@login_required
 def delete_account(request):
     if request.method == 'POST':
         password = request.POST.get('password')
-        # Authenticate the user with the provided password
         user = authenticate(username=request.user.username, password=password)
         if user is not None:
-            # Password is correct, proceed with account deletion
             request.user.delete()
             messages.success(request, "Your account has been deleted.")
-            return redirect('home')  # Or wherever you want to redirect after deletion
+            return redirect('home')
         else:
-            # Invalid password, show an error
-            messages.error(request, "The password you entered is incorrect.")
-    
-    return redirect('account_settings')  # Render the template with the form
+            messages.error(request, "The password you entered is incorrect.", extra_tags='delete_account')
+            return render(request, 'account/account_settings.html', {'show_delete_modal': True})
+    return redirect('account_settings')
 
 @login_required
 def manage_cards(request):
