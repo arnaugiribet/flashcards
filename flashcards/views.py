@@ -54,7 +54,6 @@ def change_username(request):
                 request.user.username = new_username
                 request.user.save()
                 messages.success(request, 'Username updated successfully.', extra_tags='username')
-                return redirect('account_settings')
     return render(request, 'account/change_username.html')
 
 @login_required
@@ -65,9 +64,7 @@ def change_password(request):
             user = form.save()
             update_session_auth_hash(request, user)
             messages.success(request, 'Your password was successfully updated!', extra_tags='password')
-            return redirect('account_settings')
         else:
-            # messages.error(request, 'Please correct the error below.', extra_tags='password')
             pass
     else:
         form = PasswordChangeForm(request.user)
