@@ -4,9 +4,9 @@ from django.utils import timezone
 from datetime import timedelta
 from django.http import JsonResponse
 from django.conf import settings
-from django.contrib.auth import login, authenticate
+from django.contrib.auth import login, authenticate, logout, update_session_auth_hash
 from django.contrib import messages
-from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth.forms import UserCreationForm, PasswordChangeForm
 from django.contrib.auth.models import User
 from flashcards.models import Flashcard, Deck
 from django.utils.translation import activate
@@ -31,8 +31,59 @@ def home(request):
         return redirect('user_decks')  # Redirect logged-in users to their decks
     return render(request, "home.html")  # Default home page for guests
 
+@login_required
 def account_settings(request):
-    return HttpResponse(status=204)
+    if request.method == "POST":
+        # Handle username update
+        new_username = request.POST.get("username")
+        if new_username:
+            request.user.username = new_username
+            request.user.save()
+            messages.success(request, "Your username has been updated.")
+            return redirect("account_settings")
+    return render(request, "account/account_settings.html")
+
+@login_required
+def change_username(request):
+    if request.method == 'POST':
+        new_username = request.POST.get('new_username')
+        if new_username:
+            if User.objects.filter(username=new_username).exclude(pk=request.user.pk).exists():
+                messages.error(request, 'Username is already taken.', extra_tags='username')
+            else:
+                request.user.username = new_username
+                request.user.save()
+                messages.success(request, 'Username updated successfully.', extra_tags='username')
+    return render(request, 'account/change_username.html')
+
+@login_required
+def change_password(request):
+    if request.method == 'POST':
+        form = PasswordChangeForm(request.user, request.POST)
+        if form.is_valid():
+            user = form.save()
+            update_session_auth_hash(request, user)
+            messages.success(request, 'Your password was successfully updated!', extra_tags='password')
+        else:
+            pass
+    else:
+        form = PasswordChangeForm(request.user)
+    return render(request, 'account/change_password.html', {'form': form})
+    
+# views.py
+@login_required
+def delete_account(request):
+    if request.method == 'POST':
+        password = request.POST.get('password')
+        user = authenticate(username=request.user.username, password=password)
+        if user is not None:
+            request.user.delete()
+            messages.success(request, "Your account has been deleted.")
+            return redirect('home')
+        else:
+            messages.error(request, "The password you entered is incorrect.", extra_tags='delete_account')
+            return render(request, 'account/account_settings.html', {'show_delete_modal': True})
+    return redirect('account_settings')
 
 @login_required
 def manage_cards(request):
