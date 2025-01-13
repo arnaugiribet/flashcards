@@ -43,6 +43,9 @@
             <div class="form-group" style="margin-bottom: 1rem;">
                 <label for="id_password1" style="color: #333; font-weight: bold;">Password</label>
                 {{ form.password1 }}
+                <p class="mt-2 text-sm text-gray-500">
+                    Make sure your password is at least 8 characters long and contains letters and numbers.
+                </p>
                 {% if form.password1.errors %}
                 <div style="color: #c62828; font-size: 0.85rem; margin-top: 0.5rem;">
                     {% for error in form.password1.errors %}
