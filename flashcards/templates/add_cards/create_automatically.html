@@ -6,53 +6,73 @@
 <div style="max-width: 800px; margin: 2rem auto; padding: 2rem;">
     <div style="background-color: #f4f6f5; padding: 2rem; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
         <h1 class="text-2xl font-semibold text-center mb-6" style="color: #6b8276;">Create Flashcards Automatically</h1>
-
+        
         <form id="flashcard-form" action="{% url 'process_file_and_context' %}" method="post" enctype="multipart/form-data" class="space-y-6">
             {% csrf_token %}
+            <!-- Input Type Selection -->
+            <div class="flex justify-center gap-6 mb-4">
+                <label class="inline-flex items-center">
+                    <input type="radio" name="input_type" value="file" checked class="hidden" onchange="toggleInputType()">
+                    <span class="px-4 py-2 rounded-md text-sm font-medium cursor-pointer transition-colors"
+                          style="background-color: #9daca2; color: white;" 
+                          id="file-label">
+                        Upload File
+                    </span>
+                </label>
+                <label class="inline-flex items-center">
+                    <input type="radio" name="input_type" value="text" class="hidden" onchange="toggleInputType()">
+                    <span class="px-4 py-2 rounded-md text-sm font-medium cursor-pointer transition-colors"
+                          style="background-color: #d8e0dc; color: #6b8276;"
+                          id="text-label">
+                        Paste Text
+                    </span>
+                </label>
+            </div>
 
-            <div>
+            <!-- File Upload Input -->
+            <div id="file-input-section">
                 <div class="relative flex items-center">
-                    <input 
-                        type="file" 
-                        name="file" 
-                        id="file" 
-                        accept=".txt,.pdf,.doc,.docx,.ppt,.pptx" 
-                        required
-                        class="hidden"
-                    >
-                    <button 
-                        type="button"
-                        onclick="document.getElementById('file').click()" 
-                        class="px-4 py-2 rounded-md text-sm font-medium text-white"
-                        style="background-color: #9daca2; width: fit-content;"
-                    >
-                        Upload a File
+                    <input type="file" name="file" id="file" accept=".txt,.pdf,.doc,.docx,.ppt,.pptx" class="hidden">
+                    <button type="button"
+                            onclick="document.getElementById('file').click()" 
+                            class="px-4 py-2 rounded-md text-sm font-medium text-white"
+                            style="background-color: #9daca2;">
+                        Select File
                     </button>
-                    <span id="file-label" class="text-sm ml-3" style="color: #666;">
+                    <span id="file-name" class="text-sm ml-3" style="color: #666;">
                         No file selected
                     </span>
                 </div>
             </div>
 
-            <div>
-                <label for="context" class="block text-sm font-medium" style="color: #6b8276;">Provide Context (Optional)</label>
-                <textarea 
-                    name="context" 
-                    id="context" 
-                    rows="3"
-                    placeholder="Provide any additional context for your flashcards..."
-                    class="mt-1 block w-full text-sm border-gray-300 rounded-md shadow-sm focus:ring-[#9daca2] focus:border-[#9daca2] p-2"
-                ></textarea>
+            <!-- Text Input -->
+            <div id="text-input-section" style="display: none;">
+                <textarea name="input_text" 
+                          rows="6" 
+                          placeholder="Paste your text here..."
+                          class="w-full p-3 border border-gray-300 rounded-md shadow-sm focus:ring-[#9daca2] focus:border-[#9daca2]"
+                          style="width: 100%;"></textarea>
             </div>
 
+            <!-- Context Input (unchanged) -->
+            <div>
+                <label for="context" class="block text-sm font-medium" style="color: #6b8276;">
+                    Provide Context (Optional)
+                </label>
+                <textarea name="context" 
+                          id="context" 
+                          rows="3"
+                          placeholder="Provide any additional context for your flashcards..."
+                          class="mt-1 block w-full text-sm border-gray-300 rounded-md shadow-sm focus:ring-[#9daca2] focus:border-[#9daca2] p-2"
+                          style="width: 100%;"></textarea>
+            </div>
+
+            <!-- Generate Button -->
             <div class="flex justify-center">
-                <button 
-                    type="submit" 
-                    id="generate-button"
-                    disabled
-                    class="px-4 py-2 rounded-md text-sm font-medium text-white"
-                    style="background-color: #9daca2; opacity: 0.5; pointer-events: none;"
-                >
+                <button type="submit" 
+                        id="generate-button"
+                        class="px-4 py-2 rounded-md text-sm font-medium text-white"
+                        style="background-color: #9daca2;">
                     Generate Cards
                 </button>
             </div>
@@ -130,12 +150,75 @@
 
 <script>
 
+    // Reference to the generate button
+    const generateButton = document.getElementById('generate-button');
+    
+    // Initial call to set button state on page load
+    updateButtonState();
+
+    // Function to update button state based on input type and content
+    function updateButtonState() {
+        const isFileSelected = document.querySelector('input[name="input_type"][value="file"]').checked;
+        const fileInput = document.getElementById('file');
+        const textInput = document.querySelector('textarea[name="input_text"]');
+
+        if (isFileSelected) {
+            // Enable if a file is selected
+            const hasFile = fileInput.files.length > 0;
+            toggleGenerateButton(hasFile);
+        } else {
+            // Enable if text input has content
+            const hasText = textInput.value.trim().length > 0;
+            toggleGenerateButton(hasText);
+        }
+    }
+
+    // Function to toggle generate button
+    function toggleGenerateButton(enable) {
+        generateButton.disabled = !enable;
+        generateButton.style.opacity = enable ? '1' : '0.5';
+        generateButton.style.pointerEvents = enable ? 'auto' : 'none';
+    }
+
+    // File input change event
+    document.getElementById('file').addEventListener('change', function (event) {
+        const fileName = event.target.files[0] ? event.target.files[0].name : 'No file selected';
+        document.getElementById('file-name').textContent = fileName;
+        updateButtonState();
+    });
+
+    // Text input change event
+    document.querySelector('textarea[name="input_text"]').addEventListener('input', function () {
+        updateButtonState();
+    });
+
+    // Input type toggle
+    function toggleInputType() {
+        const fileSection = document.getElementById('file-input-section');
+        const textSection = document.getElementById('text-input-section');
+        const fileLabel = document.getElementById('file-label');
+        const textLabel = document.getElementById('text-label');
+
+        const isFileSelected = document.querySelector('input[name="input_type"][value="file"]').checked;
+
+        fileSection.style.display = isFileSelected ? 'block' : 'none';
+        textSection.style.display = isFileSelected ? 'none' : 'block';
+
+        // Update button styles
+        fileLabel.style.backgroundColor = isFileSelected ? '#9daca2' : '#d8e0dc';
+        fileLabel.style.color = isFileSelected ? 'white' : '#6b8276';
+        textLabel.style.backgroundColor = isFileSelected ? '#d8e0dc' : '#9daca2';
+        textLabel.style.color = isFileSelected ? '#6b8276' : 'white';
+
+        updateButtonState(); // Ensure button state is updated after toggling input type
+    }
+
     // Shared array to store flashcards
     let flashcards = [];
 
     // File input handler
     document.getElementById('file').addEventListener('change', function (event) {
-        const fileLabel = document.getElementById('file-label');
+        const fileLabel = document.getElementById('file-name');
         const generateButton = document.getElementById('generate-button');
         
         if (event.target.files.length > 0) {
