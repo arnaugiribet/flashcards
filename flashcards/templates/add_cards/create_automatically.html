@@ -150,27 +150,67 @@
 
 <script>
 
-    document.getElementById('file').addEventListener('change', function(e) {
-        const fileName = e.target.files[0] ? e.target.files[0].name : 'No file selected';
+    // Reference to the generate button
+    const generateButton = document.getElementById('generate-button');
+    
+    // Initial call to set button state on page load
+    updateButtonState();
+
+    // Function to update button state based on input type and content
+    function updateButtonState() {
+        const isFileSelected = document.querySelector('input[name="input_type"][value="file"]').checked;
+        const fileInput = document.getElementById('file');
+        const textInput = document.querySelector('textarea[name="input_text"]');
+
+        if (isFileSelected) {
+            // Enable if a file is selected
+            const hasFile = fileInput.files.length > 0;
+            toggleGenerateButton(hasFile);
+        } else {
+            // Enable if text input has content
+            const hasText = textInput.value.trim().length > 0;
+            toggleGenerateButton(hasText);
+        }
+    }
+
+    // Function to toggle generate button
+    function toggleGenerateButton(enable) {
+        generateButton.disabled = !enable;
+        generateButton.style.opacity = enable ? '1' : '0.5';
+        generateButton.style.pointerEvents = enable ? 'auto' : 'none';
+    }
+
+    // File input change event
+    document.getElementById('file').addEventListener('change', function (event) {
+        const fileName = event.target.files[0] ? event.target.files[0].name : 'No file selected';
         document.getElementById('file-name').textContent = fileName;
+        updateButtonState();
     });
 
+    // Text input change event
+    document.querySelector('textarea[name="input_text"]').addEventListener('input', function () {
+        updateButtonState();
+    });
+
+    // Input type toggle
     function toggleInputType() {
         const fileSection = document.getElementById('file-input-section');
         const textSection = document.getElementById('text-input-section');
         const fileLabel = document.getElementById('file-label');
         const textLabel = document.getElementById('text-label');
-        
+
         const isFileSelected = document.querySelector('input[name="input_type"][value="file"]').checked;
-        
+
         fileSection.style.display = isFileSelected ? 'block' : 'none';
         textSection.style.display = isFileSelected ? 'none' : 'block';
-        
+
         // Update button styles
         fileLabel.style.backgroundColor = isFileSelected ? '#9daca2' : '#d8e0dc';
         fileLabel.style.color = isFileSelected ? 'white' : '#6b8276';
         textLabel.style.backgroundColor = isFileSelected ? '#d8e0dc' : '#9daca2';
         textLabel.style.color = isFileSelected ? '#6b8276' : 'white';
+
+        updateButtonState(); // Ensure button state is updated after toggling input type
     }
 
     // Shared array to store flashcards
@@ -178,7 +218,7 @@
 
     // File input handler
     document.getElementById('file').addEventListener('change', function (event) {
-        const fileLabel = document.getElementById('file-label');
+        const fileLabel = document.getElementById('file-name');
         const generateButton = document.getElementById('generate-button');
         
         if (event.target.files.length > 0) {
