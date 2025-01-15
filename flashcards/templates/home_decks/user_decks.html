@@ -43,7 +43,7 @@
             </p>
         {% endif %}
     </div>
-
+    
     <!-- Buttons Container: Create Deck and Add Cards -->
     <div style="display: flex; justify-content: center; gap: 1rem; margin-top: 1.5rem;">
         <!-- Create Deck Button -->
@@ -55,6 +55,14 @@
         <button id="addCardsButton" style="background-color: #9daca2; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer;">
             Add Cards
         </button>
+    </div>
+
+    <!-- Buy Me a Coffee Button -->
+    <div style="margin-top: 2rem; display: flex; justify-content: center; align-items: center;">
+        <a href="https://www.buymeacoffee.com/arnaugiribet" target="_blank">
+            <img src="https://img.buymeacoffee.com/button-api/?text=Buy us a coffee&emoji=☕&slug=arnaugiribet&button_colour=FF5F5F&font_colour=ffffff&font_family=Arial&outline_colour=000000&coffee_colour=FFDD00" 
+                alt="Buy us a coffee" />
+        </a>
     </div>
 
     <!-- Popup Form for Create Deck -->
@@ -82,9 +90,13 @@
                 <button type="button" id="cancelCreateDeck" style="background-color: #ccc; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; display: block; margin: 1rem auto;">
                     Cancel
                 </button>
-            </form>            
+            </form>   
         </div>
     </div>
+
+    
+
+
 
     <!-- Popup Form for Add Cards -->
     <div id="addCardsPopup" style="display: none; background-color: rgba(0, 0, 0, 0.5); position: fixed; top: 0; left: 0; width: 100%; height: 100%; justify-content: center; align-items: center;">
@@ -112,6 +124,8 @@
         </div>
     </div>
 </div>
+
+
 
 <!-- Custom Confirmation Modal -->
 <div id="delete-deck-modal" class="fixed inset-0 bg-gray-800 bg-opacity-50 flex justify-center items-center hidden">
