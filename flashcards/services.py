@@ -5,29 +5,47 @@ from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
-# Service function for processing the file and context
-def generate_flashcards(file, context):
+
+def generate_flashcards(content, content_format, context):
     """
     Service function to generate flashcards from the input file and context.
 
-    :param file: File object from the HTTP request.
-    :param context: Additional context string from the HTTP request.
-    :return: A list of generated flashcards.
+    Args:
+        content: File object or StringIO object containing the input content
+        content_format: String indicating the format ('txt' or 'string')
+        context: Additional context string from the HTTP request
+
+    Returns:
+        A list of generated flashcards.
+
+    Raises:
+        ValueError: If no valid input is provided or if file format is invalid
+        RuntimeError: If flashcard generation fails
     """
-    logger.debug(f"Generating flashcards...")
+    logger.debug(f"Generating flashcards with format: {content_format}")
     llm_api_key = settings.LLM_API_KEY
-    logger.debug(f"api_key is: {llm_api_key}")
     llm_client = LLMClient(llm_api_key)
     generator = FlashcardGenerator(llm_client)
 
     # Combine file and context inputs
     input_text = context or ""
-    if file:
-        try:
-            input_text += "\n" + file.read().decode('utf-8')  # Assuming UTF-8 encoding
-        except Exception as e:
-            logger.error(f"Error reading file: {e}")
-            raise ValueError("Invalid file format or encoding")
+
+    # Process content based on format
+    try:
+        if content_format == '.txt':
+            # For file uploads
+            input_text += "\n" + content.read().decode('utf-8')
+        elif content_format == 'string':
+            # For string input
+            input_text += "\n" + content.getvalue()
+        else:
+            raise ValueError(f"Unsupported content format: {content_format}")
+    except UnicodeDecodeError:
+        logger.error("Error decoding file content")
+        raise ValueError("Invalid file encoding - please ensure the file is UTF-8 encoded")
+    except Exception as e:
+        logger.error(f"Error reading content: {e}")
+        raise ValueError("Error processing input content")
 
     if not input_text.strip():
         raise ValueError("No input provided to generate flashcards")

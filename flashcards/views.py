@@ -18,6 +18,8 @@ from django.core.exceptions import ValidationError
 from django.db.models import Count, Q, Prefetch
 import random
 import logging
+import io
+import os
 
 # Import your existing backend classes
 from llm_client import LLMClient
@@ -25,8 +27,10 @@ from llm_client import LLMClient
 from django.http import HttpResponse
 
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 def home(request):
+    logger.debug("Redirecting home...")
     if request.user.is_authenticated:
         return redirect('user_decks')  # Redirect logged-in users to their decks
     return render(request, "home.html")  # Default home page for guests
@@ -380,14 +384,34 @@ def review_card(request):
 @require_http_methods(["POST"])
 def process_file_and_context(request):
     """
-    View to handle file and context submission for creating flashcards.
+    View to handle file/text input and context submission for creating flashcards.
     """
-    file = request.FILES.get('file')
-    context = request.POST.get('context', '')
+    logger.debug("Processing file and context...")
 
+    context = request.POST.get('context', '')
+    input_type = request.POST.get('input_type')
+    
     try:
-        # Call the service function
-        flashcards = generate_flashcards(file, context)
+        if input_type == 'file':
+            file = request.FILES.get('file')
+            if not file:
+                raise ValueError("No file uploaded")
+            # Extract the file extension
+            _, file_extension = os.path.splitext(file.name)
+            content_format = file_extension.lower()
+            content = file
+            
+        else:  # input_type == 'text'
+            text_input = request.POST.get('input_text')
+            if not text_input:
+                raise ValueError("No text provided")
+            # Convert text input to a file-like object to maintain compatibility
+            content = io.StringIO(text_input)
+            content_format = "string"
+
+        # Call the service function - it can now handle either a file or StringIO object
+        logger.debug(f"File is of type {content_format}")
+        flashcards = generate_flashcards(content, content_format, context)
         flashcards_data = [
             {"question": fc.question, "answer": fc.answer} for fc in flashcards
         ]
