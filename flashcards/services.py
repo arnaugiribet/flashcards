@@ -31,21 +31,14 @@ def generate_flashcards(content, content_format, context):
     input_text = context or ""
 
     # Process content based on format
-    try:
-        if content_format == '.txt':
-            # For file uploads
-            input_text += "\n" + content.read().decode('utf-8')
-        elif content_format == 'string':
-            # For string input
-            input_text += "\n" + content.getvalue()
-        else:
-            raise ValueError(f"Unsupported content format: {content_format}")
-    except UnicodeDecodeError:
-        logger.error("Error decoding file content")
-        raise ValueError("Invalid file encoding - please ensure the file is UTF-8 encoded")
-    except Exception as e:
-        logger.error(f"Error reading content: {e}")
-        raise ValueError("Error processing input content")
+    if content_format == '.txt':
+        # For file uploads
+        input_text += "\n" + content.read().decode('utf-8')
+    elif content_format == 'string':
+        # For string input
+        input_text += "\n" + content.getvalue()
+    else:
+        raise ValueError(f"Unsupported content format: {content_format}")
 
     if not input_text.strip():
         raise ValueError("No input provided to generate flashcards")
