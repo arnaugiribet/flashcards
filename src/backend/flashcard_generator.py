@@ -75,7 +75,7 @@ class FlashcardGenerator:
             except Exception as clean_error:
                 # If enforcing the format also fails, log the error and return an empty list
                 self.logger.error(f"Failed to create flashcards even after cleaning: {clean_error}")
-                flashcards = []
+                raise ValueError("Failed to create flashcards in second attempt (after cleaning).")
 
         return flashcards
 
@@ -145,7 +145,8 @@ class FlashcardGenerator:
                 # Skip the row and continue
                 continue
 
-        if not flashcards:
+        self.logger.debug(f"length of flashcards list is: {len(flashcards)}")
+        if len(flashcards)==0:
             self.logger.error("No valid flashcards were created. The string may be malformed or empty.")
             raise ValueError("No valid flashcards generated.")
 
