@@ -22,6 +22,7 @@ class FlashcardGenerator:
         """
         Generate flashcards from the provided text input.
         """
+        raise ValueError("Error")
         system_message = (
             "You are an expert in creating questions and answers out of study material."
         )

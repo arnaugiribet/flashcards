@@ -76,6 +76,11 @@
                     Generate Cards
                 </button>
             </div>
+
+            <!-- Error message display -->
+            <div id="error-message" class="text-center text-red-500 mt-4 hidden">
+                <p id="error-text"></p>
+            </div>
         </form>
     </div>
 
@@ -275,7 +280,7 @@
             generateButton.style.opacity = '1';
         });
     });
-
+    
     // Function to handle the deletion of a flashcard
     function handleDeleteCard(index) {
         flashcards.splice(index, 1); // Remove the flashcard from the array
@@ -497,6 +502,42 @@
         // Close the modal
         document.getElementById('discard-modal').classList.add('hidden');
     });
+
+    // Show error messages if card generation fails
+    document.getElementById('flashcard-form').addEventListener('submit', function (e) {
+        e.preventDefault();
+        let formData = new FormData(this);
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        
+        fetch("{% url 'process_file_and_context' %}", {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': csrfToken
+            },
+            body: formData,
+        })
+        .then(response => {
+            // First check if the response can be parsed as JSON
+            return response.json().then(data => {
+                // Add the status to the data object
+                return { ...data, status: response.status };
+            });
+        })
+        .then(data => {
+            if (data.success) {
+                document.getElementById('flashcards-container').classList.remove('hidden');
+                // Insert flashcards into the grid
+            } else {
+                document.getElementById('error-text').textContent = data.error || "An unexpected error occurred. Please try again later.";
+                document.getElementById('error-message').classList.remove('hidden');
+            }
+        })
+        .catch(error => {
+            document.getElementById('error-text').textContent = "An unexpected error occurred. Please try again later.";
+            document.getElementById('error-message').classList.remove('hidden');
+        });
+    });
+
 </script>
 
 <style>
