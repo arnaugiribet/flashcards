@@ -380,6 +380,7 @@ def review_card(request):
         logger.error(f"Unexpected error in review_card: {e}")
         return JsonResponse({'status': 'error', 'message': 'Server error'}, status=500)
 
+
 @login_required
 @require_http_methods(["POST"])
 def process_file_and_context(request):
@@ -416,10 +417,12 @@ def process_file_and_context(request):
             {"question": fc.question, "answer": fc.answer} for fc in flashcards
         ]
         return JsonResponse({"success": True, "flashcards": flashcards_data})
-    except ValueError as ve:
-        return JsonResponse({"success": False, "error": str(ve)}, status=400)
-    except RuntimeError as re:
-        return JsonResponse({"success": False, "error": "Internal error"}, status=500)
+
+    except Exception as e:
+        # Log the exception for debugging purposes
+        logger.error(f"An error occurred when generating cards: {str(e)}", exc_info=True)
+        # Return an error message to the user
+        return JsonResponse({"success": False, "error": "There was an error while generating your cards. Please try again."}, status=200)
 
 def signup(request):
 

@@ -1,6 +1,7 @@
 import csv
 from io import StringIO
 from src.backend.flashcard_class import Flashcard
+import logging
 
 class FlashcardGenerator:
     def __init__(self, llm_client):
@@ -9,21 +10,33 @@ class FlashcardGenerator:
         """
         self.llm_client = llm_client
 
+        # Logger set up
+        self.logger = logging.getLogger("src/backend/flashcard_generator.py")
+        self.logger.setLevel(logging.INFO)
+        console_handler = logging.StreamHandler()
+        formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s: %(message)s")
+        console_handler.setFormatter(formatter)
+        self.logger.addHandler(console_handler)
+
     def generate_flashcards(self, text_input, proposed_flashcards = [], feedback = ""):
         """
         Generate flashcards from the provided text input.
         """
         system_message = (
-            "You are an expert in creating questions and answers out of study material.")
+            "You are an expert in creating questions and answers out of study material."
+        )
         if not feedback or not proposed_flashcards:
             prompt = (
             "Transform the following text (within triple claudators) into questions and answers "
-            f"for studying. [[[{text_input}]]] "
+            f"for studying. Make sure the cards are in the same language of the text!! "
+            f"[[[{text_input}]]] "
             "Return it in purely CSV format without title or prefaces, like this: "
             "\"Who was Mozart?\",\"A classical composer\"\n"
-            "\"What is ice?\",\"Frozen water\"\n"
+            "\"What is ice?\",\"Frozen water\"\n "
             "Notice how every question and answer start and end with double quotes, to distinguish "
-            "between commas in the sentence or the comma separator."
+            "between commas in the sentence or the comma separator. "
+            "Questions and answers must each be surrounded by quotes. The question must be separated from the answer with a comma. "
+            "Different questions and answers must be separated with a new line. "
             "Do not add 'Question: ' or 'Answer: ' in the response."
             )
         elif feedback and proposed_flashcards:
@@ -36,9 +49,11 @@ class FlashcardGenerator:
             f"And between claudators is the feedback to modify them: [{feedback}] "
             "Return it in purely CSV format without title or prefaces, like this: "
             "\"Who was Mozart?\",\"A classical composer\"\n"
-            "\"What is ice?\",\"Frozen water\"\n"
+            "\"What is ice?\",\"Frozen water\"\n "
             "Notice how every question and answer start and end with double quotes, to distinguish "
-            "between commas in the sentence or the comma separator."
+            "between commas in the sentence or the comma separator. "
+            "Questions and answers must each be surrounded by quotes. The question must be separated from the answer with a comma. "
+            "Different questions and answers must be separated with a new line. "
             "Do not add 'Question: ' or 'Answer: ' in the response."
             "Remember to only update the flashcards if needed according to the feedback with claudators."
             )
@@ -46,9 +61,43 @@ class FlashcardGenerator:
             raise ValueError("Empty proposed flashcards or feedback")
 
         response = self.llm_client.query(prompt, system_message)
-        flashcards = self.create_flashcards_from_response(response)
+        try:
+            # Attempt to create flashcards directly from the LLM response
+            flashcards = self.create_flashcards_from_response(response)
+            self.logger.info("Flashcards created on the first try")
+        except Exception as e:
+            # If an error occurs, log it and attempt to enforce formatting on the response
+            self.logger.warning(f"Initial flashcard creation failed: {e}. Attempting to clean the response.")
+            try:
+                clean_response = self.enforce_format(response)
+                flashcards = self.create_flashcards_from_response(clean_response)
+                self.logger.info("Flashcards created on the second try (after cleaning format)")
+            except Exception as clean_error:
+                # If enforcing the format also fails, log the error and return an empty list
+                self.logger.error(f"Failed to create flashcards even after cleaning: {clean_error}")
+                flashcards = []
 
         return flashcards
+
+    def enforce_format(self, response):
+        system_message = (
+            "You are an expert in creating questions and answers out of study material, and in the same language."
+        )
+        prompt = (
+            "Ensure the following question and answers (within triple claudators) have the proper formatting. "
+            "The proper format should be exactly like this: "
+            "\"Who was Mozart?\",\"A classical composer\"\n"
+            "\"What is ice?\",\"Frozen water\"\n "
+            "Questions and answers must each be surrounded by quotes. The question must be separated from the answer with a comma. "
+            "Different questions and answers must be separated with a new line. "
+            "If the original response has a different formatting, fix it. "
+            "Return only the cleaned response. This is the original response to be cleaned: "
+            f"[[[{response}]]]"
+            )
+
+        clean_response = self.llm_client.query(prompt, system_message)
+        return clean_response
+        
 
     def create_flashcards_from_response(self, response):
         """
@@ -66,18 +115,39 @@ class FlashcardGenerator:
         :raises: Potential parsing errors if the CSV format is invalid
         """
 
-        print("Turning LLM output into flashcards...")
-        flashcards = []
+        self.logger.info("Turning LLM output into flashcards...")
+        
+        # Remove leading/trailing whitespace
+        response = response.strip()  
+    
+        # Ensure the response has a trailing newline
+        if not response.endswith('\n'):
+            response += '\n'
+
+        self.logger.debug(f"string from which generate we must flashcards:\n{repr(response)}")
 
         # Use StringIO to treat the response as a file-like object for the CSV reader
         response_io = StringIO(response)
         reader = csv.reader(response_io, quotechar='"', escapechar='\\')
 
+        flashcards = []
         # Iterate over each row in the CSV response
-        for row in reader:
-            question, answer = row
-            card_i = Flashcard(question.strip(), answer.strip())
-            flashcards.append(card_i)
+        for idx, row in enumerate(reader):
+            try:
+                # Attempt to unpack the row into question and answer
+                question, answer = row
+                # Create and append the flashcard
+                card_i = Flashcard(question.strip(), answer.strip())
+                flashcards.append(card_i)
+            except ValueError as ve:
+                # Log the error with details about the problematic row
+                self.logger.error(f"Row {idx} is invalid or malformed: {row}. Error: {ve}")
+                # Skip the row and continue
+                continue
 
-        print("Flashcards were created")
+        if not flashcards:
+            self.logger.error("No valid flashcards were created. The string may be malformed or empty.")
+            raise ValueError("No valid flashcards generated.")
+
+        self.logger.info("Flashcards were created")
         return flashcards
