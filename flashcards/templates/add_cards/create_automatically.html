@@ -78,7 +78,7 @@
             </div>
 
             <!-- Error message display -->
-            <div id="error-message" class="text-center text-red-500 mt-4 hidden">
+            <div id="error-message" class="rounded-lg bg-red-50 p-4 text-sm text-red-500 mt-4 hidden flex justify-center items-center">
                 <p id="error-text"></p>
             </div>
         </form>
@@ -157,7 +157,7 @@
 
     // Reference to the generate button
     const generateButton = document.getElementById('generate-button');
-    
+
     // Initial call to set button state on page load
     updateButtonState();
 
@@ -240,9 +240,15 @@
     });
 
     // Form submission handler
-    document.getElementById('flashcard-form').addEventListener('submit', function(e) {
+    document.getElementById('flashcard-form').addEventListener('submit', function (e) {
         e.preventDefault();
-        const formData = new FormData(this);
+        
+        // Clear any previous error messages before submitting the form
+        const errorMessageDiv = document.getElementById('error-message');
+        errorMessageDiv.classList.add('hidden');  // Hide the error message div
+
+        let formData = new FormData(this);
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
         const generateButton = document.getElementById('generate-button');
         
         // Disable the button and show loading state
@@ -252,35 +258,41 @@
 
         fetch(this.action, {
             method: 'POST',
-            body: formData,
             headers: {
-                'X-CSRFToken': formData.get('csrfmiddlewaretoken')
-            }
+                'X-CSRFToken': csrfToken
+            },
+            body: formData,
         })
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                // Update the shared flashcards array
+                // If successful, update the shared flashcards array and display them
                 flashcards = data.flashcards;
-                
-                // Display the updated flashcards
                 displayFlashcards();
             } else {
-                alert(data.error || 'An error occurred while generating flashcards.');
+                // If the server returns an error, display it in a div (no alert)
+                const errorText = data.error || "An unexpected error occurred. Please try again later.";
+                document.getElementById('error-text').textContent = errorText;
+                document.getElementById('error-message').classList.remove('hidden');
+                errorMessageDiv.classList.remove('hidden'); // Make the error div visible
             }
         })
         .catch(error => {
-            alert('An error occurred while generating flashcards.');
+            // If there is a network or other error, show a generic error message
+            const errorText = "An unexpected error occurred. Please try again later.";
+            document.getElementById('error-text').textContent = errorText;
+            document.getElementById('error-message').classList.remove('hidden');
+            errorMessageDiv.classList.remove('hidden'); // Make the error div visible
             console.error('Error:', error);
         })
         .finally(() => {
-            // Reset button state
+            // Reset button state regardless of success or failure
             generateButton.disabled = false;
             generateButton.textContent = 'Generate Cards';
             generateButton.style.opacity = '1';
         });
     });
-    
+
     // Function to handle the deletion of a flashcard
     function handleDeleteCard(index) {
         flashcards.splice(index, 1); // Remove the flashcard from the array
@@ -503,40 +515,7 @@
         document.getElementById('discard-modal').classList.add('hidden');
     });
 
-    // Show error messages if card generation fails
-    document.getElementById('flashcard-form').addEventListener('submit', function (e) {
-        e.preventDefault();
-        let formData = new FormData(this);
-        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
-        
-        fetch("{% url 'process_file_and_context' %}", {
-            method: 'POST',
-            headers: {
-                'X-CSRFToken': csrfToken
-            },
-            body: formData,
-        })
-        .then(response => {
-            // First check if the response can be parsed as JSON
-            return response.json().then(data => {
-                // Add the status to the data object
-                return { ...data, status: response.status };
-            });
-        })
-        .then(data => {
-            if (data.success) {
-                document.getElementById('flashcards-container').classList.remove('hidden');
-                // Insert flashcards into the grid
-            } else {
-                document.getElementById('error-text').textContent = data.error || "An unexpected error occurred. Please try again later.";
-                document.getElementById('error-message').classList.remove('hidden');
-            }
-        })
-        .catch(error => {
-            document.getElementById('error-text').textContent = "An unexpected error occurred. Please try again later.";
-            document.getElementById('error-message').classList.remove('hidden');
-        });
-    });
+    
 
 </script>
 
