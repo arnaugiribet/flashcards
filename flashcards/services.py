@@ -1,12 +1,12 @@
 from src.backend.flashcard_generator import FlashcardGenerator
 from src.backend.llm_client import LLMClient
+from src.backend.usage_limits import assert_input_length, assert_enough_tokens
 import logging
 from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
-
-def generate_flashcards(content, content_format, context):
+def generate_flashcards(content, content_format, context, user):
     """
     Service function to generate flashcards from the input file and context.
 
@@ -42,6 +42,10 @@ def generate_flashcards(content, content_format, context):
 
     if not input_text.strip():
         raise ValueError("No input provided to generate flashcards")
+
+    # Check length of inut text and user token consumption before proceeding
+    assert_input_length(input_text)
+    assert_enough_tokens(user, input_text)
 
     try:
         # Generate flashcards using the pipeline

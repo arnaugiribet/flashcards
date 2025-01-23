@@ -391,6 +391,7 @@ def process_file_and_context(request):
 
     context = request.POST.get('context', '')
     input_type = request.POST.get('input_type')
+    user = request.user
     
     try:
         if input_type == 'file':
@@ -410,9 +411,11 @@ def process_file_and_context(request):
             content = io.StringIO(text_input)
             content_format = "string"
 
-        # Call the service function - it can now handle either a file or StringIO object
         logger.debug(f"File is of type {content_format}")
-        flashcards = generate_flashcards(content, content_format, context)
+
+
+        # Call the service function - it can now handle either a file or StringIO object
+        flashcards = generate_flashcards(content, content_format, context, user)
         flashcards_data = [
             {"question": fc.question, "answer": fc.answer} for fc in flashcards
         ]
