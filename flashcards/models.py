@@ -7,6 +7,32 @@ from datetime import timedelta
 
 logger = logging.getLogger(__name__)
 
+class UserPlan(models.Model):
+    
+    FREE = 'free'
+    PRO = 'pro'
+    ENTERPRISE = 'enterprise'
+
+    PLAN_CHOICES = [
+        (FREE, 'free'),
+        (PRO, 'pro'),
+        (ENTERPRISE, 'enterprise'),
+    ]
+
+    user = models.OneToOneField(User, on_delete=models.CASCADE)  # Link to default User model
+    plan_type = models.CharField(
+        max_length=50,
+        choices=PLAN_CHOICES,
+        default=FREE  # Default to 'free'
+    )
+    total_tokens_allowed = models.IntegerField(default=5000)  # Default to 5000
+
+    class Meta:
+        db_table = 'user_plan'
+
+    def __str__(self):
+        return f"{self.user.username} - {self.get_plan_type_display()} - {self.total_tokens_allowed} tokens"
+
 class Deck(models.Model):
     """
     Model representing a deck of flashcards.
