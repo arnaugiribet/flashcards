@@ -1,6 +1,6 @@
 from django.contrib import admin
 from flashcards.models import Flashcard, Deck
-from .models import UserPlan
+from .models import UserPlan, TokenUsage
 
 # Register your models here.
 
@@ -20,3 +20,18 @@ class UserPlanAdmin(admin.ModelAdmin):
     list_filter = ('plan_type',)  # Optionally, add filters on the plan type
     search_fields = ('user__username',)  # Allows searching by user username
     list_editable = ('plan_type', 'total_tokens_allowed')  # These fields can now be edited in the list view
+
+@admin.register(TokenUsage)
+class TokenUsageAdmin(admin.ModelAdmin):
+    list_display = ('user_username', 'tokens_used', 'timestamp', 'context')
+    list_filter = ('timestamp', 'context')
+    search_fields = ('user__username', 'context')
+    date_hierarchy = 'timestamp'
+    
+    @admin.display(description='User')  # This is the modern way to set column header
+    def user_username(self, obj):
+        return obj.user.username
+    user_username.short_description = 'User'  # Column header in admin
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related('user')
