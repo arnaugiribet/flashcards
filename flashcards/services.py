@@ -33,10 +33,12 @@ def generate_flashcards(content, content_format, context, user):
     # Process content based on format
     if content_format == '.txt':
         # For file uploads
-        input_text += "\n" + content.read().decode('utf-8')
+        raw_user_text = content.read().decode('utf-8')
+        input_text += "\n" + raw_user_text
     elif content_format == 'string':
         # For string input
-        input_text += "\n" + content.getvalue()
+        raw_user_text = content.getvalue()
+        input_text += "\n" + raw_user_text
     else:
         raise ValueError(f"Unsupported content format: {content_format}")
 
@@ -44,7 +46,7 @@ def generate_flashcards(content, content_format, context, user):
         raise ValueError("No input provided to generate flashcards")
 
     # Check length of inut text and user token consumption before proceeding
-    assert_input_length(input_text)
+    assert_input_length(raw_user_text)
     assert_enough_tokens(user, input_text)
 
     try:

@@ -424,6 +424,14 @@ def process_file_and_context(request):
     except Exception as e:
         # Log the exception for debugging purposes
         logger.error(f"An error occurred when generating cards: {str(e)}", exc_info=True)
+
+        # Check if the text was too long
+        if isinstance(e, ValueError) and "exceeds maximum allowed length" in str(e):
+            return JsonResponse({
+                "success": False, 
+                "error": "The input text is too long. Please reduce it to 30,000 characters or less."
+            }, status=200)
+
         # Return an error message to the user
         return JsonResponse({"success": False, "error": "There was an error while generating your cards. Please try again."}, status=200)
 
