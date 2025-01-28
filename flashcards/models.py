@@ -4,7 +4,7 @@ from datetime import date, timedelta
 from django.contrib.auth.models import User
 import logging
 from django.utils import timezone
-from django.db.models import Sum
+from django.db.models import Sum, Max
 
 logger = logging.getLogger(__name__)
 
@@ -68,6 +68,14 @@ class TokenUsage(models.Model):
         """
         return cls.objects.filter(user=user).aggregate(
             total=Sum('tokens_used'))['total'] or 0
+    
+    @classmethod
+    def get_most_recent_timestamp(cls, user):
+        """
+        Get the most recent timestamp of token usage for a user
+        """
+        recent_timestamp = cls.objects.filter(user=user).aggregate(latest=Max('timestamp'))['latest']
+        return recent_timestamp
             
 class Deck(models.Model):
     """

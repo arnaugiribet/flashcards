@@ -20,6 +20,7 @@ import random
 import logging
 import io
 import os
+from src.backend.usage_limits import InsufficientTokensError
 
 # Import your existing backend classes
 from llm_client import LLMClient
@@ -421,6 +422,21 @@ def process_file_and_context(request):
         ]
         return JsonResponse({"success": True, "flashcards": flashcards_data})
 
+    except InsufficientTokensError as e:
+        # Handle the specific InsufficientTokensError
+        logger.error(f"Insufficient tokens: {str(e)}", exc_info=True)
+        
+        last_usage_timestamps = e.most_recent_usage_timestamp
+        time_in_4_hours = last_usage_timestamps + timedelta(hours=4) + timedelta(minutes=1)
+        formatted_time = time_in_4_hours.strftime('%I:%M %p')
+        if formatted_time.startswith('0'): # trick to avoid the preceding 0 
+            formatted_time = formatted_time[1:]
+
+        return JsonResponse({
+            "success": False, 
+            "error": f"You are out of tokens until {formatted_time}. Unlimited Pro version coming soon."
+        }, status=200)
+
     except Exception as e:
         # Log the exception for debugging purposes
         logger.error(f"An error occurred when generating cards: {str(e)}", exc_info=True)
@@ -429,7 +445,7 @@ def process_file_and_context(request):
         if isinstance(e, ValueError) and "exceeds maximum allowed length" in str(e):
             return JsonResponse({
                 "success": False, 
-                "error": "The input text is too long. Please reduce it to 30,000 characters or less."
+                "error": "The input text is too long. Please reduce it to 30,000 characters or less. Unlimited Pro version coming soon."
             }, status=200)
 
         # Return an error message to the user

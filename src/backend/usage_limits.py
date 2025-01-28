@@ -55,8 +55,14 @@ def assert_enough_tokens(user, input_text):
         return True
     else:
         logger.info('Not enough tokens left!')
-        raise InsufficientTokensError(
+        most_recent_usage_timestamp = TokenUsage.get_most_recent_timestamp(user)
+        logger.info(f'Last token consumption happend at {most_recent_usage_timestamp}')
+
+        error = InsufficientTokensError(
             f"Insufficient tokens. Plan limit: {max_tokens_per_period}, "
             f"Used: {tokens_used_during_period}, Available: {available_tokens}, "
             f"Needed: {tokens_needed_estimate}"
         )
+
+        error.most_recent_usage_timestamp = most_recent_usage_timestamp
+        raise error
