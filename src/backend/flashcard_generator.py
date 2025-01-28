@@ -13,10 +13,11 @@ class FlashcardGenerator:
         # Logger set up
         self.logger = logging.getLogger("src/backend/flashcard_generator.py")
         self.logger.setLevel(logging.INFO)
-        console_handler = logging.StreamHandler()
-        formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s: %(message)s")
-        console_handler.setFormatter(formatter)
-        self.logger.addHandler(console_handler)
+        if not self.logger.handlers:
+            console_handler = logging.StreamHandler()
+            formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s: %(message)s")
+            console_handler.setFormatter(formatter)
+            self.logger.addHandler(console_handler)
 
     def generate_flashcards(self, text_input, proposed_flashcards = [], feedback = ""):
         """
@@ -60,7 +61,9 @@ class FlashcardGenerator:
         else:
             raise ValueError("Empty proposed flashcards or feedback")
 
-        response = self.llm_client.query(prompt, system_message)
+        # Query LLM
+        response, tokens = self.llm_client.query(prompt, system_message)
+        
         try:
             # Attempt to create flashcards directly from the LLM response
             flashcards = self.create_flashcards_from_response(response)
@@ -77,7 +80,7 @@ class FlashcardGenerator:
                 self.logger.error(f"Failed to create flashcards even after cleaning: {clean_error}")
                 raise ValueError("Failed to create flashcards in second attempt (after cleaning).")
 
-        return flashcards
+        return (flashcards, tokens)
 
     def enforce_format(self, response):
         system_message = (

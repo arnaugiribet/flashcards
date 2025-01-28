@@ -1,12 +1,82 @@
 from django.db import models
 import uuid
-from datetime import date
+from datetime import date, timedelta
 from django.contrib.auth.models import User
 import logging
-from datetime import timedelta
+from django.utils import timezone
+from django.db.models import Sum, Max
 
 logger = logging.getLogger(__name__)
 
+class UserPlan(models.Model):
+    
+    FREE = 'free'
+    PRO = 'pro'
+    ENTERPRISE = 'enterprise'
+
+    PLAN_CHOICES = [
+        (FREE, 'free'),
+        (PRO, 'pro'),
+        (ENTERPRISE, 'enterprise'),
+    ]
+
+    user = models.OneToOneField(User, on_delete=models.CASCADE)  # Link to default User model
+    plan_type = models.CharField(
+        max_length=50,
+        choices=PLAN_CHOICES,
+        default=FREE  # Default to 'free'
+    )
+    total_tokens_allowed = models.IntegerField(default=10000)  # Default to 10000
+
+    class Meta:
+        db_table = 'user_plan'
+
+    def __str__(self):
+        return f"{self.user.username} - {self.get_plan_type_display()} - {self.total_tokens_allowed} tokens"
+
+class TokenUsage(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='token_usage')
+    tokens_used = models.IntegerField()
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'token_usage'
+        indexes = [
+            models.Index(fields=['user', 'timestamp']),
+        ]
+
+    def __str__(self):
+        return f"{self.user.username} used {self.tokens_used} tokens at {self.timestamp}"
+
+    @classmethod
+    def get_period_usage(cls, user, hours):
+        """
+        Get total tokens used by user in the last specified hours
+        """
+        period = timezone.now() - timedelta(hours=hours)
+        total_tokens = cls.objects.filter(
+            user=user,
+            timestamp__gte=period
+        ).aggregate(total=Sum('tokens_used'))['total'] or 0
+        
+        return total_tokens
+
+    @classmethod
+    def get_total_usage(cls, user):
+        """
+        Get all-time total tokens used by user
+        """
+        return cls.objects.filter(user=user).aggregate(
+            total=Sum('tokens_used'))['total'] or 0
+    
+    @classmethod
+    def get_most_recent_timestamp(cls, user):
+        """
+        Get the most recent timestamp of token usage for a user
+        """
+        recent_timestamp = cls.objects.filter(user=user).aggregate(latest=Max('timestamp'))['latest']
+        return recent_timestamp
+            
 class Deck(models.Model):
     """
     Model representing a deck of flashcards.

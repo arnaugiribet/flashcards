@@ -1,12 +1,18 @@
 from src.backend.flashcard_generator import FlashcardGenerator
 from src.backend.llm_client import LLMClient
+from src.backend.usage_limits import assert_input_length, assert_enough_tokens
 import logging
 from django.conf import settings
+from .models import TokenUsage
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("services.py")
+logger.setLevel(logging.DEBUG)
+console_handler = logging.StreamHandler()
+formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s: %(message)s")
+console_handler.setFormatter(formatter)
+logger.addHandler(console_handler)
 
-
-def generate_flashcards(content, content_format, context):
+def generate_flashcards(content, content_format, context, user):
     """
     Service function to generate flashcards from the input file and context.
 
@@ -33,19 +39,33 @@ def generate_flashcards(content, content_format, context):
     # Process content based on format
     if content_format == '.txt':
         # For file uploads
-        input_text += "\n" + content.read().decode('utf-8')
+        raw_user_text = content.read().decode('utf-8')
+        input_text += "\n" + raw_user_text
     elif content_format == 'string':
         # For string input
-        input_text += "\n" + content.getvalue()
+        raw_user_text = content.getvalue()
+        input_text += "\n" + raw_user_text
     else:
         raise ValueError(f"Unsupported content format: {content_format}")
 
     if not input_text.strip():
         raise ValueError("No input provided to generate flashcards")
 
+    # Check length of inut text and user token consumption before proceeding
+    assert_input_length(raw_user_text)
+    assert_enough_tokens(user, input_text)
+
     try:
         # Generate flashcards using the pipeline
-        flashcards = generator.generate_flashcards(text_input=input_text)
+        flashcards, tokens = generator.generate_flashcards(text_input=input_text)
+
+        # Update TokenUsage database
+        logger.debug(f"Total tokens used: {tokens}")
+        TokenUsage.objects.create(
+            user=user,
+            tokens_used=tokens
+        )
+
         return flashcards
     except Exception as e:
         logger.error(f"Error generating flashcards: {e}")

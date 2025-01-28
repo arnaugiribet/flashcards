@@ -13,10 +13,11 @@ class LLMClient:
         # Logger set up
         self.logger = logging.getLogger("src/backend/llm_client.py")
         self.logger.setLevel(logging.DEBUG)
-        console_handler = logging.StreamHandler()
-        formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s: %(message)s")
-        console_handler.setFormatter(formatter)
-        self.logger.addHandler(console_handler)
+        if not self.logger.handlers:
+            console_handler = logging.StreamHandler()
+            formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s: %(message)s")
+            console_handler.setFormatter(formatter)
+            self.logger.addHandler(console_handler)
 
     def query(self, prompt, system_message):
         """
@@ -32,10 +33,11 @@ class LLMClient:
                 ]
                 )
             response = completion.choices[0].message.content
+            total_tokens = completion.usage.total_tokens
 
         except Exception as e:
             raise RuntimeError(f"Error querying the LLM: {e}")
-        
+       
         self.logger.debug(f"System message:\n{repr(system_message)}\nPrompt:\n{repr(prompt)}")
         self.logger.debug(f"Response from the LLM:\n{repr(response)}\n")
-        return (response)
+        return (response, total_tokens)
