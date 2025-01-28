@@ -23,11 +23,14 @@ class UserPlanAdmin(admin.ModelAdmin):
 
 @admin.register(TokenUsage)
 class TokenUsageAdmin(admin.ModelAdmin):
-    list_display = ('user_username', 'tokens_used', 'timestamp', 'context')
-    list_filter = ('timestamp', 'context')
-    search_fields = ('user__username', 'context')
+    list_display = ('user_username', 'tokens_used', 'timestamp')
+    list_filter = ['timestamp']
+    search_fields = ['user__username']
     date_hierarchy = 'timestamp'
     
+    # Values not editable
+    readonly_fields = ('user', 'tokens_used', 'timestamp')
+
     @admin.display(description='User')  # This is the modern way to set column header
     def user_username(self, obj):
         return obj.user.username
