@@ -38,7 +38,6 @@ class TokenUsage(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='token_usage')
     tokens_used = models.IntegerField()
     timestamp = models.DateTimeField(auto_now_add=True)
-    context = models.CharField(max_length=100, blank=True, null=True)
 
     class Meta:
         db_table = 'token_usage'

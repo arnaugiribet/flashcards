@@ -3,6 +3,7 @@ from src.backend.llm_client import LLMClient
 from src.backend.usage_limits import assert_input_length, assert_enough_tokens
 import logging
 from django.conf import settings
+from .models import TokenUsage
 
 logger = logging.getLogger(__name__)
 
@@ -51,7 +52,15 @@ def generate_flashcards(content, content_format, context, user):
 
     try:
         # Generate flashcards using the pipeline
-        flashcards = generator.generate_flashcards(text_input=input_text)
+        flashcards, tokens = generator.generate_flashcards(text_input=input_text)
+
+        # Update TokenUsage database
+        logger.debug(f"Total tokens used: {tokens}")
+        TokenUsage.objects.create(
+            user=user,
+            tokens_used=tokens
+        )
+
         return flashcards
     except Exception as e:
         logger.error(f"Error generating flashcards: {e}")
