@@ -13,10 +13,11 @@ class LLMClient:
         # Logger set up
         self.logger = logging.getLogger("src/backend/llm_client.py")
         self.logger.setLevel(logging.DEBUG)
-        console_handler = logging.StreamHandler()
-        formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s: %(message)s")
-        console_handler.setFormatter(formatter)
-        self.logger.addHandler(console_handler)
+        if not self.logger.handlers:
+            console_handler = logging.StreamHandler()
+            formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s: %(message)s")
+            console_handler.setFormatter(formatter)
+            self.logger.addHandler(console_handler)
 
     def query(self, prompt, system_message):
         """
