@@ -72,7 +72,8 @@ class FlashcardGenerator:
             # If an error occurs, log it and attempt to enforce formatting on the response
             self.logger.warning(f"Initial flashcard creation failed: {e}. Attempting to clean the response.")
             try:
-                clean_response = self.enforce_format(response)
+                clean_response, clean_tokens = self.enforce_format(response)
+                tokens += clean_tokens
                 flashcards = self.create_flashcards_from_response(clean_response)
                 self.logger.info("Flashcards created on the second try (after cleaning format)")
             except Exception as clean_error:
@@ -98,8 +99,8 @@ class FlashcardGenerator:
             f"[[[{response}]]]"
             )
 
-        clean_response = self.llm_client.query(prompt, system_message)
-        return clean_response
+        clean_response, tokens = self.llm_client.query(prompt, system_message)
+        return (clean_response, tokens)
         
 
     def create_flashcards_from_response(self, response):
@@ -134,17 +135,23 @@ class FlashcardGenerator:
         reader = csv.reader(response_io, quotechar='"', escapechar='\\')
 
         flashcards = []
+        flashcard_errors = 0
         # Iterate over each row in the CSV response
         for idx, row in enumerate(reader):
             try:
                 # Attempt to unpack the row into question and answer
-                question, answer = row
+                question, answer = row # this may already raise a ValueError if there aren't exactly 2 items to unpack
+                len_question, len_answer = len(question), len(answer)
+                if len_question==0 or len_answer==0: # when 2 items were unpacked, but some of them are empty
+                    raise ValueError(f"Question length: {len_question}. Answer length: {len_answer}")
+
                 # Create and append the flashcard
                 card_i = Flashcard(question.strip(), answer.strip())
                 flashcards.append(card_i)
             except ValueError as ve:
+                flashcard_errors += 1
                 # Log the error with details about the problematic row
-                self.logger.error(f"Row {idx} is invalid or malformed: {row}. Error: {ve}")
+                self.logger.error(f"Row {idx+1} is invalid or malformed: {row}. Error: {ve}")
                 # Skip the row and continue
                 continue
 
@@ -152,6 +159,11 @@ class FlashcardGenerator:
         if len(flashcards)==0:
             self.logger.error("No valid flashcards were created. The string may be malformed or empty.")
             raise ValueError("No valid flashcards generated.")
+
+        proportion_errors = flashcard_errors/(idx+1)
+        if proportion_errors>0.5:
+            self.logger.error(f"{proportion_errors*100}% of rows contained errors")
+            raise ValueError(f"Over 50% of rows with errors")
 
         self.logger.info("Flashcards were created")
         return flashcards

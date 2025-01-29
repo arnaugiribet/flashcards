@@ -22,7 +22,7 @@ def assert_input_length(input_text):
 
 def estimate_tokens(text):
     """
-    Quick and dirty token estimation:
+    Quick token estimation:
     - Average English word is ~1.3 tokens
     - Add 20% buffer for safety
     """
