@@ -48,6 +48,7 @@ def assert_enough_tokens(user, input_text):
 
     ### Expected token cost
     tokens_needed_estimate = estimate_tokens(input_text)
+    logger.debug(f'Job will use approximately {tokens_needed_estimate} tokens')
     
     ### Logic
     if available_tokens >= tokens_needed_estimate:
