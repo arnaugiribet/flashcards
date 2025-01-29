@@ -40,6 +40,7 @@ def get_pdf(content):
     import io
 
     try:
+        logger.debug("Reading content from file...")
         pdf = pdfplumber.open(content)
 
         document_content = []
