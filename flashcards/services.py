@@ -1,7 +1,7 @@
 from src.backend.flashcard_generator import FlashcardGenerator
 from src.backend.llm_client import LLMClient
 from src.backend.usage_limits import assert_input_length, assert_enough_tokens
-from src.backend.input_content_processors import get_docx_text
+from src.backend.input_content_processors import get_docx, get_pdf
 import logging
 from django.conf import settings
 from .models import TokenUsage
@@ -41,11 +41,17 @@ def generate_flashcards(content, content_format, context, user):
     if content_format == '.txt':
         # For file uploads
         raw_user_text = content.read().decode('utf-8')
+        logger.debug(f"input .txt was read as:\n{raw_user_text}")
         input_text += "\n" + raw_user_text
 
     elif content_format == '.docx':
-        raw_user_text = get_docx_text(content)
+        raw_user_text = get_docx(content)
         logger.debug(f"input .docx was read as:\n{raw_user_text}")
+        input_text += "\n" + raw_user_text
+
+    elif content_format == '.pdf':
+        raw_user_text = get_pdf(content)
+        logger.debug(f"input .pdf was read as:\n{raw_user_text}")
         input_text += "\n" + raw_user_text
 
     elif content_format == 'string':
