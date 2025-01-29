@@ -138,13 +138,17 @@ class FlashcardGenerator:
         for idx, row in enumerate(reader):
             try:
                 # Attempt to unpack the row into question and answer
-                question, answer = row
+                question, answer = row # this may already raise a ValueError if there aren't exactly 2 items to unpack
+                len_question, len_answer = len(question), len(answer)
+                if len_question==0 or len_answer==0: # when 2 items were unpacked, but some of them are empty
+                    raise ValueError(f"Question length: {len_question}. Answer length: {len_answer}")
+                    
                 # Create and append the flashcard
                 card_i = Flashcard(question.strip(), answer.strip())
                 flashcards.append(card_i)
             except ValueError as ve:
                 # Log the error with details about the problematic row
-                self.logger.error(f"Row {idx} is invalid or malformed: {row}. Error: {ve}")
+                self.logger.error(f"Row {idx+1} is invalid or malformed: {row}. Error: {ve}")
                 # Skip the row and continue
                 continue
 
