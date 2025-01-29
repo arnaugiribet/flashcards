@@ -48,6 +48,11 @@ def get_pdf(content):
         for page in pdf.pages:
             page_content = []
             
+            # Extract text from the page
+            text = page.extract_text()
+            if text:
+                page_content.append(text)
+
             # Extract tables from the page
             tables = page.extract_tables()
             
@@ -67,11 +72,6 @@ def get_pdf(content):
                     )
                     if table_str:
                         page_content.append(f"[TABLE]\n{table_str}\n[/TABLE]")
-            
-            # Extract text from the page
-            text = page.extract_text()
-            if text:
-                page_content.append(text)
             
             # Add non-empty page content
             if page_content:
