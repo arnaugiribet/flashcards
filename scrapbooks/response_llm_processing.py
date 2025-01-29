@@ -21,8 +21,6 @@ print(f"string from which generate we must flashcards:\n{repr(response)}")
 response_io = StringIO(response)
 reader = csv.reader(response_io, quotechar='"', escapechar='\\')
 
-
-
 flashcards = []
 # Iterate over each row in the CSV response
 for idx, row in enumerate(reader):
