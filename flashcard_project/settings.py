@@ -21,6 +21,9 @@ import dj_database_url
 BASE_DIR = Path(__file__).resolve().parent.parent
 sys.path.append(str(BASE_DIR / 'src' / 'backend'))
 
+# Allow for SSL redirect in production
+SECURE_SSL_REDIRECT = os.getenv("DJANGO_ENV") == "production"
+
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
