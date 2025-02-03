@@ -37,7 +37,7 @@ SECRET_KEY = os.getenv('SECRET_KEY')
 DEBUG = True
 
 # Get it from the .env file for local development.
-ALLOWED_HOSTS = [os.getenv('ALLOWED_HOSTS')]
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS').split(',')
 
 # Application definition
 
