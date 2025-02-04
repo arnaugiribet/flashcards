@@ -272,3 +272,13 @@ class Flashcard(models.Model):
 
         # Save the updated state
         self.save()
+        
+class FailedFeedback(models.Model):
+    name = models.CharField(max_length=255)
+    email = models.EmailField()
+    feedback_type = models.CharField(max_length=50)
+    message = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)  # Automatically store when feedback was created
+
+    def __str__(self):
+        return f"Feedback from {self.name} ({self.email})"

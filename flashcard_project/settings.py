@@ -165,12 +165,17 @@ LOGOUT_REDIRECT_URL = '/'  # Typically the home page
 # This specifies where to redirect users after successful login
 LOGIN_REDIRECT_URL = '/'  # Or another page, e.g., '/dashboard/'
 
-# Email settings for password reset
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'  # For development
-# For production, replace with your actual email backend (e.g., SMTP)
+# EMAIL SETTINGS
+# EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'  # For development
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend' # For production
 
-# Optional: Set a default from email
-DEFAULT_FROM_EMAIL = 'noreply@yourdomain.com'
+# SMTP settings for Namecheap Private Email
+EMAIL_HOST = 'mail.privateemail.com'  # Your mail server
+EMAIL_PORT = 465  # For SSL (use 587 for TLS)
+EMAIL_USE_SSL = True  # Use SSL for secure connection
+EMAIL_HOST_USER = 'info@bibodibo.com'  # Your email address
+EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")  # Your email password (or App Password if using 2FA)
+DEFAULT_FROM_EMAIL = EMAIL_HOST_USER  # From address for outgoing emails
 
 LOGGING = {
     'version': 1,
