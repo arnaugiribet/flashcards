@@ -73,8 +73,18 @@
     </main>
 
     <!-- Footer -->
-    <footer class="bg-gray-800 text-white text-center py-4">
-        <p>&copy; 2024 BiboDibo. All rights reserved.</p>
+    <footer class="bg-gray-800 text-white text-center py-6">
+        <div class="space-y-4">
+            <div>
+                <a href="{% url 'feedback' %}" class="inline-flex items-center space-x-2 text-lg hover:text-gray-300">
+                    <span>Send us your feedback!</span>
+                    <i class="fas fa-comment-dots"></i>
+                </a>
+            </div>
+            <div class="text-sm text-gray-400">
+                <p>&copy; 2025 BiboDibo. All rights reserved.</p>
+            </div>
+        </div>
     </footer>
 
     <!-- Buy Me a Coffee Widget -->

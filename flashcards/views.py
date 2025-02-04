@@ -552,3 +552,8 @@ def create_deck(request):
         return JsonResponse({"success": True, "message": "Deck created successfully."})
 
     return JsonResponse({"success": False, "message": "Invalid request method."})
+
+def feedback_view(request):
+    if request.method == 'POST':
+        return JsonResponse({'status': 'success'})
+    return render(request, 'feedback.html')
