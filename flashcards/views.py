@@ -558,16 +558,17 @@ def feedback_view(request):
     if request.method == "POST":
         name = request.POST.get("name")
         email = request.POST.get("email")
+        username = request.POST.get("username", "") # may be authenticated or not
         feedback_type = request.POST.get("feedbackType")
         message = request.POST.get("message")
 
         try:
             # Send the feedback email
             send_mail(
-                subject=f"Feedback from {name} - {feedback_type.capitalize()}",
-                message=message,
-                from_email=email,  # Use the user's email for the "from" field
-                recipient_list=["info@bibodibo.com"],  # Send to your admin email
+                subject=f"Feedback from {name}",
+                message=f"Name: {name}\nEmail: {email}\nUsername: {username}\nType: {feedback_type.capitalize()}\n\n{message}",
+                from_email=settings.EMAIL_HOST_USER,  # Use the user's email for the "from" field
+                recipient_list=[settings.EMAIL_HOST_USER],  # Send to your admin email
                 fail_silently=False,
             )
             logger.debug(f"Feedback email successfully sent")
@@ -577,10 +578,12 @@ def feedback_view(request):
             logger.error(f"Error sending feedback email: {e}")
             FailedFeedback.objects.create(
                 name=name,
+                username=username,
                 email=email,
                 feedback_type=feedback_type,
                 message=message,
             )
+            logger.debug(f"Feedback stored in FailedFeedback table")
         
         return JsonResponse({'status': 'success'})
 

@@ -5,8 +5,8 @@ from .models import UserPlan, TokenUsage
 # Register your models here.
 @admin.register(FailedFeedback)
 class FailedFeedbackAdmin(admin.ModelAdmin):
-    list_display = ('name', 'email', 'feedback_type', 'created_at')
-    search_fields = ('name', 'email', 'feedback_type')
+    list_display = ('name', 'username', 'email', 'feedback_type', 'created_at')
+    search_fields = ('name', 'username', 'email', 'feedback_type')
     def has_change_permission(self, request, obj=None):
         return False
     def has_add_permission(self, request):
