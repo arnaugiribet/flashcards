@@ -272,3 +272,17 @@ class Flashcard(models.Model):
 
         # Save the updated state
         self.save()
+
+class FailedFeedback(models.Model):
+    name = models.CharField(max_length=255)
+    username = models.CharField(max_length=255, blank=True, null=True)
+    email = models.EmailField()
+    feedback_type = models.CharField(max_length=50)
+    message = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)  # Automatically store when feedback was created
+
+    def __str__(self):
+        # If username exists and is a valid User, return a link to their profile, else show the email
+        if self.username:
+            return f"Feedback from {self.name} ({self.username}) - {self.email}"
+        return f"Feedback from {self.name} ({self.email})"

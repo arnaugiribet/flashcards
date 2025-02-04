@@ -1,8 +1,16 @@
 from django.contrib import admin
-from flashcards.models import Flashcard, Deck
+from flashcards.models import Flashcard, Deck, FailedFeedback
 from .models import UserPlan, TokenUsage
 
 # Register your models here.
+@admin.register(FailedFeedback)
+class FailedFeedbackAdmin(admin.ModelAdmin):
+    list_display = ('name', 'username', 'email', 'feedback_type', 'created_at')
+    search_fields = ('name', 'username', 'email', 'feedback_type')
+    def has_change_permission(self, request, obj=None):
+        return False
+    def has_add_permission(self, request):
+        return False
 
 @admin.register(Flashcard)
 class FlashcardAdmin(admin.ModelAdmin):

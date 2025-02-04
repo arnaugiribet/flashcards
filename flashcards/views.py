@@ -8,7 +8,8 @@ from django.contrib.auth import login, authenticate, logout, update_session_auth
 from django.contrib import messages
 from django.contrib.auth.forms import UserCreationForm, PasswordChangeForm
 from django.contrib.auth.models import User
-from flashcards.models import Flashcard, Deck
+from django.core.mail import send_mail
+from flashcards.models import Flashcard, Deck, FailedFeedback
 from django.utils.translation import activate
 import json
 from .services import generate_flashcards
@@ -552,3 +553,38 @@ def create_deck(request):
         return JsonResponse({"success": True, "message": "Deck created successfully."})
 
     return JsonResponse({"success": False, "message": "Invalid request method."})
+
+def feedback_view(request):
+    if request.method == "POST":
+        name = request.POST.get("name")
+        email = request.POST.get("email")
+        username = request.POST.get("username", "") # may be authenticated or not
+        feedback_type = request.POST.get("feedbackType")
+        message = request.POST.get("message")
+
+        try:
+            # Send the feedback email
+            send_mail(
+                subject=f"Feedback from {name}",
+                message=f"Name: {name}\nEmail: {email}\nUsername: {username}\nType: {feedback_type.capitalize()}\n\n{message}",
+                from_email=settings.EMAIL_HOST_USER,  # Use the user's email for the "from" field
+                recipient_list=[settings.EMAIL_HOST_USER],  # Send to your admin email
+                fail_silently=False,
+            )
+            logger.debug(f"Feedback email successfully sent")
+
+        except Exception as e:
+            # if the email fails, we store the feedback in the db
+            logger.error(f"Error sending feedback email: {e}")
+            FailedFeedback.objects.create(
+                name=name,
+                username=username,
+                email=email,
+                feedback_type=feedback_type,
+                message=message,
+            )
+            logger.debug(f"Feedback stored in FailedFeedback table")
+        
+        return JsonResponse({'status': 'success'})
+
+    return render(request, 'feedback.html')
