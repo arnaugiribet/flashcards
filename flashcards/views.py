@@ -442,6 +442,13 @@ def process_file_and_context(request):
         # Log the exception for debugging purposes
         logger.error(f"An error occurred when generating cards: {str(e)}", exc_info=True)
 
+        # Check if the format is not supported
+        if isinstance(e, ValueError) and "Unsupported content format" in str(e):
+            return JsonResponse({
+                "success": False, 
+                "error": "Supported formats are txt, docx and pdf."
+            }, status=200)
+        
         # Check if the text was too long
         if isinstance(e, ValueError) and "exceeds maximum allowed length" in str(e):
             return JsonResponse({
