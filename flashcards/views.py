@@ -22,6 +22,13 @@ import logging
 import io
 import os
 from src.backend.usage_limits import InsufficientTokensError
+from django.contrib.sites.shortcuts import get_current_site
+from django.template.loader import render_to_string
+from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+from django.utils.encoding import force_bytes
+from django.contrib.auth.tokens import default_token_generator
+from django.core.mail import EmailMultiAlternatives
+from django.utils.html import strip_tags
 
 # Import your existing backend classes
 from llm_client import LLMClient
@@ -460,20 +467,97 @@ def process_file_and_context(request):
         return JsonResponse({"success": False, "error": "There was an error while generating your cards. Please try again."}, status=200)
 
 def signup(request):
-
     if request.method == 'POST':
         form = CustomUserCreationForm(request.POST)
         if form.is_valid():
-            # Save the new user
-            user = form.save()
-            login(request, user)
+            # Create user as inactive
+            user = form.save(commit=False)
+            user.is_active = False
+            user.save()
+            logger.debug(f"starting registration process for {user} with email {user.email}")
 
-            # Set the language to english
-            activate('en')
-            return redirect('home')
+            # Generate verification token
+            uid = urlsafe_base64_encode(force_bytes(user.pk))
+            token = default_token_generator.make_token(user)
+
+            current_site = get_current_site(request)
+            subject = "Activate Your Account"
+            context = {
+                'user': user,
+                'domain': current_site.domain,
+                'uid': uid,
+                'token': token,
+            }
+            text_content = render_to_string('registration/activation_email.txt', context)
+            html_content = render_to_string('registration/activation_email.html', context)
+            
+            email = EmailMultiAlternatives(
+                subject,
+                text_content,
+                settings.DEFAULT_FROM_EMAIL,
+                [user.email]
+            )
+            email.attach_alternative(html_content, "text/html")
+            email.send()
+            logger.debug(f"activation email was sent")
+            return render(request, 'registration/email_sent.html')
+
     else:
         form = CustomUserCreationForm()
+
     return render(request, 'registration/signup.html', {'form': form})
+
+def resend_activation_email(request, user_id):
+    """View to handle resending verification email"""
+    try:
+        user = User.objects.get(id=user_id, is_active=False)
+        
+        # Generate new verification token
+        token = default_token_generator.make_token(user)
+        uid = urlsafe_base64_encode(force_bytes(user.pk))
+        
+        # Resend verification email
+        current_site = get_current_site(request)
+        subject = "Activate Your Account"
+        context = {
+            'user': user,
+            'domain': current_site.domain,
+            'uid': uid,
+            'token': token,
+        }
+        text_content = render_to_string('registration/activation_email.txt', context)
+        html_content = render_to_string('registration/activation_email.html', context)
+        
+        email = EmailMultiAlternatives(
+            subject,
+            text_content,
+            settings.DEFAULT_FROM_EMAIL,
+            [user.email]
+        )
+        email.attach_alternative(html_content, "text/html")
+        email.send()
+        logger.debug(f"new activation email was sent")
+
+    except User.DoesNotExist:
+        messages.error(request, 'User does not exist.')
+    
+    return render(request, 'registration/email_sent.html')
+
+def activate(request, uidb64, token):
+    try:
+        uid = urlsafe_base64_decode(uidb64).decode()
+        user = User.objects.get(pk=uid)
+    except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+        user = None
+
+    if user is not None and default_token_generator.check_token(user, token):
+        user.is_active = True
+        user.save()
+        login(request, user)  # Log the user in after activation
+        return render(request, 'registration/activation_success.html')  # Show success page
+    else:
+        return render(request, 'registration/activation_failed.html')  # Show failure page
+
 
 @login_required
 def create_manually(request):

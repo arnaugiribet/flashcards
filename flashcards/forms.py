@@ -1,6 +1,8 @@
 from django import forms
 from django.contrib.auth.models import User
 from django.contrib.auth.forms import UserCreationForm
+from django.urls import reverse
+from django.utils.safestring import mark_safe
 
 class CustomUserCreationForm(UserCreationForm):
     email = forms.EmailField(required=True, help_text="Enter a valid email address.")
@@ -11,9 +13,25 @@ class CustomUserCreationForm(UserCreationForm):
 
     def clean_email(self):
         email = self.cleaned_data.get("email")
-        if User.objects.filter(email=email).exists():
-            raise forms.ValidationError("A user with this email already exists.")
+        existing_user = User.objects.filter(email=email)
+        
+        if existing_user.exists():
+            user = existing_user.first()
+            if not user.is_active:
+                # Add a link/button to resend the verification email
+                self.add_resend_button_to_error(user)
+                raise forms.ValidationError(
+                    f"This email is pending verification. Please check your inbox or request a new verification email.\n{self.resend_button}"
+                )
+            else:
+                raise forms.ValidationError("This email is already in use.")
         return email
+
+    def add_resend_button_to_error(self, user):
+        """ Adds the button link for resending activation email to the error message """
+        # Generate the URL to resend the email
+        resend_url = reverse('resend_activation_email', kwargs={'user_id': user.id})
+        self.resend_button = mark_safe(f'<a href="{resend_url}" class="btn-resend">Resend Verification Email</a>')
 
     def clean_username(self):
         username = self.cleaned_data.get("username")
