@@ -22,6 +22,13 @@ import logging
 import io
 import os
 from src.backend.usage_limits import InsufficientTokensError
+from django.contrib.sites.shortcuts import get_current_site
+from django.template.loader import render_to_string
+from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+from django.utils.encoding import force_bytes
+from django.contrib.auth.tokens import default_token_generator
+from django.core.mail import EmailMultiAlternatives
+from django.utils.html import strip_tags
 
 # Import your existing backend classes
 from llm_client import LLMClient
@@ -460,20 +467,55 @@ def process_file_and_context(request):
         return JsonResponse({"success": False, "error": "There was an error while generating your cards. Please try again."}, status=200)
 
 def signup(request):
-
     if request.method == 'POST':
         form = CustomUserCreationForm(request.POST)
         if form.is_valid():
             # Save the new user
             user = form.save()
+            user.is_active = False  # Deactivate the account until email is confirmed
             login(request, user)
 
-            # Set the language to english
-            activate('en')
-            return redirect('home')
+            # Generate email confirmation token
+            current_site = get_current_site(request)
+            subject = "Activate Your Account"
+            message = render_to_string('registration/activation_email.html', {
+                'user': user,
+                'domain': current_site.domain,
+                'uid': urlsafe_base64_encode(force_bytes(user.pk)),
+                'token': default_token_generator.make_token(user),
+            })
+            plain_message = strip_tags(message)  # Converts HTML to plain text
+
+            # Use EmailMultiAlternatives to send both text and HTML emails
+            email = EmailMultiAlternatives(
+                subject, plain_message, settings.DEFAULT_FROM_EMAIL, [user.email]
+            )
+            email.attach_alternative(html_message, "text/html")  # Attach HTML version
+            email.send()
+
+            #send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, [user.email])
+            
+            return render(request, 'registration/email_sent.html')
     else:
         form = CustomUserCreationForm()
     return render(request, 'registration/signup.html', {'form': form})
+
+
+def activate(request, uidb64, token):
+    try:
+        uid = urlsafe_base64_decode(uidb64).decode()
+        user = User.objects.get(pk=uid)
+    except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+        user = None
+
+    if user is not None and default_token_generator.check_token(user, token):
+        user.is_active = True
+        user.save()
+        login(request, user)  # Log the user in after activation
+        return render(request, 'registration/activation_success.html')  # Show success page
+    else:
+        return render(request, 'registration/activation_failed.html')  # Show failure page
+
 
 @login_required
 def create_manually(request):

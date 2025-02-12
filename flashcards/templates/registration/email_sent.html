@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div style="display: flex; justify-content: center; align-items: center; min-height: 80vh;">
+    <div class="signup-container" style="background-color: white; padding: 2rem; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 100%; max-width: 400px;">
+        <h2 style="color: #9daca2; text-align: center; margin-bottom: 1rem;">Email Sent</h2>
+        
+        <p style="text-align: center; color: #333; margin-bottom: 1rem;">
+            We have sent you an email with an activation link.<br> Please check your inbox (and spam folder) to activate your account.
+        </p>
+
+        <p style="text-align: center; color: #9daca2;">
+            Didn't receive the email? <a href="{% url 'register' %}" style="color: #9daca2;">Try signing up again</a>.
+        </p>
+    </div>
+</div>
+{% endblock %}
