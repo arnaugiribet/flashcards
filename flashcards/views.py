@@ -470,36 +470,78 @@ def signup(request):
     if request.method == 'POST':
         form = CustomUserCreationForm(request.POST)
         if form.is_valid():
-            # Save the new user
-            user = form.save()
-            user.is_active = False  # Deactivate the account until email is confirmed
-            login(request, user)
+            # Create user as inactive
+            user = form.save(commit=False)
+            user.is_active = False
+            user.save()
+            logger.debug(f"starting registration process for {user} with email {user.email}")
 
-            # Generate email confirmation token
+            # Generate verification token
+            uid = urlsafe_base64_encode(force_bytes(user.pk))
+            token = default_token_generator.make_token(user)
+
             current_site = get_current_site(request)
             subject = "Activate Your Account"
-            message = render_to_string('registration/activation_email.html', {
+            context = {
                 'user': user,
                 'domain': current_site.domain,
-                'uid': urlsafe_base64_encode(force_bytes(user.pk)),
-                'token': default_token_generator.make_token(user),
-            })
-            plain_message = strip_tags(message)  # Converts HTML to plain text
-
-            # Use EmailMultiAlternatives to send both text and HTML emails
-            email = EmailMultiAlternatives(
-                subject, plain_message, settings.DEFAULT_FROM_EMAIL, [user.email]
-            )
-            email.attach_alternative(html_message, "text/html")  # Attach HTML version
-            email.send()
-
-            #send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, [user.email])
+                'uid': uid,
+                'token': token,
+            }
+            text_content = render_to_string('registration/activation_email.txt', context)
+            html_content = render_to_string('registration/activation_email.html', context)
             
+            email = EmailMultiAlternatives(
+                subject,
+                text_content,
+                settings.DEFAULT_FROM_EMAIL,
+                [user.email]
+            )
+            email.attach_alternative(html_content, "text/html")
+            email.send()
+            logger.debug(f"activation email was sent")
             return render(request, 'registration/email_sent.html')
+
     else:
         form = CustomUserCreationForm()
+
     return render(request, 'registration/signup.html', {'form': form})
 
+def resend_activation_email(request, user_id):
+    """View to handle resending verification email"""
+    try:
+        user = User.objects.get(id=user_id, is_active=False)
+        
+        # Generate new verification token
+        token = default_token_generator.make_token(user)
+        uid = urlsafe_base64_encode(force_bytes(user.pk))
+        
+        # Resend verification email
+        current_site = get_current_site(request)
+        subject = "Activate Your Account"
+        context = {
+            'user': user,
+            'domain': current_site.domain,
+            'uid': uid,
+            'token': token,
+        }
+        text_content = render_to_string('registration/activation_email.txt', context)
+        html_content = render_to_string('registration/activation_email.html', context)
+        
+        email = EmailMultiAlternatives(
+            subject,
+            text_content,
+            settings.DEFAULT_FROM_EMAIL,
+            [user.email]
+        )
+        email.attach_alternative(html_content, "text/html")
+        email.send()
+        logger.debug(f"new activation email was sent")
+
+    except User.DoesNotExist:
+        messages.error(request, 'User does not exist.')
+    
+    return render(request, 'registration/email_sent.html')
 
 def activate(request, uidb64, token):
     try:

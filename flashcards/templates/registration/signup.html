@@ -34,7 +34,7 @@
                 {% if form.email.errors %}
                 <div style="color: #c62828; font-size: 0.85rem; margin-top: 0.5rem;">
                     {% for error in form.email.errors %}
-                        {{ error }}
+                        <p>{{ error|safe }}</p>
                     {% endfor %}
                 </div>
                 {% endif %}

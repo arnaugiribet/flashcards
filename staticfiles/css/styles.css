@@ -1,0 +1,35 @@
+/* Style for the Resend button */
+.btn-resend {
+    background-color: #9daca2;  /* Matching green color */
+    color: white;
+    padding: 8px 16px;  /* Slightly more padding for better visual balance */
+    border-radius: 5px;
+    text-decoration: none;
+    display: inline-block;  /* Ensure the button stays inline */
+    font-size: 0.85rem;  /* Slightly smaller font size to fit better */
+    white-space: nowrap;  /* Prevent the text from wrapping to the next line */
+    text-align: center;  /* Center the button text */
+    margin: 0 auto;  /* Center the button itself */
+    display: block;  /* Make it block-level to center it */
+}
+
+.btn-resend:hover {
+    background-color: #7a8e84;  /* Darker green for hover effect */
+}
+
+/* Ensure the error message container is still styled properly */
+.error-container {
+    color: #c62828;
+    font-size: 0.85rem;
+    margin-top: 0.5rem;
+    background-color: #ffebee;
+    padding: 10px;
+    border-radius: 5px;
+    text-align: center;  /* Center the error message text */
+}
+
+/* Container for the resend button (if it's inside an error container) */
+.btn-resend-container {
+    text-align: center;  /* Center the button */
+    margin-top: 10px;  /* Space above the button */
+}
