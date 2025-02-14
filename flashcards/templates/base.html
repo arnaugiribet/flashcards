@@ -88,7 +88,6 @@
     </footer>
 
     <!-- Buy Me a Coffee Widget -->
-    {% if user.is_authenticated %}
     <script 
         data-name="BMC-Widget" 
         data-cfasync="false" 
@@ -101,7 +100,6 @@
         data-x_margin="18" 
         data-y_margin="18">
     </script>
-    {% endif %}
 
     {% block extra_js %}{% endblock %}
 </body>
