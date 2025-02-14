@@ -33,7 +33,7 @@
                 </div>
 
                 <!-- Middle Section: Manage Cards -->
-                <div>
+                <div class="hidden md:block">
                     {% if user.is_authenticated %}
                         <a href="{% url 'manage_cards' %}" class="text-white hover:text-gray-200">
                             Manage Cards
