@@ -45,14 +45,12 @@
     </div>
     
     <!-- Buttons Container: Create Deck and Add Cards -->
-    <div style="display: flex; justify-content: center; gap: 1rem; margin-top: 1.5rem;">
-        <!-- Create Deck Button -->
-        <button id="createDeckButton" style="background-color: #9daca2; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer;">
+    <div class="flex justify-center gap-4 mt-6">
+        <button id="createDeckButton" class="bg-[#9daca2] hover:bg-opacity-90 text-white px-6 py-3 rounded-md text-sm font-medium shadow-sm transition-all duration-200 ease-in-out hover:shadow-md">
             Create Deck
         </button>
-
-        <!-- Add Cards Button -->
-        <button id="addCardsButton" style="background-color: #9daca2; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer;">
+        
+        <button id="addCardsButton" class="bg-[#9daca2] hover:bg-opacity-90 text-white px-6 py-3 rounded-md text-sm font-medium shadow-sm transition-all duration-200 ease-in-out hover:shadow-md">
             Add Cards
         </button>
     </div>
@@ -89,38 +87,47 @@
                 <button type="submit" style="background-color: #9daca2; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; display: block; margin: 1rem auto;">
                     Create Deck
                 </button>
-                <button type="button" id="cancelCreateDeck" style="background-color: #ccc; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; display: block; margin: 1rem auto;">
+                <button 
+                    type="button" 
+                    id="cancelCreateDeck" 
+                    class="mt-6 mx-auto block bg-gray-400 hover:bg-gray-500 text-white py-2 px-6 rounded-md font-medium transition-all duration-200 ease-in-out text-sm">
                     Cancel
                 </button>
             </form>   
         </div>
     </div>
 
-    
-
-
-
     <!-- Popup Form for Add Cards -->
-    <div id="addCardsPopup" style="display: none; background-color: rgba(0, 0, 0, 0.5); position: fixed; top: 0; left: 0; width: 100%; height: 100%; justify-content: center; align-items: center;">
-        <div style="background-color: white; padding: 2rem; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 400px;">
-            <h3 style="margin-bottom: 1rem; color: #9daca2; text-align: center;">Add Cards</h3>
-            <div style="display: flex; flex-direction: column; gap: 1rem;">
-                <!-- Option to Create Card -->
-                <button 
-                    id="createCardButton"
-                    onclick="location.href='{% url 'create_manually' %}'"
-                    style="background-color: #b3c6d9; color: #f8f9fa; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer;">
-                    Create Card
-                </button>
-                <!-- Option to Generate From File -->
-                <button
-                    id="generateFromFileButton"
-                    onclick="location.href='{% url 'create_automatically' %}'"
-                    style="background-color: #b3d9b3; color: #f8f9fa; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer;">
-                    Generate From File
-                </button>
-            </div>
-            <button type="button" id="cancelAddCards" style="background-color: #ccc; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; display: block; margin: 1rem auto;">
+    <div id="addCardsPopup" class="hidden fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
+        <div class="bg-white p-8 rounded-lg shadow-lg w-[400px]">
+            {% if decks %}
+                <h3 class="mb-6 text-[#9daca2] text-xl font-medium text-center">Add Cards</h3>
+                <div class="flex flex-col gap-4">
+                    <!-- Option to Create Card -->
+                    <button 
+                        id="createCardButton"
+                        onclick="location.href='{% url 'create_manually' %}'"
+                        class="bg-[#a4b8c4] hover:bg-opacity-90 text-white py-3 px-6 rounded-md font-medium transition-all duration-200 ease-in-out hover:shadow-md text-sm">
+                        Create Manually
+                    </button>
+                    
+                    <!-- Option to Generate From File -->
+                    <button
+                        id="generateFromFileButton"
+                        onclick="location.href='{% url 'create_automatically' %}'"
+                        class="bg-[#9db4a2] hover:bg-opacity-90 text-white py-3 px-6 rounded-md font-medium transition-all duration-200 ease-in-out hover:shadow-md text-sm">
+                        Generate From File
+                    </button>
+                </div>
+            {% else %}
+                <h3 class="mb-6 text-[#9daca2] text-xl font-medium text-center">No Decks Available</h3>
+                <p class="text-center text-gray-600 mb-6">Please create a deck first before adding cards!</p>
+            {% endif %}
+
+            <button 
+                type="button" 
+                id="cancelAddCards" 
+                class="mt-6 mx-auto block bg-gray-400 hover:bg-gray-500 text-white py-2 px-6 rounded-md font-medium transition-all duration-200 ease-in-out text-sm">
                 Cancel
             </button>
         </div>
