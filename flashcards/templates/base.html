@@ -12,11 +12,10 @@
         .custom-logo {
             width: 30px;
             height: 30px;
-            background-color: white;
-            mask-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="3" x2="9" y2="21"></line></svg>');
-            -webkit-mask-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="3" x2="9" y2="21"></line></svg>');
-            mask-size: cover;
-            -webkit-mask-size: cover;
+            background-image: url('{% static "images/bibo-dibo-cup-distilled.png" %}');
+            background-size: contain;  /* Ensures the entire image fits within the box */
+            background-position: center;  /* Centers the logo in case it doesn't cover the whole area */
+            background-repeat: no-repeat;  /* Prevents the logo from repeating */
         }
     </style>
     {% block extra_css %}{% endblock %}
@@ -94,7 +93,7 @@
         data-name="BMC-Widget" 
         data-cfasync="false" 
         src="https://cdnjs.buymeacoffee.com/1.0.0/widget.prod.min.js" 
-        data-id="arnaugiribet" 
+        data-id="bibodibo" 
         data-description="Support me on Buy me a coffee!" 
         data-message="" 
         data-color="#FF5F5F" 
