@@ -59,26 +59,36 @@ def account_settings(request):
 @login_required
 def change_username(request):
     if request.method == 'POST':
-        new_username = request.POST.get('new_username')
-        if new_username:
-            if User.objects.filter(username=new_username).exclude(pk=request.user.pk).exists():
-                messages.error(request, 'Username is already taken.', extra_tags='username')
-            else:
-                request.user.username = new_username
-                request.user.save()
-                messages.success(request, 'Username updated successfully.', extra_tags='username')
+        # Block username change for test_user
+        if request.user.username == "test_user":
+            messages.error(request, 'This username cannot be changed.', extra_tags='username')
+        else:
+            new_username = request.POST.get('new_username')
+            if new_username:
+                if User.objects.filter(username=new_username).exclude(pk=request.user.pk).exists():
+                    messages.error(request, 'Username is already taken.', extra_tags='username')
+                else:
+                    request.user.username = new_username
+                    request.user.save()
+                    messages.success(request, 'Username updated successfully.', extra_tags='username')
     return render(request, 'account/change_username.html')
 
 @login_required
 def change_password(request):
     if request.method == 'POST':
-        form = PasswordChangeForm(request.user, request.POST)
-        if form.is_valid():
-            user = form.save()
-            update_session_auth_hash(request, user)
-            messages.success(request, 'Your password was successfully updated!', extra_tags='password')
+        # Block password change for 'test_user'
+        if request.user.username == "test_user":
+            messages.error(request, 'This account cannot be deleted.', extra_tags='password')
+            form = PasswordChangeForm(request.user, request.POST)
+            return render(request, 'account/change_password.html', {'form': form})
         else:
-            pass
+            form = PasswordChangeForm(request.user, request.POST)
+            if form.is_valid():
+                user = form.save()
+                update_session_auth_hash(request, user)
+                messages.success(request, 'Your password was successfully updated!', extra_tags='password')
+            else:
+                pass
     else:
         form = PasswordChangeForm(request.user)
     return render(request, 'account/change_password.html', {'form': form})
@@ -87,6 +97,10 @@ def change_password(request):
 @login_required
 def delete_account(request):
     if request.method == 'POST':
+        # Block deletion for 'test_user'
+        if request.user.username == "test_user":
+            messages.error(request, "This account cannot be deleted.", extra_tags='delete_account')
+            return render(request, 'account/account_settings.html', {'show_delete_modal': True})
         password = request.POST.get('password')
         user = authenticate(username=request.user.username, password=password)
         if user is not None:
