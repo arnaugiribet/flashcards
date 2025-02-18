@@ -42,6 +42,7 @@ ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS').split(',')
 # Application definition
 
 INSTALLED_APPS = [
+    "storages",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -172,6 +173,20 @@ EMAIL_HOST_USER = 'info@bibodibo.com'  # Your email address
 EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")  # Your email password (or App Password if using 2FA)
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER  # From address for outgoing emails
 
+# AWS S3 settings
+AWS_ACCESS_KEY_ID = os.getenv('AWS_ACCESS_KEY_ID')
+AWS_SECRET_ACCESS_KEY = os.getenv('AWS_SECRET_ACCESS_KEY')
+AWS_STORAGE_BUCKET_NAME = 'bibodibo-user-documents'
+AWS_S3_REGION_NAME = 'eu-west-1'  # Replace with your region
+AWS_S3_FILE_OVERWRITE = False
+AWS_DEFAULT_ACL = 'private'
+AWS_S3_SIGNATURE_VERSION = 's3v4'
+AWS_S3_ADDRESSING_STYLE = 'virtual'
+
+# Use S3 for file storage
+DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+
+# LOGS
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
