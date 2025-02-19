@@ -17,6 +17,15 @@
             background-position: center;  /* Centers the logo in case it doesn't cover the whole area */
             background-repeat: no-repeat;  /* Prevents the logo from repeating */
         }
+        /* Add transition for smooth sidebar collapse/expand */
+        .sidebar {
+            transition: width 0.3s ease;
+        }
+        
+        /* Adjust main content when sidebar is collapsed */
+        .main-content {
+            transition: margin-left 0.3s ease;
+        }
     </style>
     {% block extra_css %}{% endblock %}
 </head>
@@ -66,11 +75,41 @@
         </div>
     </nav>
 
-    <!-- Content Block -->
-    <main class="flex-grow px-4 py-6">
-        {% block content %}
-        {% endblock %}
-    </main>
+    <!-- Sidebar and Main Content Container -->
+    <div class="flex flex-grow">
+        <!-- Sidebar -->
+        {% if user.is_authenticated %}
+        <div id="sidebar-wrapper" class="flex">
+            <div id="sidebar" class="sidebar bg-gray-800 text-white w-64 flex-shrink-0 transition-all duration-300 ease-in-out">
+                <div class="p-4">
+                    <nav class="space-y-4">
+                        <a href="#" class="sidebar-link block py-2 px-4 rounded hover:bg-gray-700 transition-all duration-200">
+                            <i class="fas fa-sync-alt mr-2"></i>
+                            <span>Spaced Repetition</span>
+                        </a>
+                        <a href="#" class="sidebar-link block py-2 px-4 rounded hover:bg-gray-700 transition-all duration-200">
+                            <i class="fas fa-file-alt mr-2"></i>
+                            <span>My Documents</span>
+                        </a>
+                    </nav>
+                </div>
+            </div>
+
+            <!-- Sidebar border and button -->
+            <div id="sidebar-border" class="bg-gray-700 w-1 h-full cursor-pointer">
+                <button id="sidebar-collapse-border" class="w-full h-full flex items-center justify-center">
+                    <i class="fas fa-chevron-left text-white"></i>
+                </button>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Main Content -->
+        <main class="flex-grow px-4 py-6">
+            {% block content %}
+            {% endblock %}
+        </main>
+    </div>
 
     <!-- Footer -->
     <footer class="bg-gray-800 text-white text-center py-6">
@@ -99,6 +138,45 @@
         data-position="Right" 
         data-x_margin="18" 
         data-y_margin="18">
+    </script>
+
+    <!-- Sidebar JavaScript -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const sidebar = document.getElementById('sidebar');
+            const sidebarWrapper = document.getElementById('sidebar-wrapper');
+            const sidebarCollapseBorder = document.getElementById('sidebar-collapse-border');
+            const sidebarLinks = document.querySelectorAll('.sidebar-link');
+            const mainContent = document.querySelector('.main-content');
+
+            // Initialize state
+            let isCollapsed = false;
+
+            // Desktop collapse
+            if (sidebarCollapseBorder) {
+                sidebarCollapseBorder.addEventListener('click', function() {
+                    isCollapsed = !isCollapsed;
+
+                    if (isCollapsed) {
+                        sidebar.style.width = '3rem';
+                        sidebarCollapseBorder.innerHTML = '<i class="fas fa-chevron-right text-white"></i>';
+                        // Hide the text
+                        sidebarLinks.forEach(link => {
+                            link.style.opacity = '0';
+                            link.style.visibility = 'hidden';
+                        });
+                    } else {
+                        sidebar.style.width = '16rem';
+                        sidebarCollapseBorder.innerHTML = '<i class="fas fa-chevron-left text-white"></i>';
+                        // Show the text
+                        sidebarLinks.forEach(link => {
+                            link.style.opacity = '1';
+                            link.style.visibility = 'visible';
+                        });
+                    }
+                });
+            }
+        });
     </script>
 
     {% block extra_js %}{% endblock %}
