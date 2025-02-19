@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div style="display: flex; justify-content: center; align-items: center; min-height: 80vh;">
+    <div class="signup-container" style="background-color: white; padding: 2rem; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 100%; max-width: 400px;">
+        <h2 style="color: #9daca2; text-align: center; margin-bottom: 1rem;">Feature Under Construction</h2>
+        
+        <p style="text-align: center; color: #9daca2; margin-bottom: 1.5rem;">
+            This feature is currently under construction. Please check back later.
+        </p>
+
+        <div style="text-align: center;">
+            <a href="{% url 'home' %}" style="color: #9daca2; text-decoration: none; font-weight: bold;">
+                Go back to the homepage
+            </a>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
