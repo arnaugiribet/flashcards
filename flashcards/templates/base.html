@@ -17,15 +17,6 @@
             background-position: center;  /* Centers the logo in case it doesn't cover the whole area */
             background-repeat: no-repeat;  /* Prevents the logo from repeating */
         }
-        /* Add transition for smooth sidebar collapse/expand */
-        .sidebar {
-            transition: width 0.3s ease;
-        }
-        
-        /* Adjust main content when sidebar is collapsed */
-        .main-content {
-            transition: margin-left 0.3s ease;
-        }
     </style>
     {% block extra_css %}{% endblock %}
 </head>
@@ -80,24 +71,24 @@
         <!-- Sidebar -->
         {% if user.is_authenticated %}
         <div id="sidebar-wrapper" class="flex">
-            <div id="sidebar" class="sidebar bg-gray-800 text-white w-64 flex-shrink-0 transition-all duration-300 ease-in-out">
+            <div id="sidebar" class="sidebar bg-white w-64 flex-shrink-0 transition-all duration-300 ease-in-out">
                 <div class="p-4">
                     <nav class="space-y-4">
-                        <a href="#" class="sidebar-link block py-2 px-4 rounded hover:bg-gray-700 transition-all duration-200">
+                        <a href="#" class="sidebar-link block py-2 px-4 rounded hover:bg-gray-100 text-gray-700 transition-all duration-200 whitespace-nowrap overflow-hidden">
                             <i class="fas fa-sync-alt mr-2"></i>
-                            <span>Spaced Repetition</span>
+                            <span>Study Flashcards</span>
                         </a>
-                        <a href="#" class="sidebar-link block py-2 px-4 rounded hover:bg-gray-700 transition-all duration-200">
+                        <a href="#" class="sidebar-link block py-2 px-4 rounded hover:bg-gray-100 text-gray-700 transition-all duration-200 whitespace-nowrap overflow-hidden">
                             <i class="fas fa-file-alt mr-2"></i>
                             <span>My Documents</span>
                         </a>
                     </nav>
                 </div>
             </div>
-
+        
             <!-- Sidebar border and button -->
-            <div id="sidebar-border" class="bg-gray-700 w-1 h-full cursor-pointer">
-                <button id="sidebar-collapse-border" class="w-full h-full flex items-center justify-center">
+            <div id="sidebar-border" class="bg-gray-200 w-1 h-full cursor-pointer hover:bg-gray-300 relative">
+                <button id="sidebar-collapse-border" class="absolute top-24 -right-4 w-8 h-8 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center shadow-sm transition-all duration-200 whitespace-nowrap overflow-hidden">
                     <i class="fas fa-chevron-left text-white"></i>
                 </button>
             </div>
