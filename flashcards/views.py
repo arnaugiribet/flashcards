@@ -195,6 +195,10 @@ def delete_deck(request, deck_id):
     return JsonResponse({'success': False, 'message': 'Invalid request method'}, status=400)
 
 @login_required
+def user_documents(request):
+    return render(request, 'documents/user_documents.html')
+
+@login_required
 def user_decks(request):
 
     def set_indentation_level(deck, all_decks, level=0):
