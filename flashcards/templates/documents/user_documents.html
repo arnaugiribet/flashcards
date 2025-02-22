@@ -1,20 +1,45 @@
 {% extends 'base.html' %}
-
 {% block content %}
 <div style="display: flex; justify-content: center; align-items: center; min-height: 80vh;">
-    <div class="signup-container" style="background-color: white; padding: 2rem; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 100%; max-width: 400px;">
-        <h2 style="color: #9daca2; text-align: center; margin-bottom: 1rem;">Feature Under Construction</h2>
-        
-        <p style="text-align: center; color: #9daca2; margin-bottom: 1.5rem;">
-            This feature is currently under construction. Please check back later.
-        </p>
-
-        <div style="text-align: center;">
-            <a href="{% url 'home' %}" style="color: #9daca2; text-decoration: none; font-weight: bold;">
-                Go back to the homepage
-            </a>
-        </div>
+    <div class="upload-container" style="background-color: white; padding: 2rem; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 100%; max-width: 400px;">
+        <form method="POST" enctype="multipart/form-data" action="{% url 'upload_document' %}">
+            {% csrf_token %}
+            
+            {% if form.non_field_errors %}
+            <div style="color: red; margin-bottom: 1rem; text-align: center;">
+                {% for error in form.non_field_errors %}
+                    {{ error }}
+                {% endfor %}
+            </div>
+            {% endif %}
+            
+            <div style="margin-bottom: 1.5rem; text-align: center;">
+                <label for="file-upload" class="custom-file-upload" style="display: inline-block; padding: 0.75rem 1.5rem; background-color: #9daca2; color: white; border-radius: 5px; cursor: pointer; margin-bottom: 1rem;">
+                    Select File
+                </label>
+                <input id="file-upload" type="file" name="document" style="display: none;" accept=".pdf,.txt,.docx">
+                <div id="file-name" style="margin-top: 0.5rem; color: #666; font-size: 0.875rem;"></div>
+                
+                {% if form.file.errors %}
+                <div style="color: red; font-size: 0.875rem; margin-top: 0.5rem;">
+                    {{ form.file.errors }}
+                </div>
+                {% endif %}
+            </div>
+            
+            <div style="text-align: center;">
+                <button type="submit" style="background-color: #9daca2; color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 5px; cursor: pointer;">
+                    Submit
+                </button>
+            </div>
+        </form>
     </div>
 </div>
 
+<script>
+document.getElementById('file-upload').addEventListener('change', function() {
+    var fileName = this.files[0] ? this.files[0].name : 'No file selected';
+    document.getElementById('file-name').textContent = fileName;
+});
+</script>
 {% endblock %}
