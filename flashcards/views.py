@@ -209,11 +209,13 @@ def upload_document(request):
             logger.debug(f"Form is valid request received for file upload to s3")
             document = form.cleaned_data['document']
             file_type = document.name.split('.')[-1].lower()
+            name = document.name
             
             # Create the UserDocument instance but don't save yet
             user_document = form.save(commit=False)
             user_document.user = request.user
             user_document.file_type = file_type
+            user_document.name = name
             
             logger.debug(f"Generating S3 key")
             # Generate S3 key
