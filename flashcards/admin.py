@@ -1,8 +1,14 @@
 from django.contrib import admin
 from flashcards.models import Flashcard, Deck, FailedFeedback
-from .models import UserPlan, TokenUsage
+from .models import UserPlan, TokenUsage, UserDocument
 
 # Register your models here.
+@admin.register(UserDocument)
+class UserDocumentAdmin(admin.ModelAdmin):
+    list_display = ('user', 'name', 'file_type', 's3_key')  # Columns to show in the list view
+    search_fields = ('user__username', 'name')  # Search by username or document name
+    list_filter = ('file_type',)  # Filter by file type
+
 @admin.register(FailedFeedback)
 class FailedFeedbackAdmin(admin.ModelAdmin):
     list_display = ('name', 'username', 'email', 'feedback_type', 'created_at')
@@ -16,6 +22,7 @@ class FailedFeedbackAdmin(admin.ModelAdmin):
 class FlashcardAdmin(admin.ModelAdmin):
     list_display = ('question', 'creation_date', 'due')
     search_fields = ('question', 'answer')
+    ordering = ('-creation_date',)
 
 @admin.register(Deck)
 class DeckAdmin(admin.ModelAdmin):
