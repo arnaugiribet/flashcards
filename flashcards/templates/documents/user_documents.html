@@ -1,7 +1,9 @@
 {% extends 'base.html' %}
 {% block content %}
 <!-- Add PDF.js scripts in the head -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf_viewer.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf_viewer.min.js"></script>
 
 <div class="container mx-auto p-6">
     <!-- Single panel for files -->
@@ -95,7 +97,7 @@
 
 <!-- Document viewer modal -->
 <div id="documentViewerModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center">
-    <div class="bg-white w-11/12 h-5/6 rounded-lg flex flex-col">
+    <div class="bg-white w-11/12 h-5/6 rounded-lg flex flex-col relative"> <!-- relative here -->
         <!-- Viewer header -->
         <div class="flex justify-between items-center p-4 border-b">
             <h3 class="text-lg font-semibold">Document Viewer</h3>
@@ -107,8 +109,8 @@
         </div>
         
         <!-- PDF viewer container -->
-        <div id="viewerContainer" class="flex-1 overflow-auto">
-            <canvas id="pdfCanvas"></canvas>
+        <div id="viewerContainer" class="absolute inset-0 mt-16"> <!-- absolute positioning -->
+            <div id="viewer" class="pdfViewer"></div>
         </div>
     </div>
 </div>
@@ -140,38 +142,33 @@ document.getElementById('file-upload').addEventListener('change', function() {
 });
 
 // Initialize PDF.js
-pdfjsLib = window['pdfjs-dist/build/pdf'];
-pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+const pdfjsViewer = window.pdfjsViewer;
 
 let currentPDF = null;
 let currentPage = 1;
 
 async function viewDocument(documentId) {
-    // Show modal
     document.getElementById('documentViewerModal').classList.remove('hidden');
     
-    // Get and display document
-    fetch(`/document/${documentId}/url/`)
-        .then(response => response.json())
-        .then(data => {
-            console.log("Presigned URL:", data.url);
-            pdfjsLib.getDocument(data.url).promise.then(pdf => {
-                pdf.getPage(1).then(page => {
-                    const canvas = document.getElementById('pdfCanvas');
-                    const context = canvas.getContext('2d');
-                    const viewport = page.getViewport({scale: 1.5});
-                    
-                    canvas.height = viewport.height;
-                    canvas.width = viewport.width;
-                    
-                    page.render({
-                        canvasContext: context,
-                        viewport: viewport
-                    });
-                });
-            });
-        })
-        .catch(error => console.error("Error fetching document:", error));
+    try {
+        const response = await fetch(`/document/${documentId}/url/`);
+        const data = await response.json();
+        
+        const container = document.getElementById('viewerContainer');
+        const viewer = document.getElementById('viewer');
+        
+        const pdfDoc = await pdfjsLib.getDocument(data.url).promise;
+        const pdfViewer = new pdfjsViewer.PDFViewer({
+            container: container,
+            viewer: viewer,
+            eventBus: new pdfjsViewer.EventBus(),
+        });
+        
+        pdfViewer.setDocument(pdfDoc);
+    } catch (error) {
+        console.error("Error loading PDF:", error);
+    }
 }
 
 function closeViewer() {
