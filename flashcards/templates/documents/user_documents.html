@@ -1,5 +1,8 @@
 {% extends 'base.html' %}
 {% block content %}
+<!-- Add PDF.js scripts in the head -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
+
 <div class="container mx-auto p-6">
     <!-- Single panel for files -->
     <div class="bg-white rounded-lg shadow-md p-6">
@@ -59,7 +62,10 @@
 
                     <!-- Action buttons -->
                     <div class="flex gap-2">
-                        <button class="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors">
+                        <!-- Modified view button with onclick handler -->
+                        <button 
+                            onclick="viewDocument('{{ document.id }}')"
+                            class="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
@@ -84,6 +90,26 @@
             <p class="mt-1 text-sm text-gray-500">Upload your first file to get started</p>
         </div>
         {% endif %}
+    </div>
+</div>
+
+<!-- Document viewer modal -->
+<div id="documentViewerModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center">
+    <div class="bg-white w-11/12 h-5/6 rounded-lg flex flex-col">
+        <!-- Viewer header -->
+        <div class="flex justify-between items-center p-4 border-b">
+            <h3 class="text-lg font-semibold">Document Viewer</h3>
+            <button onclick="closeViewer()" class="text-gray-500 hover:text-gray-700">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        </div>
+        
+        <!-- PDF viewer container -->
+        <div id="viewerContainer" class="flex-1 overflow-auto">
+            <canvas id="pdfCanvas"></canvas>
+        </div>
     </div>
 </div>
 
@@ -112,5 +138,45 @@ document.getElementById('file-upload').addEventListener('change', function() {
         });
     }
 });
+
+// Initialize PDF.js
+pdfjsLib = window['pdfjs-dist/build/pdf'];
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
+
+let currentPDF = null;
+let currentPage = 1;
+
+async function viewDocument(documentId) {
+    // Show modal
+    document.getElementById('documentViewerModal').classList.remove('hidden');
+    
+    // Get and display document
+    fetch(`/document/${documentId}/url/`)
+        .then(response => response.json())
+        .then(data => {
+            console.log("Presigned URL:", data.url);
+            pdfjsLib.getDocument(data.url).promise.then(pdf => {
+                pdf.getPage(1).then(page => {
+                    const canvas = document.getElementById('pdfCanvas');
+                    const context = canvas.getContext('2d');
+                    const viewport = page.getViewport({scale: 1.5});
+                    
+                    canvas.height = viewport.height;
+                    canvas.width = viewport.width;
+                    
+                    page.render({
+                        canvasContext: context,
+                        viewport: viewport
+                    });
+                });
+            });
+        })
+        .catch(error => console.error("Error fetching document:", error));
+}
+
+function closeViewer() {
+    document.getElementById('documentViewerModal').classList.add('hidden');
+}
+
 </script>
 {% endblock %}

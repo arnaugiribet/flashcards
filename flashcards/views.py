@@ -1,4 +1,4 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.utils import timezone
 from datetime import timedelta
@@ -199,6 +199,39 @@ def delete_deck(request, deck_id):
 def user_documents(request):
     user_documents = UserDocument.objects.filter(user=request.user)
     return render(request, 'documents/user_documents.html', {'user_documents': user_documents})
+
+@login_required
+def get_document_url(request, document_id):
+    logger.debug(f"Received request to generate presigned URL for document_id: {document_id}")
+    try:
+        document = get_object_or_404(UserDocument, id=document_id, user=request.user)
+        logger.debug(f"Document found: {document.id}, S3 Key: {document.s3_key}")
+    except Exception as e:
+        logger.error(f"Document lookup failed: {e}")
+        return JsonResponse({'error': 'Document not found'}, status=404)
+    
+    s3_client = boto3_client(
+        's3',
+        aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
+        aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
+        region_name=settings.AWS_S3_REGION_NAME
+    )
+    # Generate a presigned URL
+    try:
+        presigned_url = s3_client.generate_presigned_url(
+            'get_object',
+            Params={
+                'Bucket': settings.AWS_STORAGE_BUCKET_NAME,  # Use the bucket from settings
+                'Key': document.s3_key  # The S3 object key stored in the model
+            },
+            ExpiresIn=3600  # Link expires in 1 hour
+        )
+    except Exception as e:
+        logger.error(f"Error generating presigned URL: {e}")
+        return JsonResponse({'error': str(e)}, status=500)
+        
+    logger.debug(f"Presigned URL generated successfully: {presigned_url}")
+    return JsonResponse({'url': presigned_url})
 
 @login_required
 def upload_document(request):
