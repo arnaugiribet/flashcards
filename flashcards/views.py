@@ -9,7 +9,7 @@ from django.contrib import messages
 from django.contrib.auth.forms import UserCreationForm, PasswordChangeForm
 from django.contrib.auth.models import User
 from django.core.mail import send_mail
-from flashcards.models import Flashcard, Deck, FailedFeedback
+from flashcards.models import Flashcard, Deck, FailedFeedback, UserDocument
 from flashcards.forms import DocumentUploadForm
 from django.utils.translation import activate
 import json
@@ -197,7 +197,8 @@ def delete_deck(request, deck_id):
 
 @login_required
 def user_documents(request):
-    return render(request, 'documents/user_documents.html')
+    user_documents = UserDocument.objects.filter(user=request.user)
+    return render(request, 'documents/user_documents.html', {'user_documents': user_documents})
 
 @login_required
 def upload_document(request):

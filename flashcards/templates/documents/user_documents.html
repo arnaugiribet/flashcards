@@ -1,45 +1,116 @@
 {% extends 'base.html' %}
 {% block content %}
-<div style="display: flex; justify-content: center; align-items: center; min-height: 80vh;">
-    <div class="upload-container" style="background-color: white; padding: 2rem; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 100%; max-width: 400px;">
-        <form method="POST" enctype="multipart/form-data" action="{% url 'upload_document' %}">
-            {% csrf_token %}
+<div class="container mx-auto p-6">
+    <!-- Single panel for files -->
+    <div class="bg-white rounded-lg shadow-md p-6">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-xl font-semibold">Your Files</h2>
             
-            {% if form.non_field_errors %}
-            <div style="color: red; margin-bottom: 1rem; text-align: center;">
-                {% for error in form.non_field_errors %}
-                    {{ error }}
+            <!-- Upload button in header -->
+            <div class="relative">
+                <label for="file-upload" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg cursor-pointer hover:bg-blue-700 transition-colors">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                    </svg>
+                    Upload File
+                </label>
+                <input id="file-upload" type="file" name="document" class="hidden" accept=".pdf,.txt,.docx">
+                <div id="upload-progress" class="hidden absolute top-full right-0 mt-2 text-sm text-gray-600"></div>
+            </div>
+        </div>
+
+        {% if form.non_field_errors %}
+        <div class="text-red-500 mb-4 text-center">
+            {% for error in form.non_field_errors %}
+                {{ error }}
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        {% if user_documents %}
+        <div class="overflow-hidden">
+            <div class="grid gap-3">
+                {% for document in user_documents %}
+                <div class="flex items-center p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                    <!-- File icon based on type -->
+                    <div class="mr-4">
+                        {% if document.file_type == 'pdf' %}
+                        <svg class="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                        </svg>
+                        {% elif document.file_type == 'txt' %}
+                        <svg class="w-8 h-8 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                        {% else %}
+                        <svg class="w-8 h-8 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                        </svg>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- File info -->
+                    <div class="flex-grow">
+                        <h3 class="font-medium">{{ document.name }}</h3>
+                        <div class="text-sm text-gray-500">
+                            {{ document.file_type|upper }} • Uploaded {{ document.uploaded_at|date:"M d, Y" }} at {{ document.uploaded_at|date:"H:i" }}
+                        </div>
+                    </div>
+
+                    <!-- Action buttons -->
+                    <div class="flex gap-2">
+                        <button class="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                            </svg>
+                        </button>
+                        <button class="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
                 {% endfor %}
             </div>
-            {% endif %}
-            
-            <div style="margin-bottom: 1.5rem; text-align: center;">
-                <label for="file-upload" class="custom-file-upload" style="display: inline-block; padding: 0.75rem 1.5rem; background-color: #9daca2; color: white; border-radius: 5px; cursor: pointer; margin-bottom: 1rem;">
-                    Select File
-                </label>
-                <input id="file-upload" type="file" name="document" style="display: none;" accept=".pdf,.txt,.docx">
-                <div id="file-name" style="margin-top: 0.5rem; color: #666; font-size: 0.875rem;"></div>
-                
-                {% if form.file.errors %}
-                <div style="color: red; font-size: 0.875rem; margin-top: 0.5rem;">
-                    {{ form.file.errors }}
-                </div>
-                {% endif %}
-            </div>
-            
-            <div style="text-align: center;">
-                <button type="submit" style="background-color: #9daca2; color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 5px; cursor: pointer;">
-                    Submit
-                </button>
-            </div>
-        </form>
+        </div>
+        {% else %}
+        <div class="text-center py-12">
+            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+            </svg>
+            <h3 class="mt-2 text-sm font-medium text-gray-900">No files yet</h3>
+            <p class="mt-1 text-sm text-gray-500">Upload your first file to get started</p>
+        </div>
+        {% endif %}
     </div>
 </div>
 
 <script>
 document.getElementById('file-upload').addEventListener('change', function() {
-    var fileName = this.files[0] ? this.files[0].name : 'No file selected';
-    document.getElementById('file-name').textContent = fileName;
+    if (this.files[0]) {
+        const formData = new FormData();
+        formData.append('document', this.files[0]);
+        formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+        
+        const progressElement = document.getElementById('upload-progress');
+        progressElement.textContent = 'Uploading...';
+        progressElement.classList.remove('hidden');
+        
+        fetch('{% url "upload_document" %}', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => {
+            if (!response.ok) throw new Error('Upload failed');
+            window.location.reload();
+        })
+        .catch(error => {
+            progressElement.textContent = 'Upload failed. Please try again.';
+            progressElement.classList.add('text-red-500');
+        });
+    }
 });
 </script>
 {% endblock %}
