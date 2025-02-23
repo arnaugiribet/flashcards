@@ -6,6 +6,7 @@ urlpatterns = [
     path('', views.home, name='home'),  # Root path (e.g., '/')
     path('decks/', views.user_decks, name='user_decks'),
     path('documents/', views.user_documents, name='user_documents'),
+    path('document/<uuid:document_id>/url/', views.get_document_url, name='get_document_url'),
     path('documents/upload/', views.upload_document, name='upload_document'),
     path('manage_cards/', views.manage_cards, name='manage_cards'),    
     path('delete_card/<uuid:card_id>/', views.delete_card, name='delete_card'),
