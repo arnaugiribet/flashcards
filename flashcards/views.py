@@ -1,4 +1,4 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.utils import timezone
 from datetime import timedelta
@@ -9,7 +9,8 @@ from django.contrib import messages
 from django.contrib.auth.forms import UserCreationForm, PasswordChangeForm
 from django.contrib.auth.models import User
 from django.core.mail import send_mail
-from flashcards.models import Flashcard, Deck, FailedFeedback
+from flashcards.models import Flashcard, Deck, FailedFeedback, UserDocument
+from flashcards.forms import DocumentUploadForm
 from django.utils.translation import activate
 import json
 from .services import generate_flashcards
@@ -29,11 +30,11 @@ from django.utils.encoding import force_bytes
 from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import EmailMultiAlternatives
 from django.utils.html import strip_tags
-
-# Import your existing backend classes
+from django.urls import reverse
+from botocore.exceptions import ClientError
 from llm_client import LLMClient
-
 from django.http import HttpResponse
+from boto3 import client as boto3_client
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -196,7 +197,100 @@ def delete_deck(request, deck_id):
 
 @login_required
 def user_documents(request):
-    return render(request, 'documents/user_documents.html')
+    user_documents = UserDocument.objects.filter(user=request.user)
+    return render(request, 'documents/user_documents.html', {'user_documents': user_documents})
+
+@login_required
+def get_document_url(request, document_id):
+    logger.debug(f"Received request to generate presigned URL for document_id: {document_id}")
+    try:
+        document = get_object_or_404(UserDocument, id=document_id, user=request.user)
+        logger.debug(f"Document found: {document.id}, S3 Key: {document.s3_key}")
+    except Exception as e:
+        logger.error(f"Document lookup failed: {e}")
+        return JsonResponse({'error': 'Document not found'}, status=404)
+    
+    s3_client = boto3_client(
+        's3',
+        aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
+        aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
+        region_name=settings.AWS_S3_REGION_NAME
+    )
+    # Generate a presigned URL
+    try:
+        presigned_url = s3_client.generate_presigned_url(
+            'get_object',
+            Params={
+                'Bucket': settings.AWS_STORAGE_BUCKET_NAME,  # Use the bucket from settings
+                'Key': document.s3_key  # The S3 object key stored in the model
+            },
+            ExpiresIn=3600  # Link expires in 1 hour
+        )
+    except Exception as e:
+        logger.error(f"Error generating presigned URL: {e}")
+        return JsonResponse({'error': str(e)}, status=500)
+        
+    logger.debug(f"Presigned URL generated successfully: {presigned_url}")
+    return JsonResponse({'url': presigned_url})
+
+@login_required
+def upload_document(request):
+    logger.debug(f"Upload function called")
+    if request.method == 'POST':
+        logger.info(f"POST request received for file upload to s3")
+        form = DocumentUploadForm(request.POST, request.FILES)
+        if form.is_valid():
+            logger.debug(f"Form is valid request received for file upload to s3")
+            document = form.cleaned_data['document']
+            file_type = document.name.split('.')[-1].lower()
+            name = document.name
+            
+            # Create the UserDocument instance but don't save yet
+            user_document = form.save(commit=False)
+            user_document.user = request.user
+            user_document.file_type = file_type
+            user_document.name = name
+            
+            logger.debug(f"Generating S3 key")
+            # Generate S3 key
+            s3_key = f'documents/{request.user.id}/{user_document.id}.{file_type}'
+            user_document.s3_key = s3_key
+            
+            # Upload to S3
+            try:
+                logger.debug(f"Trying to upload to S3")
+                s3_client = boto3_client(
+                    's3',
+                    aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
+                    aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
+                    region_name=settings.AWS_S3_REGION_NAME
+                )
+                
+                logger.debug(f"S3 client created, uploading...")
+                s3_client.upload_fileobj(
+                    document,
+                    settings.AWS_STORAGE_BUCKET_NAME,
+                    s3_key,
+                    ExtraArgs={
+                        'ContentType': document.content_type,
+                        'ACL': 'private'
+                    }
+                )
+                # Save the document record
+                logger.debug(f"File uploaded. Saving user_document")
+                user_document.save()
+
+                logger.debug(f"user_document saved. Redirecting...")
+                return redirect('user_documents')  # Redirect to your documents list view
+                
+            except ClientError as e:
+                form.add_error(None, 'Failed to upload document. Please try again.')
+        else:
+            logger.error(f"Form errors: {form.errors}")  # <-- Debugging
+    else:
+        form = DocumentUploadForm()
+    
+    return render(request, 'documents/user_documents.html', {'form': form})
 
 @login_required
 def user_decks(request):

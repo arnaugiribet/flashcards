@@ -1,20 +1,179 @@
 {% extends 'base.html' %}
-
 {% block content %}
-<div style="display: flex; justify-content: center; align-items: center; min-height: 80vh;">
-    <div class="signup-container" style="background-color: white; padding: 2rem; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 100%; max-width: 400px;">
-        <h2 style="color: #9daca2; text-align: center; margin-bottom: 1rem;">Feature Under Construction</h2>
-        
-        <p style="text-align: center; color: #9daca2; margin-bottom: 1.5rem;">
-            This feature is currently under construction. Please check back later.
-        </p>
+<!-- Add PDF.js scripts in the head -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf_viewer.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf_viewer.min.js"></script>
 
-        <div style="text-align: center;">
-            <a href="{% url 'home' %}" style="color: #9daca2; text-decoration: none; font-weight: bold;">
-                Go back to the homepage
-            </a>
+<div class="container mx-auto p-6">
+    <!-- Single panel for files -->
+    <div class="bg-white rounded-lg shadow-md p-6">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-xl font-semibold">Your Files</h2>
+            
+            <!-- Upload button in header -->
+            <div class="relative">
+                <label for="file-upload" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg cursor-pointer hover:bg-blue-700 transition-colors">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                    </svg>
+                    Upload File
+                </label>
+                <input id="file-upload" type="file" name="document" class="hidden" accept=".pdf,.txt,.docx">
+                <div id="upload-progress" class="hidden absolute top-full right-0 mt-2 text-sm text-gray-600"></div>
+            </div>
+        </div>
+
+        {% if form.non_field_errors %}
+        <div class="text-red-500 mb-4 text-center">
+            {% for error in form.non_field_errors %}
+                {{ error }}
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        {% if user_documents %}
+        <div class="overflow-hidden">
+            <div class="grid gap-3">
+                {% for document in user_documents %}
+                <div class="flex items-center p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                    <!-- File icon based on type -->
+                    <div class="mr-4">
+                        {% if document.file_type == 'pdf' %}
+                        <svg class="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                        </svg>
+                        {% elif document.file_type == 'txt' %}
+                        <svg class="w-8 h-8 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                        {% else %}
+                        <svg class="w-8 h-8 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                        </svg>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- File info -->
+                    <div class="flex-grow">
+                        <h3 class="font-medium">{{ document.name }}</h3>
+                        <div class="text-sm text-gray-500">
+                            {{ document.file_type|upper }} • Uploaded {{ document.uploaded_at|date:"M d, Y" }} at {{ document.uploaded_at|date:"H:i" }}
+                        </div>
+                    </div>
+
+                    <!-- Action buttons -->
+                    <div class="flex gap-2">
+                        <!-- Modified view button with onclick handler -->
+                        <button 
+                            onclick="viewDocument('{{ document.id }}')"
+                            class="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                            </svg>
+                        </button>
+                        <button class="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% else %}
+        <div class="text-center py-12">
+            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+            </svg>
+            <h3 class="mt-2 text-sm font-medium text-gray-900">No files yet</h3>
+            <p class="mt-1 text-sm text-gray-500">Upload your first file to get started</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Document viewer modal -->
+<div id="documentViewerModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center">
+    <div class="bg-white w-11/12 h-5/6 rounded-lg flex flex-col relative"> <!-- relative here -->
+        <!-- Viewer header -->
+        <div class="flex justify-between items-center p-4 border-b">
+            <h3 class="text-lg font-semibold">Document Viewer</h3>
+            <button onclick="closeViewer()" class="text-gray-500 hover:text-gray-700">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        </div>
+        
+        <!-- PDF viewer container -->
+        <div id="viewerContainer" class="absolute inset-0 mt-16 overflow-auto"> <!-- absolute positioning -->
+            <div id="viewer" class="pdfViewer"></div>
         </div>
     </div>
 </div>
 
+<script>
+document.getElementById('file-upload').addEventListener('change', function() {
+    if (this.files[0]) {
+        const formData = new FormData();
+        formData.append('document', this.files[0]);
+        formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+        
+        const progressElement = document.getElementById('upload-progress');
+        progressElement.textContent = 'Uploading...';
+        progressElement.classList.remove('hidden');
+        
+        fetch('{% url "upload_document" %}', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => {
+            if (!response.ok) throw new Error('Upload failed');
+            window.location.reload();
+        })
+        .catch(error => {
+            progressElement.textContent = 'Upload failed. Please try again.';
+            progressElement.classList.add('text-red-500');
+        });
+    }
+});
+
+// Initialize PDF.js
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+const pdfjsViewer = window.pdfjsViewer;
+
+let currentPDF = null;
+let currentPage = 1;
+
+async function viewDocument(documentId) {
+    document.getElementById('documentViewerModal').classList.remove('hidden');
+    
+    try {
+        const response = await fetch(`/document/${documentId}/url/`);
+        const data = await response.json();
+        
+        const container = document.getElementById('viewerContainer');
+        const viewer = document.getElementById('viewer');
+        
+        const pdfDoc = await pdfjsLib.getDocument(data.url).promise;
+        const pdfViewer = new pdfjsViewer.PDFViewer({
+            container: container,
+            viewer: viewer,
+            eventBus: new pdfjsViewer.EventBus(),
+        });
+        
+        pdfViewer.setDocument(pdfDoc);
+    } catch (error) {
+        console.error("Error loading PDF:", error);
+    }
+}
+
+function closeViewer() {
+    document.getElementById('documentViewerModal').classList.add('hidden');
+}
+
+</script>
 {% endblock %}
