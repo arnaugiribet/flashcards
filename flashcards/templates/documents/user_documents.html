@@ -166,6 +166,8 @@ async function viewDocument(documentId) {
         });
         
         pdfViewer.setDocument(pdfDoc);
+        setTimeout(createHighlights, 1000);
+
     } catch (error) {
         console.error("Error loading PDF:", error);
     }
@@ -181,29 +183,32 @@ document.addEventListener("mouseup", function() {
     if (!selection.rangeCount) return;
 
     const selectedText = selection.toString().trim();
-    if (!selectedText) return; // No text selected
+    if (!selectedText) return;
 
-    // Get bounding box
     const range = selection.getRangeAt(0);
-    const rect = range.getBoundingClientRect(); // Bounding box of selection
+    const rect = range.getBoundingClientRect(); // Viewport coordinates
 
-    // Get page number - fixed to avoid the TypeError
+    // Get page element and page number
     let node = range.startContainer;
-    // If it's a text node, get its parent element
-    if (node.nodeType === Node.TEXT_NODE) {
-        node = node.parentElement;
-    }
+    if (node.nodeType === Node.TEXT_NODE) node = node.parentElement;
     
     const pageElement = node.closest(".page");
     if (!pageElement) return;
     const pageNumber = parseInt(pageElement.dataset.pageNumber, 10);
 
-    // Capture the selection data
+    // Get PDF container position
+    const pdfContainer = document.querySelector('.pdfViewer');
+    const pdfRect = pdfContainer.getBoundingClientRect();
+
+    // Adjust coordinates
+    const adjustedX = rect.x - pdfRect.left;
+    const adjustedY = rect.y - pdfRect.top;
+
     const selectionData = {
         text: selectedText,
         bbox: {
-            x: rect.x,
-            y: rect.y,
+            x: adjustedX,
+            y: adjustedY,
             width: rect.width,
             height: rect.height
         },
@@ -211,15 +216,66 @@ document.addEventListener("mouseup", function() {
         timestamp: new Date().toISOString()
     };
 
-    // Store or process the data
-    console.log("Captured selection:", selectionData);
-    
-    // You could store to localStorage
-    //saveSelection(selectionData);
-    
-    // Or send to your backend
-    // sendToBackend(selectionData);
+    console.log("Captured selection (adjusted):", selectionData);
 });
+
+
+// Function to create highlights
+function createHighlights() {
+    console.log("Creating highlights...");
+    const pdfContainer = document.querySelector('.pdfViewer'); 
+    if (!pdfContainer) {
+        console.error('PDF container not found');
+        return;
+    }
+
+    const highlightData = [
+        {
+            text: "bbox",
+            bbox: {
+                height: 17,
+                width: 83.33599853515625,
+                x: 220.75,
+                y: 307.5625
+            }
+        },
+        {
+            text: "box",
+            bbox: {
+                height: 17,
+                width: 85.95343017578125,
+                x: 220.75,
+                y: 326.296875
+            }
+        }
+    ];
+
+    highlightData.forEach((item, index) => {
+        const highlight = document.createElement('div');
+        highlight.className = 'pdf-highlight';
+        highlight.id = `fixed-highlight-${index}`;
+
+        // Get the PDF container position (to adjust for scrolling)
+        const pdfRect = pdfContainer.getBoundingClientRect();
+
+        // Adjust coordinates relative to the PDF container
+        const adjustedX = item.bbox.x - pdfRect.left;
+        const adjustedY = item.bbox.y - pdfRect.top;
+
+        // Apply styles
+        highlight.style.position = 'absolute';
+        highlight.style.left = `${adjustedX}px`;
+        highlight.style.top = `${adjustedY}px`;
+        highlight.style.width = `${item.bbox.width}px`;
+        highlight.style.height = `${item.bbox.height}px`;
+        highlight.style.backgroundColor = 'rgba(255, 255, 0, 0.3)';
+        highlight.style.pointerEvents = 'none';
+        highlight.style.zIndex = '100';
+        highlight.title = item.text;
+
+        pdfContainer.appendChild(highlight);
+    });
+}
 
 
 </script>
