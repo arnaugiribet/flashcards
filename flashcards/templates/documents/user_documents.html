@@ -149,6 +149,7 @@ let currentPDF = null;
 let currentPage = 1;
 
 async function viewDocument(documentId) {
+    console.log("Retrieving document with id:", documentId);
     document.getElementById('documentViewerModal').classList.remove('hidden');
     
     try {

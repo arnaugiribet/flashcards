@@ -160,6 +160,9 @@ class Flashcard(models.Model):
     current_interval = models.IntegerField(default=1)  # Interval in days
     ease_factor = models.FloatField(default=1.5)  # Starting ease factor
     history = models.JSONField(default=list)
+    document = models.ForeignKey(UserDocument, on_delete=models.SET_NULL, null=True, blank=True, related_name='flashcards')
+    page_number = models.IntegerField(null=True, blank=True)
+    bounding_box = models.JSONField(null=True, blank=True)
 
     # Relationship to Deck and User
     deck = models.ForeignKey(Deck, on_delete=models.CASCADE, related_name='flashcards')
@@ -234,8 +237,6 @@ class Flashcard(models.Model):
 
         # Return the predicted intervals and ease factors
         return intervals, ease_factors
-
-
 
     def update_review(self, quality: str):
         """
