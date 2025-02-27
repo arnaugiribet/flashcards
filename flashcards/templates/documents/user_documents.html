@@ -205,9 +205,8 @@ document.addEventListener("mouseup", function() {
     if (!selectedText) return;
 
     const range = selection.getRangeAt(0);
-    const rect = range.getBoundingClientRect(); // Viewport coordinates
+    const rects = range.getClientRects(); // Get multiple bounding boxes
 
-    // Get page element and page number
     let node = range.startContainer;
     if (node.nodeType === Node.TEXT_NODE) node = node.parentElement;
     
@@ -219,23 +218,34 @@ document.addEventListener("mouseup", function() {
     const pdfContainer = document.querySelector('.pdfViewer');
     const pdfRect = pdfContainer.getBoundingClientRect();
 
-    // Adjust coordinates
-    const adjustedX = rect.x - pdfRect.left;
-    const adjustedY = rect.y - pdfRect.top;
+    // Find all text spans inside the selected range
+    const textLayer = pageElement.querySelector('.textLayer');
+    const spans = [...textLayer.querySelectorAll('span')];
+
+    // Map each span to its bounding box
+    const wordBoxes = spans
+        .filter(span => selection.containsNode(span, true)) // Only selected words
+        .map(span => ({
+            text: span.textContent.trim(),
+            bbox: (() => {
+                const rect = span.getBoundingClientRect();
+                return {
+                    x: rect.x - pdfRect.left,
+                    y: rect.y - pdfRect.top,
+                    width: rect.width,
+                    height: rect.height
+                };
+            })()
+        }));
 
     const selectionData = {
         text: selectedText,
-        bbox: {
-            x: adjustedX,
-            y: adjustedY,
-            width: rect.width,
-            height: rect.height
-        },
+        words: wordBoxes, // Each word with its own bounding box
         page: pageNumber,
         timestamp: new Date().toISOString()
     };
 
-    console.log("Captured selection (adjusted):", selectionData);
+    console.log("Captured selection with word-level bounding boxes:", selectionData);
 });
 
 // Fetch flashcards for the current document and create highlights
