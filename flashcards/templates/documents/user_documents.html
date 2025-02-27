@@ -160,18 +160,23 @@ async function viewDocument(documentId) {
         const container = document.getElementById('viewerContainer');
         const viewer = document.getElementById('viewer');
         
+        // Create an event bus to listen for rendering events
+        const eventBus = new pdfjsViewer.EventBus();
+
+        // Setup event listener for when pages are rendered
+        eventBus.on('pagesloaded', function() {
+            console.log("PDF pages loaded, fetching flashcards...");
+            fetchAndCreateHighlights(documentId);
+        });
+
         const pdfDoc = await pdfjsLib.getDocument(data.url).promise;
         const pdfViewer = new pdfjsViewer.PDFViewer({
             container: container,
             viewer: viewer,
-            eventBus: new pdfjsViewer.EventBus(),
+            eventBus: eventBus,
         });
         
         pdfViewer.setDocument(pdfDoc);
-
-        setTimeout(() => {
-            fetchAndCreateHighlights(documentId);
-        }, 1000);
 
     } catch (error) {
         console.error("Error loading PDF:", error);
@@ -277,9 +282,20 @@ function createHighlights(flashcards) {
         highlight.dataset.flashcardId = flashcard.id;
         highlight.id = `flashcard-highlight-${flashcard.id}`;
 
-        // Adjust coordinates relative to the PDF container
-        const adjustedX = flashcard.bbox.x - pdfRect.left;
-        const adjustedY = flashcard.bbox.y - pdfRect.top;
+        // CANCELLED - Adjust coordinates relative to the PDF container
+        const adjustedX = flashcard.bbox.x; //- pdfRect.left;
+        const adjustedY = flashcard.bbox.y; //- pdfRect.top;
+
+        // Log the flashcard info
+        console.log(`Flashcard ${index + 1}:`, {
+            id: flashcard.id,
+            page: flashcard.page,
+            bbox: flashcard.bbox,
+            adjustedPosition: {
+                x: adjustedX,
+                y: adjustedY
+            }
+        });
 
         // Apply styles
         highlight.style.position = 'absolute';
