@@ -234,6 +234,34 @@ def get_document_url(request, document_id):
     return JsonResponse({'url': presigned_url})
 
 @login_required
+def get_document_flashcards(request, document_id):
+    """
+    API endpoint that returns all flashcards associated with a specific document.
+    Returns flashcard data including page numbers and bounding boxes.
+    """
+    try:
+        # Ensure the document exists and belongs to the current user
+        document = UserDocument.objects.get(id=document_id, user=request.user)
+        
+        # Get all flashcards for this document
+        flashcards = Flashcard.objects.filter(document=document)
+        
+        # Format the response data
+        flashcard_data = []
+        for card in flashcards:
+            if card.page_number is not None and card.bounding_box is not None:
+                flashcard_data.append({
+                    'id': str(card.id),
+                    'page': card.page_number,
+                    'bbox': card.bounding_box,
+                })
+        
+        return JsonResponse({'flashcards': flashcard_data})
+    
+    except UserDocument.DoesNotExist:
+        return JsonResponse({'error': 'Document not found'}, status=404)
+
+@login_required
 def upload_document(request):
     logger.debug(f"Upload function called")
     if request.method == 'POST':

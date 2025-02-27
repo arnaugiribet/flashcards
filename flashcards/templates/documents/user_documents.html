@@ -151,7 +151,8 @@ let currentPage = 1;
 async function viewDocument(documentId) {
     console.log("Retrieving document with id:", documentId);
     document.getElementById('documentViewerModal').classList.remove('hidden');
-    
+    currentDocumentId = documentId;
+
     try {
         const response = await fetch(`/document/${documentId}/url/`);
         const data = await response.json();
@@ -167,7 +168,10 @@ async function viewDocument(documentId) {
         });
         
         pdfViewer.setDocument(pdfDoc);
-        setTimeout(createHighlights, 1000);
+
+        setTimeout(() => {
+            fetchAndCreateHighlights(documentId);
+        }, 1000);
 
     } catch (error) {
         console.error("Error loading PDF:", error);
@@ -176,6 +180,15 @@ async function viewDocument(documentId) {
 
 function closeViewer() {
     document.getElementById('documentViewerModal').classList.add('hidden');
+    // Remove all existing highlights when closing the viewer
+    clearHighlights();
+    currentDocumentId = null;
+}
+
+// Clear any existing highlights
+function clearHighlights() {
+    const existingHighlights = document.querySelectorAll('.pdf-highlight');
+    existingHighlights.forEach(highlight => highlight.remove());
 }
 
 // Listen for text selections in the PDF viewer
@@ -220,59 +233,63 @@ document.addEventListener("mouseup", function() {
     console.log("Captured selection (adjusted):", selectionData);
 });
 
+// Fetch flashcards for the current document and create highlights
+async function fetchAndCreateHighlights(documentId) {
+    try {
+        const response = await fetch(`/document/${documentId}/flashcards/`);
+        
+        if (!response.ok) {
+            throw new Error('Failed to fetch flashcards');
+        }
+        
+        const data = await response.json();
+        createHighlights(data.flashcards);
+    } catch (error) {
+        console.error("Error fetching flashcards:", error);
+    }
+}
 
 // Function to create highlights
-function createHighlights() {
+function createHighlights(flashcards) {
     console.log("Creating highlights...");
+    clearHighlights();
+
     const pdfContainer = document.querySelector('.pdfViewer'); 
     if (!pdfContainer) {
         console.error('PDF container not found');
         return;
     }
 
-    const highlightData = [
-        {
-            text: "bbox",
-            bbox: {
-                height: 17,
-                width: 83.33599853515625,
-                x: 220.75,
-                y: 307.5625
-            }
-        },
-        {
-            text: "box",
-            bbox: {
-                height: 17,
-                width: 85.95343017578125,
-                x: 220.75,
-                y: 326.296875
-            }
-        }
-    ];
+    // Get the PDF container position (to adjust for scrolling)
+    const pdfRect = pdfContainer.getBoundingClientRect();
 
-    highlightData.forEach((item, index) => {
+    flashcards.forEach((flashcard, index) => {
+        // Skip if missing required data
+        if (!flashcard.bbox || flashcard.page === undefined) {
+            console.warn("Skipping flashcard with missing data:", flashcard);
+            return;
+        }
+
+        // Create highlight element
         const highlight = document.createElement('div');
         highlight.className = 'pdf-highlight';
         highlight.id = `fixed-highlight-${index}`;
-
-        // Get the PDF container position (to adjust for scrolling)
-        const pdfRect = pdfContainer.getBoundingClientRect();
+        highlight.dataset.flashcardId = flashcard.id;
+        highlight.id = `flashcard-highlight-${flashcard.id}`;
 
         // Adjust coordinates relative to the PDF container
-        const adjustedX = item.bbox.x - pdfRect.left;
-        const adjustedY = item.bbox.y - pdfRect.top;
+        const adjustedX = flashcard.bbox.x - pdfRect.left;
+        const adjustedY = flashcard.bbox.y - pdfRect.top;
 
         // Apply styles
         highlight.style.position = 'absolute';
         highlight.style.left = `${adjustedX}px`;
         highlight.style.top = `${adjustedY}px`;
-        highlight.style.width = `${item.bbox.width}px`;
-        highlight.style.height = `${item.bbox.height}px`;
+        highlight.style.width = `${flashcard.bbox.width}px`;
+        highlight.style.height = `${flashcard.bbox.height}px`;
         highlight.style.backgroundColor = 'rgba(255, 255, 0, 0.3)';
         highlight.style.pointerEvents = 'none';
         highlight.style.zIndex = '100';
-        highlight.title = item.text;
 
         pdfContainer.appendChild(highlight);
     });
