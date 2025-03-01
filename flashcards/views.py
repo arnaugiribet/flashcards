@@ -320,6 +320,14 @@ def upload_document(request):
     
     return render(request, 'documents/user_documents.html', {'form': form})
 
+# Pass selected text to LLM
+def process_selection(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        logger.debug(f"Received selection data")  # Process as needed
+        return JsonResponse({'status': 'success'})
+    return JsonResponse({'error': 'Invalid request'}, status=400)
+
 @login_required
 def user_decks(request):
 

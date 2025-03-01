@@ -227,7 +227,7 @@ document.addEventListener("mouseup", function() {
         .filter(span => selection.containsNode(span, true)) // Only selected words
         .map(span => ({
             text: span.textContent.trim(),
-            bbox: (() => {
+            box: (() => {
                 const rect = span.getBoundingClientRect();
                 return {
                     x: rect.x - pdfRect.left,
@@ -240,12 +240,28 @@ document.addEventListener("mouseup", function() {
 
     const selectionData = {
         text: selectedText,
-        words: wordBoxes, // Each word with its own bounding box
-        page: pageNumber,
-        timestamp: new Date().toISOString()
+        boxes: wordBoxes, // Each word with its own bounding box
+        page: pageNumber
     };
 
     console.log("Captured selection with word-level bounding boxes:", selectionData);
+
+    fetch('/process-selection/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCsrfToken()
+        },
+        body: JSON.stringify(selectionData)
+    })
+    .then(response => response.json())
+    .then(data => console.log("Server response:", data))
+    .catch(error => console.error("Error:", error));
+
+    function getCsrfToken() {
+        return document.querySelector('[name=csrfmiddlewaretoken]').value;
+    }
+
 });
 
 // Fetch flashcards for the current document and create highlights
