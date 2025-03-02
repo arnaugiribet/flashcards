@@ -183,6 +183,12 @@ class Flashcard(models.Model):
         """
         return (f"Question: {self.question}\n"
                 f"Answer: {self.answer}")
+        
+    def short_id_question(self):
+        """
+        Shorter string representation.
+        """
+        return f"{self.id}\n{self.question[:10]}\n{self.answer[:10]}"
 
     def save(self, *args, **kwargs):
         """

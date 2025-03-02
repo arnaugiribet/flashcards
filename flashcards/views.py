@@ -327,7 +327,7 @@ def process_selection(request):
 
         logger.debug(f"Received selection data")
         logger.debug(f"{data.keys()}")  # Process as needed
-        get_matched_flashcards_to_text(data["text"], data["page"], data["boxes"], user)
+        get_matched_flashcards_to_text(data["doc_id"], data["text"], data["page"], data["boxes"], user)
         return JsonResponse({'status': 'success'})
     return JsonResponse({'error': 'Invalid request'}, status=400)
 

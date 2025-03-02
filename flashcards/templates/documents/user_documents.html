@@ -241,7 +241,8 @@ document.addEventListener("mouseup", function() {
     const selectionData = {
         text: selectedText,
         boxes: wordBoxes, // Each word with its own bounding box
-        page: pageNumber
+        page: pageNumber,
+        doc_id: currentDocumentId
     };
 
     console.log("Captured selection with word-level bounding boxes:", selectionData);
