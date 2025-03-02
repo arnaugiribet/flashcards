@@ -13,7 +13,7 @@ from flashcards.models import Flashcard, Deck, FailedFeedback, UserDocument
 from flashcards.forms import DocumentUploadForm
 from django.utils.translation import activate
 import json
-from .services import generate_flashcards
+from .services import generate_flashcards, get_matched_flashcards_to_text
 from .forms import CustomUserCreationForm
 from django.views.decorators.http import require_http_methods
 from django.core.exceptions import ValidationError
@@ -32,8 +32,6 @@ from django.core.mail import EmailMultiAlternatives
 from django.utils.html import strip_tags
 from django.urls import reverse
 from botocore.exceptions import ClientError
-from llm_client import LLMClient
-from django.http import HttpResponse
 from boto3 import client as boto3_client
 
 logger = logging.getLogger(__name__)
@@ -321,10 +319,15 @@ def upload_document(request):
     return render(request, 'documents/user_documents.html', {'form': form})
 
 # Pass selected text to LLM
+@login_required
 def process_selection(request):
     if request.method == 'POST':
         data = json.loads(request.body)
-        logger.debug(f"Received selection data")  # Process as needed
+        user = request.user
+
+        logger.debug(f"Received selection data")
+        logger.debug(f"{data.keys()}")  # Process as needed
+        get_matched_flashcards_to_text(data["text"], data["page"], data["boxes"], user)
         return JsonResponse({'status': 'success'})
     return JsonResponse({'error': 'Invalid request'}, status=400)
 
@@ -569,7 +572,6 @@ def process_file_and_context(request):
             content_format = "string"
 
         logger.debug(f"File is of type {content_format}")
-
 
         # Call the service function - it can now handle either a file or StringIO object
         flashcards = generate_flashcards(content, content_format, context, user)

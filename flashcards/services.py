@@ -13,6 +13,16 @@ formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s: %(message
 console_handler.setFormatter(formatter)
 logger.addHandler(console_handler)
 
+def get_matched_flashcards_to_text(text, page, boxes, user):
+    logger.debug(f"Processing selected text...")
+
+    flashcards = generate_flashcards(content=text, content_format='raw_string', context='', user=user)
+
+    for flashcard in flashcards:
+        print(flashcard)
+
+    return True
+
 def generate_flashcards(content, content_format, context, user):
     """
     Service function to generate flashcards from the input file and context.
@@ -57,6 +67,11 @@ def generate_flashcards(content, content_format, context, user):
     elif content_format == 'string':
         # For string input
         raw_user_text = content.getvalue()
+        input_text += "\n" + raw_user_text
+    
+    elif content_format == 'raw_string':
+        # For string input
+        raw_user_text = content
         input_text += "\n" + raw_user_text
 
     else:
