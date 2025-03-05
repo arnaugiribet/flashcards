@@ -165,13 +165,13 @@ class Flashcard(models.Model):
     bounding_box = models.JSONField(null=True, blank=True)
 
     # Relationship to Deck and User
-    deck = models.ForeignKey(Deck, on_delete=models.CASCADE, related_name='flashcards')
+    deck = models.ForeignKey(Deck, on_delete=models.CASCADE, related_name='flashcards', null=True, blank=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='flashcards')
         
     def __str__(self):
         return (f"Flashcard ID: {self.id}\n"
                 f"Question: {self.question}\n"
-                f"Deck: {self.deck.name}\n"
+                f"Deck: {self.deck.name if self.deck else 'No Deck'}\n"
                 f"User: {self.user.username}\n"
                 f"Due: {self.due}\n"
                 f"Interval: {self.current_interval}\n"

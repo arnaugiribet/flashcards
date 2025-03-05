@@ -152,7 +152,7 @@ def generate_flashcards(content, content_format, context, user):
 
     try:
         # Generate flashcards using the pipeline
-        flashcards, tokens = generator.generate_flashcards(text_input=input_text)
+        flashcards, tokens = generator.generate_flashcards(text_input=input_text, user=user)
 
         # Update TokenUsage database
         logger.debug(f"Total tokens used: {tokens}")
