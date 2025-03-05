@@ -4,7 +4,7 @@ from src.backend.usage_limits import assert_input_length, assert_enough_tokens
 from src.backend.input_content_processors import get_docx, get_pdf
 import logging
 from django.conf import settings
-from .models import TokenUsage
+from flashcards.models import TokenUsage, UserDocument
 
 logger = logging.getLogger("services.py")
 logger.setLevel(logging.DEBUG)
@@ -72,20 +72,17 @@ If no boxes seem relevant, return "None".
         logger.error(f"Original response: {indices_response}")
         box_indices = []
     
-    # Create matched_boxes list from the identified indices
-    matched_boxes = []
+    # Store in flashcard: page, docId and boxes
+    user_document = UserDocument.objects.get(id=doc_id)
+    flashcard.page_number = page
+    flashcard.document = user_document
     for idx in box_indices:
         if 0 <= idx < len(boxes):
-            matched_boxes.append({
-                'page': page,
-                'box': boxes[idx]['box'],
-                'doc_id': doc_id
-            })
-    
-    # Attach the matched boxes to the flashcard
-    # flashcard.source_locations = matched_boxes
-    
-    logger.debug(f"Matched flashcard to {len(matched_boxes)} boxes")
+            box_i = boxes[idx]['box']
+            flashcard.bounding_box.append(box_i)
+        
+    print(flashcard)
+    logger.debug(f"Matched flashcard to {len(box_indices)} boxes")
     logger.debug(f"Matched indices are:\n{box_indices}")
     return True
 
