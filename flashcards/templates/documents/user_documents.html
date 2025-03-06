@@ -338,14 +338,89 @@ function createHighlights(flashcards) {
             highlight.style.width = `${bbox.width}px`;
             highlight.style.height = `${bbox.height}px`;
             highlight.style.backgroundColor = 'rgba(255, 255, 0, 0.3)';
-            highlight.style.pointerEvents = 'none';
+            highlight.style.pointerEvents = 'auto';
             highlight.style.zIndex = '100';
+            
+            // Add hover event to show flashcard content
+            highlight.addEventListener('mouseenter', function() {
+                console.log('Mouse entering bbox')
+                showFlashcardTooltip(flashcard, highlight);
+            });
+            
+            highlight.addEventListener('mouseleave', function() {
+                hideFlashcardTooltip();
+            });
 
             pdfContainer.appendChild(highlight);
         });
     });
 }
 
+// Function to show flashcard tooltip
+function showFlashcardTooltip(flashcard, highlightElement) {
+    // Remove any existing tooltip
+    hideFlashcardTooltip();
+    console.log("Flashcard Data:", flashcard);
+    // Create tooltip element
+    const tooltip = document.createElement('div');
+    tooltip.id = 'flashcard-tooltip';
+    tooltip.className = 'flashcard-tooltip';
+    tooltip.innerHTML = `
+        <div class="flashcard-content">
+            <div class="flashcard-question">${flashcard.question || 'Question not available'}</div>
+            <div class="flashcard-answer">${flashcard.answer || 'Answer not available'}</div>
+        </div>
+    `;
+    
+    // Style the tooltip
+    tooltip.style.position = 'absolute';
+    tooltip.style.backgroundColor = 'white';
+    tooltip.style.border = '1px solid #ccc';
+    tooltip.style.borderRadius = '4px';
+    tooltip.style.padding = '10px';
+    tooltip.style.boxShadow = '0 2px 5px rgba(0,0,0,0.2)';
+    tooltip.style.zIndex = '200';
+    tooltip.style.maxWidth = '300px';
+    
+    // Position the tooltip near the highlight
+    const rect = highlightElement.getBoundingClientRect();
+    const pdfContainer = document.querySelector('.pdfViewer');
+    const containerRect = pdfContainer.getBoundingClientRect();
+    
+    tooltip.style.left = `${rect.right - containerRect.left + 10}px`;
+    tooltip.style.top = `${rect.top - containerRect.top}px`;
+    
+    // Add the tooltip to the container
+    pdfContainer.appendChild(tooltip);
+}
+
+// Function to hide flashcard tooltip
+function hideFlashcardTooltip() {
+    const existingTooltip = document.getElementById('flashcard-tooltip');
+    if (existingTooltip) {
+        existingTooltip.remove();
+    }
+}
+
+// Add some CSS to the page
+const style = document.createElement('style');
+style.textContent = `
+    .flashcard-tooltip {
+        transition: opacity 0.2s ease;
+    }
+    .flashcard-content {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+    .flashcard-question {
+        font-weight: bold;
+    }
+    .flashcard-answer {
+        color: #333;
+    }
+`;
+document.head.appendChild(style);
 
 </script>
 {% endblock %}
