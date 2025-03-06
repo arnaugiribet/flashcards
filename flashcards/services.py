@@ -20,6 +20,8 @@ def get_matched_flashcards_to_text(doc_id, text, page, boxes, user):
     for flashcard in flashcards:
         logger.debug(f"Matching flashcard:\n{flashcard}")
         match_flashcard_to_text(flashcard, doc_id, text, page, boxes)
+        flashcard.save()
+        logger.debug(f"Stored flashcard in db")
 
     return True
 

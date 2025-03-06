@@ -297,44 +297,52 @@ function createHighlights(flashcards) {
 
     flashcards.forEach((flashcard, index) => {
         // Skip if missing required data
-        if (!flashcard.bbox || flashcard.page === undefined) {
+        if (!flashcard.bbox || !Array.isArray(flashcard.bbox) || flashcard.bbox.length === 0 || flashcard.page === undefined) {
             console.warn("Skipping flashcard with missing data:", flashcard);
             return;
         }
-
-        // Create highlight element
-        const highlight = document.createElement('div');
-        highlight.className = 'pdf-highlight';
-        highlight.id = `fixed-highlight-${index}`;
-        highlight.dataset.flashcardId = flashcard.id;
-        highlight.id = `flashcard-highlight-${flashcard.id}`;
-
-        // CANCELLED - Adjust coordinates relative to the PDF container
-        const adjustedX = flashcard.bbox.x; //- pdfRect.left;
-        const adjustedY = flashcard.bbox.y; //- pdfRect.top;
-
-        // Log the flashcard info
-        console.log(`Flashcard ${index + 1}:`, {
-            id: flashcard.id,
-            page: flashcard.page,
-            bbox: flashcard.bbox,
-            adjustedPosition: {
-                x: adjustedX,
-                y: adjustedY
+        
+        // Process each bbox in the array
+        flashcard.bbox.forEach((bbox, bboxIndex) => {
+            // Skip if this specific bbox is missing required properties
+            if (!bbox.x || !bbox.y || !bbox.width || !bbox.height) {
+                console.warn(`Skipping invalid bbox at index ${bboxIndex} for flashcard:`, flashcard);
+                return;
             }
+
+            // Create highlight element
+            const highlight = document.createElement('div');
+            highlight.className = 'pdf-highlight';
+            highlight.dataset.flashcardId = flashcard.id;
+            highlight.id = `flashcard-highlight-${flashcard.id}-${bboxIndex}`;
+
+            // CANCELLED - Adjust coordinates relative to the PDF container
+            const adjustedX = bbox.x; //- pdfRect.left;
+            const adjustedY = bbox.y; //- pdfRect.top;
+
+            // Log the flashcard and bbox info
+            console.log(`Flashcard ${index + 1}, Bbox ${bboxIndex + 1}:`, {
+                id: flashcard.id,
+                page: flashcard.page,
+                bbox: bbox,
+                adjustedPosition: {
+                    x: adjustedX,
+                    y: adjustedY
+                }
+            });
+
+            // Apply styles
+            highlight.style.position = 'absolute';
+            highlight.style.left = `${adjustedX}px`;
+            highlight.style.top = `${adjustedY}px`;
+            highlight.style.width = `${bbox.width}px`;
+            highlight.style.height = `${bbox.height}px`;
+            highlight.style.backgroundColor = 'rgba(255, 255, 0, 0.3)';
+            highlight.style.pointerEvents = 'none';
+            highlight.style.zIndex = '100';
+
+            pdfContainer.appendChild(highlight);
         });
-
-        // Apply styles
-        highlight.style.position = 'absolute';
-        highlight.style.left = `${adjustedX}px`;
-        highlight.style.top = `${adjustedY}px`;
-        highlight.style.width = `${flashcard.bbox.width}px`;
-        highlight.style.height = `${flashcard.bbox.height}px`;
-        highlight.style.backgroundColor = 'rgba(255, 255, 0, 0.3)';
-        highlight.style.pointerEvents = 'none';
-        highlight.style.zIndex = '100';
-
-        pdfContainer.appendChild(highlight);
     });
 }
 
