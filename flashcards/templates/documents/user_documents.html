@@ -56,7 +56,7 @@
                     
                     <!-- File info -->
                     <div class="flex-grow">
-                        <h3 class="font-medium">{{ document.name }}</h3>
+                        <h3 class="font-medium cursor-pointer hover:text-blue-600" onclick="viewDocument('{{ document.id }}')">{{ document.name }}</h3>
                         <div class="text-sm text-gray-500">
                             {{ document.file_type|upper }} • Uploaded {{ document.uploaded_at|date:"M d, Y" }} at {{ document.uploaded_at|date:"H:i" }}
                         </div>
