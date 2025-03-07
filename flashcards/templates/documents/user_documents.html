@@ -56,7 +56,7 @@
                     
                     <!-- File info -->
                     <div class="flex-grow">
-                        <h3 class="font-medium">{{ document.name }}</h3>
+                        <h3 class="font-medium cursor-pointer hover:text-blue-600" onclick="viewDocument('{{ document.id }}')">{{ document.name }}</h3>
                         <div class="text-sm text-gray-500">
                             {{ document.file_type|upper }} • Uploaded {{ document.uploaded_at|date:"M d, Y" }} at {{ document.uploaded_at|date:"H:i" }}
                         </div>
@@ -149,8 +149,10 @@ let currentPDF = null;
 let currentPage = 1;
 
 async function viewDocument(documentId) {
+    console.log("Retrieving document with id:", documentId);
     document.getElementById('documentViewerModal').classList.remove('hidden');
-    
+    currentDocumentId = documentId;
+
     try {
         const response = await fetch(`/document/${documentId}/url/`);
         const data = await response.json();
@@ -158,14 +160,24 @@ async function viewDocument(documentId) {
         const container = document.getElementById('viewerContainer');
         const viewer = document.getElementById('viewer');
         
+        // Create an event bus to listen for rendering events
+        const eventBus = new pdfjsViewer.EventBus();
+
+        // Setup event listener for when pages are rendered
+        eventBus.on('pagesloaded', function() {
+            console.log("PDF pages loaded, fetching flashcards...");
+            fetchAndCreateHighlights(documentId);
+        });
+
         const pdfDoc = await pdfjsLib.getDocument(data.url).promise;
         const pdfViewer = new pdfjsViewer.PDFViewer({
             container: container,
             viewer: viewer,
-            eventBus: new pdfjsViewer.EventBus(),
+            eventBus: eventBus,
         });
         
         pdfViewer.setDocument(pdfDoc);
+
     } catch (error) {
         console.error("Error loading PDF:", error);
     }
@@ -173,7 +185,242 @@ async function viewDocument(documentId) {
 
 function closeViewer() {
     document.getElementById('documentViewerModal').classList.add('hidden');
+    // Remove all existing highlights when closing the viewer
+    clearHighlights();
+    currentDocumentId = null;
 }
+
+// Clear any existing highlights
+function clearHighlights() {
+    const existingHighlights = document.querySelectorAll('.pdf-highlight');
+    existingHighlights.forEach(highlight => highlight.remove());
+}
+
+// Listen for text selections in the PDF viewer
+document.addEventListener("mouseup", function() {
+    const selection = window.getSelection();
+    if (!selection.rangeCount) return;
+
+    const selectedText = selection.toString().trim();
+    if (!selectedText) return;
+
+    const range = selection.getRangeAt(0);
+    const rects = range.getClientRects(); // Get multiple bounding boxes
+
+    let node = range.startContainer;
+    if (node.nodeType === Node.TEXT_NODE) node = node.parentElement;
+    
+    const pageElement = node.closest(".page");
+    if (!pageElement) return;
+    const pageNumber = parseInt(pageElement.dataset.pageNumber, 10);
+
+    // Get PDF container position
+    const pdfContainer = document.querySelector('.pdfViewer');
+    const pdfRect = pdfContainer.getBoundingClientRect();
+
+    // Find all text spans inside the selected range
+    const textLayer = pageElement.querySelector('.textLayer');
+    const spans = [...textLayer.querySelectorAll('span')];
+
+    // Map each span to its bounding box
+    const wordBoxes = spans
+        .filter(span => selection.containsNode(span, true)) // Only selected words
+        .map(span => ({
+            text: span.textContent.trim(),
+            box: (() => {
+                const rect = span.getBoundingClientRect();
+                return {
+                    x: rect.x - pdfRect.left,
+                    y: rect.y - pdfRect.top,
+                    width: rect.width,
+                    height: rect.height
+                };
+            })()
+        }));
+
+    const selectionData = {
+        text: selectedText,
+        boxes: wordBoxes, // Each word with its own bounding box
+        page: pageNumber,
+        doc_id: currentDocumentId
+    };
+
+    console.log("Captured selection with word-level bounding boxes:", selectionData);
+
+    /*
+    fetch('/process-selection/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCsrfToken()
+        },
+        body: JSON.stringify(selectionData)
+    })
+    .then(response => response.json())
+    .then(data => console.log("Server response:", data))
+    .catch(error => console.error("Error:", error));
+    */
+
+    function getCsrfToken() {
+        return document.querySelector('[name=csrfmiddlewaretoken]').value;
+    }
+
+});
+
+// Fetch flashcards for the current document and create highlights
+async function fetchAndCreateHighlights(documentId) {
+    try {
+        const response = await fetch(`/document/${documentId}/flashcards/`);
+        
+        if (!response.ok) {
+            throw new Error('Failed to fetch flashcards');
+        }
+        
+        const data = await response.json();
+        createHighlights(data.flashcards);
+    } catch (error) {
+        console.error("Error fetching flashcards:", error);
+    }
+}
+
+// Function to create highlights
+function createHighlights(flashcards) {
+    console.log("Creating highlights...");
+    clearHighlights();
+
+    const pdfContainer = document.querySelector('.pdfViewer'); 
+    if (!pdfContainer) {
+        console.error('PDF container not found');
+        return;
+    }
+
+    // Get the PDF container position (to adjust for scrolling)
+    const pdfRect = pdfContainer.getBoundingClientRect();
+
+    flashcards.forEach((flashcard, index) => {
+        // Skip if missing required data
+        if (!flashcard.bbox || !Array.isArray(flashcard.bbox) || flashcard.bbox.length === 0 || flashcard.page === undefined) {
+            console.warn("Skipping flashcard with missing data:", flashcard);
+            return;
+        }
+        
+        // Log the flashcard and bbox info
+        console.log(`Flashcard ${index + 1}:`, {
+            id: flashcard.id,
+            page: flashcard.page,
+            bboxes: flashcard.bbox
+        });
+
+        // Process each bbox in the array
+        flashcard.bbox.forEach((bbox, bboxIndex) => {
+            // Skip if this specific bbox is missing required properties
+            if (!bbox.x || !bbox.y || !bbox.width || !bbox.height) {
+                console.warn(`Skipping invalid bbox at index ${bboxIndex} for flashcard:`, flashcard);
+                return;
+            }
+            
+            // Create highlight element
+            const highlight = document.createElement('div');
+            highlight.className = 'pdf-highlight';
+            highlight.dataset.flashcardId = flashcard.id;
+            highlight.id = `flashcard-highlight-${flashcard.id}-${bboxIndex}`;
+
+            // CANCELLED - Adjust coordinates relative to the PDF container
+            const adjustedX = bbox.x; //- pdfRect.left;
+            const adjustedY = bbox.y; //- pdfRect.top;
+
+            
+
+            // Apply styles
+            highlight.style.position = 'absolute';
+            highlight.style.left = `${adjustedX}px`;
+            highlight.style.top = `${adjustedY}px`;
+            highlight.style.width = `${bbox.width}px`;
+            highlight.style.height = `${bbox.height}px`;
+            highlight.style.backgroundColor = 'rgba(255, 255, 0, 0.3)';
+            highlight.style.pointerEvents = 'auto';
+            highlight.style.zIndex = '100';
+            
+            // Add hover event to show flashcard content
+            highlight.addEventListener('mouseenter', function() {
+                console.log('Mouse entering bbox')
+                showFlashcardTooltip(flashcard, highlight);
+            });
+            
+            highlight.addEventListener('mouseleave', function() {
+                hideFlashcardTooltip();
+            });
+
+            pdfContainer.appendChild(highlight);
+        });
+    });
+}
+
+// Function to show flashcard tooltip
+function showFlashcardTooltip(flashcard, highlightElement) {
+    // Remove any existing tooltip
+    hideFlashcardTooltip();
+    
+    // Create tooltip element
+    const tooltip = document.createElement('div');
+    tooltip.id = 'flashcard-tooltip';
+    tooltip.className = 'flashcard-tooltip';
+    tooltip.innerHTML = `
+        <div class="flashcard-content">
+            <div class="flashcard-question">${flashcard.question || 'Question not available'}</div>
+            <div class="flashcard-answer">${flashcard.answer || 'Answer not available'}</div>
+        </div>
+    `;
+    
+    // Style the tooltip
+    tooltip.style.position = 'absolute';
+    tooltip.style.backgroundColor = 'white';
+    tooltip.style.border = '1px solid #ccc';
+    tooltip.style.borderRadius = '4px';
+    tooltip.style.padding = '10px';
+    tooltip.style.boxShadow = '0 2px 5px rgba(0,0,0,0.2)';
+    tooltip.style.zIndex = '200';
+    tooltip.style.maxWidth = '300px';
+    
+    // Position the tooltip near the highlight
+    const rect = highlightElement.getBoundingClientRect();
+    const pdfContainer = document.querySelector('.pdfViewer');
+    const containerRect = pdfContainer.getBoundingClientRect();
+    
+    tooltip.style.left = `${rect.right - containerRect.left + 10}px`;
+    tooltip.style.top = `${rect.top - containerRect.top}px`;
+    
+    // Add the tooltip to the container
+    pdfContainer.appendChild(tooltip);
+}
+
+// Function to hide flashcard tooltip
+function hideFlashcardTooltip() {
+    const existingTooltip = document.getElementById('flashcard-tooltip');
+    if (existingTooltip) {
+        existingTooltip.remove();
+    }
+}
+
+// Add some CSS to the page
+const style = document.createElement('style');
+style.textContent = `
+    .flashcard-tooltip {
+        transition: opacity 0.2s ease;
+    }
+    .flashcard-content {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+    .flashcard-question {
+        font-weight: bold;
+    }
+    .flashcard-answer {
+        color: #333;
+    }
+`;
+document.head.appendChild(style);
 
 </script>
 {% endblock %}

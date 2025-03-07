@@ -1,6 +1,6 @@
 import csv
 from io import StringIO
-from src.backend.flashcard_class import Flashcard
+from flashcards.models import Flashcard
 import logging
 
 class FlashcardGenerator:
@@ -19,7 +19,7 @@ class FlashcardGenerator:
             console_handler.setFormatter(formatter)
             self.logger.addHandler(console_handler)
 
-    def generate_flashcards(self, text_input, proposed_flashcards = [], feedback = ""):
+    def generate_flashcards(self, user, text_input, proposed_flashcards = [], feedback = ""):
         """
         Generate flashcards from the provided text input.
         """
@@ -66,7 +66,7 @@ class FlashcardGenerator:
         
         try:
             # Attempt to create flashcards directly from the LLM response
-            flashcards = self.create_flashcards_from_response(response)
+            flashcards = self.create_flashcards_from_response(response, user)
             self.logger.info("Flashcards created on the first try")
         except Exception as e:
             # If an error occurs, log it and attempt to enforce formatting on the response
@@ -74,7 +74,7 @@ class FlashcardGenerator:
             try:
                 clean_response, clean_tokens = self.enforce_format(response)
                 tokens += clean_tokens
-                flashcards = self.create_flashcards_from_response(clean_response)
+                flashcards = self.create_flashcards_from_response(clean_response, user)
                 self.logger.info("Flashcards created on the second try (after cleaning format)")
             except Exception as clean_error:
                 # If enforcing the format also fails, log the error and return an empty list
@@ -103,7 +103,7 @@ class FlashcardGenerator:
         return (clean_response, tokens)
         
 
-    def create_flashcards_from_response(self, response):
+    def create_flashcards_from_response(self, response, user):
         """
         Transform the LLM's raw text output into a list of Flashcard instances.
     
@@ -146,7 +146,11 @@ class FlashcardGenerator:
                     raise ValueError(f"Question length: {len_question}. Answer length: {len_answer}")
 
                 # Create and append the flashcard
-                card_i = Flashcard(question.strip(), answer.strip())
+                card_i = Flashcard(
+                    question=question.strip(), 
+                    answer=answer.strip(), 
+                    user=user
+                )
                 flashcards.append(card_i)
             except ValueError as ve:
                 flashcard_errors += 1

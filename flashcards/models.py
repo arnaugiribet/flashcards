@@ -160,19 +160,26 @@ class Flashcard(models.Model):
     current_interval = models.IntegerField(default=1)  # Interval in days
     ease_factor = models.FloatField(default=1.5)  # Starting ease factor
     history = models.JSONField(default=list)
+    document = models.ForeignKey(UserDocument, on_delete=models.SET_NULL, null=True, blank=True, related_name='flashcards')
+    page_number = models.IntegerField(null=True, blank=True)
+    bounding_box = models.JSONField(default=list, null=True, blank=True)
 
     # Relationship to Deck and User
-    deck = models.ForeignKey(Deck, on_delete=models.CASCADE, related_name='flashcards')
+    deck = models.ForeignKey(Deck, on_delete=models.CASCADE, related_name='flashcards', null=True, blank=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='flashcards')
         
     def __str__(self):
         return (f"Flashcard ID: {self.id}\n"
                 f"Question: {self.question}\n"
-                f"Deck: {self.deck.name}\n"
+                f"Answer: {self.answer[:40]}...\n"
+                f"Deck: {self.deck.name if self.deck else 'No Deck'}\n"
                 f"User: {self.user.username}\n"
                 f"Due: {self.due}\n"
                 f"Interval: {self.current_interval}\n"
-                f"Ease Factor: {self.ease_factor}")
+                f"Ease Factor: {self.ease_factor}\n"
+                f"Document: {self.document}\n"
+                f"Page Nuber: {self.page_number}\n"
+                f"Bounding Box: {self.bounding_box}")
 
     def short_str(self):
         """
@@ -180,6 +187,12 @@ class Flashcard(models.Model):
         """
         return (f"Question: {self.question}\n"
                 f"Answer: {self.answer}")
+        
+    def short_id_question(self):
+        """
+        Shorter string representation.
+        """
+        return f"{self.id}\n{self.question[:10]}\n{self.answer[:10]}"
 
     def save(self, *args, **kwargs):
         """
@@ -234,8 +247,6 @@ class Flashcard(models.Model):
 
         # Return the predicted intervals and ease factors
         return intervals, ease_factors
-
-
 
     def update_review(self, quality: str):
         """
