@@ -247,6 +247,7 @@ document.addEventListener("mouseup", function() {
 
     console.log("Captured selection with word-level bounding boxes:", selectionData);
 
+    /*
     fetch('/process-selection/', {
         method: 'POST',
         headers: {
@@ -258,6 +259,7 @@ document.addEventListener("mouseup", function() {
     .then(response => response.json())
     .then(data => console.log("Server response:", data))
     .catch(error => console.error("Error:", error));
+    */
 
     function getCsrfToken() {
         return document.querySelector('[name=csrfmiddlewaretoken]').value;
@@ -302,6 +304,13 @@ function createHighlights(flashcards) {
             return;
         }
         
+        // Log the flashcard and bbox info
+        console.log(`Flashcard ${index + 1}:`, {
+            id: flashcard.id,
+            page: flashcard.page,
+            bboxes: flashcard.bbox
+        });
+
         // Process each bbox in the array
         flashcard.bbox.forEach((bbox, bboxIndex) => {
             // Skip if this specific bbox is missing required properties
@@ -309,7 +318,7 @@ function createHighlights(flashcards) {
                 console.warn(`Skipping invalid bbox at index ${bboxIndex} for flashcard:`, flashcard);
                 return;
             }
-
+            
             // Create highlight element
             const highlight = document.createElement('div');
             highlight.className = 'pdf-highlight';
@@ -320,16 +329,7 @@ function createHighlights(flashcards) {
             const adjustedX = bbox.x; //- pdfRect.left;
             const adjustedY = bbox.y; //- pdfRect.top;
 
-            // Log the flashcard and bbox info
-            console.log(`Flashcard ${index + 1}, Bbox ${bboxIndex + 1}:`, {
-                id: flashcard.id,
-                page: flashcard.page,
-                bbox: bbox,
-                adjustedPosition: {
-                    x: adjustedX,
-                    y: adjustedY
-                }
-            });
+            
 
             // Apply styles
             highlight.style.position = 'absolute';
