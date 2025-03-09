@@ -95,22 +95,40 @@
     </div>
 </div>
 
-<!-- Document viewer modal -->
-<div id="documentViewerModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center">
-    <div class="bg-white w-11/12 h-5/6 rounded-lg flex flex-col relative"> <!-- relative here -->
-        <!-- Viewer header -->
-        <div class="flex justify-between items-center p-4 border-b">
-            <h3 class="text-lg font-semibold">Document Viewer</h3>
-            <button onclick="closeViewer()" class="text-gray-500 hover:text-gray-700">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                </svg>
-            </button>
+<!-- Outer container modal -->
+<div id="outerContainerModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center">
+    <div class="bg-white w-11/12 h-5/6 rounded-lg flex flex-row relative">
+        <!-- Left section - Original document viewer modal (without the fixed positioning) -->
+        <div id="leftSection" class="w-3/4 h-full">
+            <!-- Document viewer modal (keeping original structure) -->
+            <div id="documentViewerModal" class="h-full flex flex-col relative">
+                <!-- Viewer header -->
+                <div class="flex justify-between items-center p-4 border-b">
+                    <h3 class="text-lg font-semibold">Document Viewer</h3>
+                </div>
+                
+                <!-- PDF viewer container -->
+                <div id="viewerContainer" class="absolute inset-0 mt-16 overflow-auto">
+                    <div id="viewer" class="pdfViewer"></div>
+                </div>
+            </div>
         </div>
         
-        <!-- PDF viewer container -->
-        <div id="viewerContainer" class="absolute inset-0 mt-16 overflow-auto"> <!-- absolute positioning -->
-            <div id="viewer" class="pdfViewer"></div>
+        <!-- Resizable divider -->
+        <div id="divider" class="w-1 bg-gray-300 h-full cursor-col-resize hover:bg-blue-500 active:bg-blue-700"></div>
+        
+        <!-- Right section - Empty with light red background -->
+        <div id="rightSection" class="w-1/4 h-full bg-red-100">
+            <!-- Empty right column with light red background -->
+             <!-- Flashcards header -->
+             <div class="flex justify-between items-center p-4 border-b">
+                <h3 class="text-lg font-semibold">Flashcards</h3>
+                <button onclick="closeViewer()" class="text-gray-500 hover:text-gray-700">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
         </div>
     </div>
 </div>
@@ -150,7 +168,7 @@ let currentPage = 1;
 
 async function viewDocument(documentId) {
     console.log("Retrieving document with id:", documentId);
-    document.getElementById('documentViewerModal').classList.remove('hidden');
+    document.getElementById('outerContainerModal').classList.remove('hidden');
     currentDocumentId = documentId;
 
     try {
@@ -184,7 +202,7 @@ async function viewDocument(documentId) {
 }
 
 function closeViewer() {
-    document.getElementById('documentViewerModal').classList.add('hidden');
+    document.getElementById('outerContainerModal').classList.add('hidden');
     // Remove all existing highlights when closing the viewer
     clearHighlights();
     currentDocumentId = null;
@@ -401,6 +419,40 @@ function hideFlashcardTooltip() {
         existingTooltip.remove();
     }
 }
+
+// Control the width of the flashcards right column
+document.addEventListener('DOMContentLoaded', function() {
+    const divider = document.getElementById('divider');
+    const leftSection = document.getElementById('leftSection');
+    const rightSection = document.getElementById('rightSection');
+    const container = divider.parentElement;
+    
+    let isDragging = false;
+    
+    divider.addEventListener('mousedown', function(e) {
+        isDragging = true;
+        e.preventDefault();
+    });
+    
+    document.addEventListener('mousemove', function(e) {
+        if (!isDragging) return;
+        
+        const containerRect = container.getBoundingClientRect();
+        const containerWidth = containerRect.width;
+        const mouseX = e.clientX - containerRect.left;
+        
+        // Calculate percentage (clamped between 20% and 80%)
+        const percentage = Math.max(60, Math.min(80, (mouseX / containerWidth) * 100));
+        
+        // Apply the new widths
+        leftSection.style.width = `${percentage}%`;
+        rightSection.style.width = `${100 - percentage}%`;
+    });
+    
+    document.addEventListener('mouseup', function() {
+        isDragging = false;
+    });
+});
 
 // Add some CSS to the page
 const style = document.createElement('style');
