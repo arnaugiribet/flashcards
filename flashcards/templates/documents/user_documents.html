@@ -117,11 +117,10 @@
         <!-- Resizable divider -->
         <div id="divider" class="w-1 bg-gray-300 h-full cursor-col-resize hover:bg-blue-500 active:bg-blue-700"></div>
         
-        <!-- Right section - Empty with light red background -->
-        <div id="rightSection" class="w-1/4 h-full bg-red-100">
-            <!-- Empty right column with light red background -->
-             <!-- Flashcards header -->
-             <div class="flex justify-between items-center p-4 border-b">
+        <!-- Right section -->
+        <div id="rightSection" class="w-1/4 h-full">
+            <!-- Flashcards header -->
+            <div class="flex justify-between items-center p-4 border-b">
                 <h3 class="text-lg font-semibold">Flashcards</h3>
                 <button onclick="closeViewer()" class="text-gray-500 hover:text-gray-700">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -129,6 +128,9 @@
                     </svg>
                 </button>
             </div>
+
+            <!-- Flashcards list -->
+            <div id="flashcardsContainer" class="p-4 overflow-auto h-full"></div>
         </div>
     </div>
 </div>
@@ -295,12 +297,31 @@ async function fetchAndCreateHighlights(documentId) {
         }
         
         const data = await response.json();
+        displayFlashcards(data.flashcards);
         createHighlights(data.flashcards);
     } catch (error) {
         console.error("Error fetching flashcards:", error);
     }
 }
 
+
+// Function to display flashcards in the right column
+function displayFlashcards(flashcards) {
+    const flashcardsContainer = document.getElementById("flashcardsContainer");
+    flashcardsContainer.innerHTML = ""; // Clear existing flashcards
+    
+    flashcards.forEach(flashcard => {
+        const flashcardElement = document.createElement("div");
+        flashcardElement.classList.add("p-4", "border-b");
+        
+        flashcardElement.innerHTML = `
+            <p class="font-semibold">Q: ${flashcard.question}</p>
+            <p class="text-gray-600">A: ${flashcard.answer}</p>
+        `;
+        
+        flashcardsContainer.appendChild(flashcardElement);
+    });
+}
 // Function to create highlights
 function createHighlights(flashcards) {
     console.log("Creating highlights...");
