@@ -340,9 +340,31 @@ function displayFlashcards(flashcards) {
             if (!isCurrentlySelected) {
                 flashcardElement.classList.add('bg-blue-50', 'border-blue-200');
                 const flashcardId = flashcard.id;
-                document.querySelectorAll(`.pdf-highlight[data-flashcard-id="${flashcardId}"]`).forEach(highlight => {
+                const highlights = document.querySelectorAll(`.pdf-highlight[data-flashcard-id="${flashcardId}"]`);
+                
+                // Activate all highlights for this flashcard
+                highlights.forEach(highlight => {
                     highlight.classList.add('active');
                 });
+
+                // Get the first highlight element to scroll to
+                if (highlights.length > 0) {
+                    const firstHighlight = highlights[0];
+                    const pdfContainer = document.querySelector('#viewerContainer');
+                    
+                    // Get the highlight's position relative to the container
+                    const highlightRect = firstHighlight.getBoundingClientRect();
+                    const containerRect = pdfContainer.getBoundingClientRect();
+                    
+                    // Calculate the scroll position (adding some padding above)
+                    const scrollTop = highlightRect.top - containerRect.top + pdfContainer.scrollTop - 100;
+                    
+                    // Smooth scroll to the highlight
+                    pdfContainer.scrollTo({
+                        top: scrollTop,
+                        behavior: 'smooth'
+                    });
+                }
             }
         });
 
