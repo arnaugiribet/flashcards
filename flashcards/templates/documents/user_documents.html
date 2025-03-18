@@ -327,32 +327,42 @@ function displayFlashcards(flashcards) {
             // Check if this flashcard is already selected
             const isCurrentlySelected = flashcardElement.classList.contains('bg-blue-50');
             
-            // Remove selected class from all flashcards
+            // Remove selected class from all flashcards and deactivate all highlights
             document.querySelectorAll('#flashcardsContainer > div').forEach(card => {
                 card.classList.remove('bg-blue-50', 'border-blue-200');
+                const cardId = card.dataset.flashcardId;
+                document.querySelectorAll(`.pdf-highlight[data-flashcard-id="${cardId}"]`).forEach(highlight => {
+                    highlight.classList.remove('active');
+                });
             });
             
-            // Only add selected class if the clicked flashcard wasn't already selected
+            // Only add selected class and activate highlights if the clicked flashcard wasn't already selected
             if (!isCurrentlySelected) {
                 flashcardElement.classList.add('bg-blue-50', 'border-blue-200');
+                const flashcardId = flashcard.id;
+                document.querySelectorAll(`.pdf-highlight[data-flashcard-id="${flashcardId}"]`).forEach(highlight => {
+                    highlight.classList.add('active');
+                });
             }
         });
 
-        // Add hover handlers
+        // Add hover handlers - only activate highlights if the card is not selected
         flashcardElement.addEventListener('mouseenter', () => {
-            const flashcardId = flashcard.id;
-            // Find and highlight all corresponding highlights
-            document.querySelectorAll(`.pdf-highlight[data-flashcard-id="${flashcardId}"]`).forEach(highlight => {
-                highlight.classList.add('active');
-            });
+            if (!flashcardElement.classList.contains('bg-blue-50')) {
+                const flashcardId = flashcard.id;
+                document.querySelectorAll(`.pdf-highlight[data-flashcard-id="${flashcardId}"]`).forEach(highlight => {
+                    highlight.classList.add('active');
+                });
+            }
         });
 
         flashcardElement.addEventListener('mouseleave', () => {
-            const flashcardId = flashcard.id;
-            // Remove highlight from all corresponding highlights
-            document.querySelectorAll(`.pdf-highlight[data-flashcard-id="${flashcardId}"]`).forEach(highlight => {
-                highlight.classList.remove('active');
-            });
+            if (!flashcardElement.classList.contains('bg-blue-50')) {
+                const flashcardId = flashcard.id;
+                document.querySelectorAll(`.pdf-highlight[data-flashcard-id="${flashcardId}"]`).forEach(highlight => {
+                    highlight.classList.remove('active');
+                });
+            }
         });
         
         flashcardsContainer.appendChild(flashcardElement);
