@@ -315,6 +315,7 @@ function displayFlashcards(flashcards) {
     flashcards.forEach(flashcard => {
         const flashcardElement = document.createElement("div");
         flashcardElement.classList.add("p-4", "border-b", "cursor-pointer", "hover:bg-gray-50");
+        flashcardElement.dataset.flashcardId = flashcard.id;
         
         flashcardElement.innerHTML = `
             <p class="font-semibold">Q: ${flashcard.question}</p>
@@ -323,17 +324,41 @@ function displayFlashcards(flashcards) {
         
         // Add click handler
         flashcardElement.addEventListener('click', () => {
+            // Check if this flashcard is already selected
+            const isCurrentlySelected = flashcardElement.classList.contains('bg-blue-50');
+            
             // Remove selected class from all flashcards
             document.querySelectorAll('#flashcardsContainer > div').forEach(card => {
                 card.classList.remove('bg-blue-50', 'border-blue-200');
             });
-            // Add selected class to clicked flashcard
-            flashcardElement.classList.add('bg-blue-50', 'border-blue-200');
+            
+            // Only add selected class if the clicked flashcard wasn't already selected
+            if (!isCurrentlySelected) {
+                flashcardElement.classList.add('bg-blue-50', 'border-blue-200');
+            }
+        });
+
+        // Add hover handlers
+        flashcardElement.addEventListener('mouseenter', () => {
+            const flashcardId = flashcard.id;
+            // Find and highlight all corresponding highlights
+            document.querySelectorAll(`.pdf-highlight[data-flashcard-id="${flashcardId}"]`).forEach(highlight => {
+                highlight.classList.add('active');
+            });
+        });
+
+        flashcardElement.addEventListener('mouseleave', () => {
+            const flashcardId = flashcard.id;
+            // Remove highlight from all corresponding highlights
+            document.querySelectorAll(`.pdf-highlight[data-flashcard-id="${flashcardId}"]`).forEach(highlight => {
+                highlight.classList.remove('active');
+            });
         });
         
         flashcardsContainer.appendChild(flashcardElement);
     });
 }
+
 // Function to create highlights
 function createHighlights(flashcards) {
     console.log("Creating highlights...");
@@ -503,6 +528,14 @@ style.textContent = `
     }
     .flashcard-answer {
         color: #333;
+    }
+    .pdf-highlight {
+        transition: all 0.2s ease;
+    }
+    .pdf-highlight.active {
+        background-color: rgba(255, 196, 0, 0.5) !important;
+        box-shadow: 0 0 8px rgba(255, 196, 0, 0.5);
+        z-index: 101 !important;
     }
 `;
 document.head.appendChild(style);
