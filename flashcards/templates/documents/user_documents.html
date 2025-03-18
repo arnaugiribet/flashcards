@@ -314,12 +314,22 @@ function displayFlashcards(flashcards) {
     
     flashcards.forEach(flashcard => {
         const flashcardElement = document.createElement("div");
-        flashcardElement.classList.add("p-4", "border-b");
+        flashcardElement.classList.add("p-4", "border-b", "cursor-pointer", "hover:bg-gray-50");
         
         flashcardElement.innerHTML = `
             <p class="font-semibold">Q: ${flashcard.question}</p>
             <p class="text-gray-600">A: ${flashcard.answer}</p>
         `;
+        
+        // Add click handler
+        flashcardElement.addEventListener('click', () => {
+            // Remove selected class from all flashcards
+            document.querySelectorAll('#flashcardsContainer > div').forEach(card => {
+                card.classList.remove('bg-blue-50', 'border-blue-200');
+            });
+            // Add selected class to clicked flashcard
+            flashcardElement.classList.add('bg-blue-50', 'border-blue-200');
+        });
         
         flashcardsContainer.appendChild(flashcardElement);
     });
