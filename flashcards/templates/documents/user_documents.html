@@ -547,6 +547,20 @@ style.textContent = `
         box-shadow: 0 0 8px rgba(255, 196, 0, 0.5);
         z-index: 101 !important;
     }
+    #rightSection {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+    }
+    #flashcardsContainer {
+        flex: 1;
+        overflow-y: auto;
+        overflow-x: hidden;
+    }
+    #flashcardsContainer > div {
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+    }
 `;
 document.head.appendChild(style);
 
