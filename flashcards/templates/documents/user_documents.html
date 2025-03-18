@@ -448,6 +448,7 @@ function createHighlights(flashcards) {
             highlight.style.backgroundColor = 'rgba(255, 255, 0, 0.2)';
             highlight.style.pointerEvents = 'auto';
             highlight.style.zIndex = '100';
+            highlight.style.cursor = 'pointer';  // Add pointer cursor
             
             // Add hover event to show flashcard content
             highlight.addEventListener('mouseenter', function() {
@@ -457,6 +458,32 @@ function createHighlights(flashcards) {
             
             highlight.addEventListener('mouseleave', function() {
                 hideFlashcardTooltip();
+            });
+
+            // Add click handler to select and scroll to the corresponding flashcard
+            highlight.addEventListener('click', function() {
+                const flashcardId = flashcard.id;
+                const flashcardElement = document.querySelector(`#flashcardsContainer > div[data-flashcard-id="${flashcardId}"]`);
+                
+                if (flashcardElement) {
+                    // Remove selected class from all flashcards and deactivate all highlights
+                    document.querySelectorAll('#flashcardsContainer > div').forEach(card => {
+                        card.classList.remove('bg-blue-50', 'border-blue-200');
+                        const cardId = card.dataset.flashcardId;
+                        document.querySelectorAll(`.pdf-highlight[data-flashcard-id="${cardId}"]`).forEach(highlight => {
+                            highlight.classList.remove('active');
+                        });
+                    });
+                    
+                    // Add selected class to the clicked flashcard and activate its highlights
+                    flashcardElement.classList.add('bg-blue-50', 'border-blue-200');
+                    document.querySelectorAll(`.pdf-highlight[data-flashcard-id="${flashcardId}"]`).forEach(highlight => {
+                        highlight.classList.add('active');
+                    });
+
+                    // Scroll the flashcard into view
+                    flashcardElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
             });
 
             pdfContainer.appendChild(highlight);
@@ -591,6 +618,21 @@ style.textContent = `
     }
 `;
 document.head.appendChild(style);
+
+// Add click handler to clear selection when clicking outside highlights
+document.getElementById('viewerContainer').addEventListener('click', function(e) {
+    // Check if the click was on a highlight
+    if (!e.target.classList.contains('pdf-highlight')) {
+        // Remove selected class from all flashcards and deactivate all highlights
+        document.querySelectorAll('#flashcardsContainer > div').forEach(card => {
+            card.classList.remove('bg-blue-50', 'border-blue-200');
+            const cardId = card.dataset.flashcardId;
+            document.querySelectorAll(`.pdf-highlight[data-flashcard-id="${cardId}"]`).forEach(highlight => {
+                highlight.classList.remove('active');
+            });
+        });
+    }
+});
 
 </script>
 {% endblock %}
