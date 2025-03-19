@@ -131,17 +131,17 @@
 
             <!-- Options subheader -->
             <div class="px-4 py-2 border-b flex gap-2">
-                <button class="text-sm text-gray-600 hover:text-gray-900 flex items-center" title="AI will generate cards from your selection">
+                <button id="aiButton" class="text-sm text-gray-400 flex items-center cursor-not-allowed disabled:hover:text-gray-400" title="Select text to generate AI cards" disabled>
                     <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
                     </svg>
                     AI
                 </button>
-                <button class="text-sm text-gray-600 hover:text-gray-900 flex items-center" title="Create card manually related to your selection">
+                <button class="custom-button text-sm text-gray-600 hover:text-gray-900 flex items-center" title="Create custom cards">
                     <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
                     </svg>
-                    Manual
+                    Custom
                 </button>
             </div>
 
@@ -234,12 +234,27 @@ function clearHighlights() {
     existingHighlights.forEach(highlight => highlight.remove());
 }
 
-// Listen for text selections in the PDF viewer
-document.addEventListener("mouseup", function() {
+// Add this after the existing script tag but before the closing script tag
+let hasSelectedText = false;
+
+// Modify the existing mouseup event listener
+document.addEventListener("mouseup", function(e) {
+    // Ignore if the click was on either button
+    if (e.target.closest('#aiButton') || e.target.closest('.custom-button')) {
+        return;
+    }
+
     const selection = window.getSelection();
-    if (!selection.rangeCount) return;
+    if (!selection.rangeCount) {
+        hasSelectedText = false;
+        updateAIButton();
+        return;
+    }
 
     const selectedText = selection.toString().trim();
+    hasSelectedText = selectedText.length > 0;
+    updateAIButton();
+
     if (!selectedText) return;
 
     const range = selection.getRangeAt(0);
@@ -303,6 +318,37 @@ document.addEventListener("mouseup", function() {
         return document.querySelector('[name=csrfmiddlewaretoken]').value;
     }
 
+});
+
+function updateAIButton() {
+    const aiButton = document.getElementById('aiButton');
+    if (hasSelectedText) {
+        aiButton.disabled = false;
+        aiButton.classList.remove('text-gray-400', 'cursor-not-allowed', 'disabled:hover:text-gray-400');
+        aiButton.classList.add('text-gray-600', 'hover:text-gray-900');
+        aiButton.title = "AI will generate cards from your selection";
+    } else {
+        aiButton.disabled = true;
+        aiButton.classList.remove('text-gray-600', 'hover:text-gray-900');
+        aiButton.classList.add('text-gray-400', 'cursor-not-allowed', 'disabled:hover:text-gray-400');
+        aiButton.title = "Select text to generate AI cards";
+    }
+}
+
+// Add click handler for AI button
+document.getElementById('aiButton').addEventListener('click', function(e) {
+    if (this.disabled) {
+        // Show a tooltip or notification that text needs to be selected
+        const notification = document.createElement('div');
+        notification.className = 'fixed bottom-4 right-4 bg-gray-800 text-white px-4 py-2 rounded-lg shadow-lg z-50';
+        notification.textContent = 'Please select text first';
+        document.body.appendChild(notification);
+        
+        // Remove the notification after 2 seconds
+        setTimeout(() => {
+            notification.remove();
+        }, 2000);
+    }
 });
 
 // Fetch flashcards for the current document and create highlights
