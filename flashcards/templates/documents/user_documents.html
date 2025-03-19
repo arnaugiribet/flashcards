@@ -491,6 +491,27 @@ function createHighlights(flashcards) {
     });
 }
 
+// Add event listeners to track the Ctrl key state, allow selecting highlighted texts
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Control') {
+        // Change pointer-events for all highlights when Ctrl is pressed
+        document.querySelectorAll('.pdf-highlight').forEach(highlight => {
+            highlight.style.pointerEvents = 'none';
+        });
+    }
+});
+
+document.addEventListener('keyup', function(e) {
+    if (e.key === 'Control') {
+        // Restore pointer-events when Ctrl is released
+        document.querySelectorAll('.pdf-highlight').forEach(highlight => {
+            highlight.style.pointerEvents = 'auto';
+        });
+    }
+});
+
+
+
 // Function to show flashcard tooltip
 function showFlashcardTooltip(flashcard, highlightElement) {
     // Remove any existing tooltip
