@@ -287,9 +287,10 @@ document.addEventListener("mouseup", function(e) {
             text: span.textContent.trim(),
             box: (() => {
                 const rect = span.getBoundingClientRect();
+                const viewerContainer = document.getElementById('viewerContainer');
                 return {
-                    x: rect.x - pdfRect.left,
-                    y: rect.y - pdfRect.top,
+                    x: rect.x + viewerContainer.scrollLeft,
+                    y: rect.y + viewerContainer.scrollTop,
                     width: rect.width,
                     height: rect.height
                 };
