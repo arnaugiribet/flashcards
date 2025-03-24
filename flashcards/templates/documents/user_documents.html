@@ -215,6 +215,7 @@ async function viewDocument(documentId, documentName) {
         });
         
         pdfViewer.setDocument(pdfDoc);
+        window.appPdfViewer = pdfViewer; // Store the viewer instance globally
 
     } catch (error) {
         console.error("Error loading PDF:", error);
@@ -235,10 +236,76 @@ function clearHighlights() {
 }
 
 let hasSelectedText = false;
-let lastSelectionData = null;
+var lastSelectionData = null;
+
+function getSelectionWordCoords() {
+    var pdfViewer = window.appPdfViewer;    
+    if (!pdfViewer) {
+        console.error("PDF Viewer not found!");
+        return null;
+    }
+
+    var pageIndex = pdfViewer.currentPageNumber - 1; 
+    var page = pdfViewer.getPageView(pageIndex);
+    if (!page) {
+        console.error("PDF page not found!");
+        return null;
+    }
+
+    var pageRect = page.canvas?.getClientRects()[0];
+    if (!pageRect) {
+        console.error("Page rectangle not found!");
+        return null;
+    }
+
+    var selection = window.getSelection();
+    if (!selection.rangeCount) return null;
+
+    var range = selection.getRangeAt(0);
+    var selectedText = range.toString();
+    var words = selectedText.split(/\s+/).filter(w => w.trim().length > 0);
+    
+    var selectionRects = range.getClientRects();
+    var viewport = page.viewport;
+    var wordBoxes = [];
+
+    let rectIndex = 0;
+    
+    words.forEach(word => {
+        if (rectIndex >= selectionRects.length) return;
+
+        var r = selectionRects[rectIndex];
+
+        // Convert to PDF coordinates
+        var pdfCoords = viewport.convertToPdfPoint(r.left - pageRect.x, r.top - pageRect.y).concat(
+            viewport.convertToPdfPoint(r.right - pageRect.x, r.bottom - pageRect.y)
+        );
+
+        wordBoxes.push({ text: word, pdf_space: pdfCoords });
+        rectIndex++;
+    });
+
+    lastSelectionData = {
+        text: selectedText,
+        boxes: wordBoxes,
+        page: pageIndex,
+    };
+
+    return lastSelectionData;
+}
+
+// Attach event listener to detect text selection
+window.addEventListener('mouseup', function() {
+    var selectionLength = window.getSelection().toString().length;
+    if (selectionLength > 0) {
+        console.log(getSelectionWordCoords()); // Logs the word-to-PDF mappings
+    }
+});
+
 
 // Modify the existing mouseup event listener
 document.addEventListener("mouseup", function(e) {
+    return; // cancel for now
     // Ignore if the click was on either button
     if (e.target.closest('#aiButton') || e.target.closest('.custom-button')) {
         return;
