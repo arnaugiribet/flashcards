@@ -276,10 +276,23 @@ window.addEventListener('mouseup', function() {
         if (pages) {
             // Get the coordinates of the selected text for all pages in range
             getSelectionWordCoords(pages.startPage, pages.endPage).then(data => {
-                console.log("Selected text is:", selectionText);
-                console.log("Selected text coordinates across pages:", data);
+                // Store the selection data
+                lastSelectionData = {
+                    text: selectionText,
+                    words: data,
+                    doc_id: currentDocumentId
+                };
+                console.log("Selected text is:", lastSelectionData);
+                // Update UI to reflect selection
+                hasSelectedText = true;
+                updateAIButton();
             });
         }
+    } else {
+        // Clear selection data if no text is selected
+        lastSelectionData = null;
+        hasSelectedText = false;
+        updateAIButton();
     }
 });
 
@@ -294,7 +307,8 @@ function getStartAndEndPage(range) {
     // Find the closest page elements
     const startPage = startNode.closest('.page');
     const endPage = endNode.closest('.page');
-    
+    console.log("startPage:", startPage);
+    console.log("endPage:", endPage);
     if (startPage && endPage) {
         return {
             startPage: parseInt(startPage.dataset.pageNumber, 10),
@@ -303,77 +317,6 @@ function getStartAndEndPage(range) {
     }
     return null;
 }
-
-// Modify the existing mouseup event listener
-document.addEventListener("mouseup", function(e) {
-    return; // cancel for now
-    // Ignore if the click was on either button
-    if (e.target.closest('#aiButton') || e.target.closest('.custom-button')) {
-        return;
-    }
-
-    const selection = window.getSelection();
-    if (!selection.rangeCount) {
-        hasSelectedText = false;
-        lastSelectionData = null;
-        updateAIButton();
-        return;
-    }
-
-    const selectedText = selection.toString().trim();
-    hasSelectedText = selectedText.length > 0;
-    updateAIButton();
-
-    if (!selectedText) {
-        lastSelectionData = null;
-        return;
-    }
-
-    const range = selection.getRangeAt(0);
-    let node = range.startContainer;
-    if (node.nodeType === Node.TEXT_NODE) node = node.parentElement;
-    
-    const pageElement = node.closest(".page");
-    if (!pageElement) {
-        lastSelectionData = null;
-        return;
-    }
-    const pageNumber = parseInt(pageElement.dataset.pageNumber, 10);
-
-    // Get PDF container position
-    const pdfContainer = document.querySelector('.pdfViewer');
-    const pdfRect = pdfContainer.getBoundingClientRect();
-
-    // Find all text spans inside the selected range
-    const textLayer = pageElement.querySelector('.textLayer');
-    const spans = [...textLayer.querySelectorAll('span')];
-
-    // Map each span to its bounding box
-    const wordBoxes = spans
-        .filter(span => selection.containsNode(span, true)) // Only selected words
-        .map(span => ({
-            text: span.textContent.trim(),
-            box: (() => {
-                const rect = span.getBoundingClientRect();
-                const viewerContainer = document.getElementById('viewerContainer');
-                return {
-                    x: rect.x + viewerContainer.scrollLeft,
-                    y: rect.y + viewerContainer.scrollTop,
-                    width: rect.width,
-                    height: rect.height
-                };
-            })()
-        }));
-
-    lastSelectionData = {
-        text: selectedText,
-        boxes: wordBoxes, // Each word with its own bounding box
-        page: pageNumber,
-        doc_id: currentDocumentId
-    };
-
-    console.log("Captured selection with word-level bounding boxes:", lastSelectionData);
-});
 
 function updateAIButton() {
     const aiButton = document.getElementById('aiButton');
