@@ -238,33 +238,71 @@ function clearHighlights() {
 let hasSelectedText = false;
 var lastSelectionData = null;
 
-function getSelectionWordCoords() {
-    let pdfViewer = window.appPdfViewer;
-    let page = pdfViewer.getPageView(pdfViewer.currentPageNumber - 1).pdfPage;
-    let viewport = pdfViewer.getPageView(pdfViewer.currentPageNumber - 1).viewport;
+async function getSelectionWordCoords(startPage, endPage) {
+    const pdfViewer = window.appPdfViewer;
+    let allWords = [];
 
-    return page.getTextContent().then(textContent => {
-        return textContent.items.map(item => {
-            let [x, y] = viewport.convertToViewportPoint(item.transform[4], item.transform[5]);
+    // Get coordinates for each page in the range
+    for (let pageNum = startPage; pageNum <= endPage; pageNum++) {
+        const page = pdfViewer.getPageView(pageNum - 1).pdfPage;
+        const viewport = pdfViewer.getPageView(pageNum - 1).viewport;
+
+        const textContent = await page.getTextContent();
+        const pageWords = textContent.items.map(item => {
+            const [x, y] = viewport.convertToViewportPoint(item.transform[4], item.transform[5]);
             return {
                 text: item.str,
                 x: x,
                 y: viewport.height - y, // Flip Y-axis for correct PDF coordinate system
                 width: item.width,
-                height: item.height
+                height: item.height,
+                page: pageNum
             };
         });
-    });
+        allWords = allWords.concat(pageWords);
+    }
+    return allWords;
 }
 
 // Attach event listener to detect text selection
 window.addEventListener('mouseup', function() {
-    var selectionLength = window.getSelection().toString().length;
+    const selection = window.getSelection();
+    const range = selection.getRangeAt(0);
+    const selectionText = selection.toString();
+    const selectionLength = selectionText.length;
     if (selectionLength > 0) {
-        getSelectionWordCoords().then(data => console.log(data)); // Logs extracted words with positions
+        // Get start and end pages
+        const pages = getStartAndEndPage(range);
+        if (pages) {
+            // Get the coordinates of the selected text for all pages in range
+            getSelectionWordCoords(pages.startPage, pages.endPage).then(data => {
+                console.log("Selected text is:", selectionText);
+                console.log("Selected text coordinates across pages:", data);
+            });
+        }
     }
 });
 
+function getStartAndEndPage(range) {
+    let startNode = range.startContainer;
+    let endNode = range.endContainer;
+    
+    // Navigate up to parent elements if we're in text nodes
+    if (startNode.nodeType === Node.TEXT_NODE) startNode = startNode.parentElement;
+    if (endNode.nodeType === Node.TEXT_NODE) endNode = endNode.parentElement;
+    
+    // Find the closest page elements
+    const startPage = startNode.closest('.page');
+    const endPage = endNode.closest('.page');
+    
+    if (startPage && endPage) {
+        return {
+            startPage: parseInt(startPage.dataset.pageNumber, 10),
+            endPage: parseInt(endPage.dataset.pageNumber, 10)
+        };
+    }
+    return null;
+}
 
 // Modify the existing mouseup event listener
 document.addEventListener("mouseup", function(e) {
