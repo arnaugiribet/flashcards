@@ -270,7 +270,7 @@ window.addEventListener('mouseup', function() {
     const range = selection.getRangeAt(0);
     const selectionText = selection.toString();
     const selectionLength = selectionText.length;
-    if (selectionLength > 0) {
+    if (selectionLength > 2) {
         // Get start and end pages
         const pages = getStartAndEndPage(range);
         if (pages) {
@@ -746,17 +746,39 @@ style.textContent = `
         background-color: rgb(239 246 255) !important;
     }
     @keyframes buttonFlash {
-        0% { color: rgb(107, 114, 128); }
-        25% { color: rgb(34, 197, 94); }
-        50% { color: rgb(34, 197, 94); }
-        75% { color: rgb(34, 197, 94); }
-        100% { color: rgb(75, 85, 99); }
+        0% { 
+            color: rgb(107, 114, 128);
+            transform: scale(1);
+            box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7);
+        }
+        25% { 
+            color: rgb(34, 197, 94);
+            transform: scale(1.03);
+            box-shadow: 0 0 0 8px rgba(34, 197, 94, 0);
+        }
+        50% { 
+            color: rgb(34, 197, 94);
+            transform: scale(1);
+            box-shadow: 0 0 0 0 rgba(34, 197, 94, 0);
+        }
+        75% { 
+            color: rgb(34, 197, 94);
+            transform: scale(1);
+            box-shadow: 0 0 0 0 rgba(34, 197, 94, 0);
+        }
+        100% { 
+            color: rgb(75, 85, 99);
+            transform: scale(1);
+            box-shadow: 0 0 0 0 rgba(34, 197, 94, 0);
+        }
     }
     .button-flash {
-        animation: buttonFlash 1.2s ease;
+        animation: buttonFlash 2s ease;
+        position: relative;
+        overflow: visible;
     }
     .button-flash svg {
-        animation: buttonFlash 1.2s ease;
+        animation: buttonFlash 2s ease;
     }
 `;
 document.head.appendChild(style);
