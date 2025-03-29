@@ -13,6 +13,12 @@ formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s: %(message
 console_handler.setFormatter(formatter)
 logger.addHandler(console_handler)
 
+def match_selected_text_to_word_boxes(text, words):
+    logger.debug(f"Matching selected text to word boxes...")
+    logger.debug(f"Text: {text}")
+    logger.debug(f"Words: {words}")
+    return True
+
 def get_matched_flashcards_to_text(doc_id, text, page, boxes, user):
     logger.debug(f"Processing selected text...")
 

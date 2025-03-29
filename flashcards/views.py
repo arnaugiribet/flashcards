@@ -13,7 +13,7 @@ from flashcards.models import Flashcard, Deck, FailedFeedback, UserDocument
 from flashcards.forms import DocumentUploadForm
 from django.utils.translation import activate
 import json
-from .services import generate_flashcards, get_matched_flashcards_to_text
+from .services import generate_flashcards, get_matched_flashcards_to_text, match_selected_text_to_word_boxes
 from .forms import CustomUserCreationForm
 from django.views.decorators.http import require_http_methods
 from django.core.exceptions import ValidationError
@@ -323,12 +323,15 @@ def upload_document(request):
 # Pass selected text to LLM
 @login_required
 def process_selection(request):
+
     if request.method == 'POST':
         data = json.loads(request.body)
         user = request.user
 
         logger.debug(f"Received selection data")
         logger.debug(f"{data.keys()}")  # Process as needed
+        match_selected_text_to_word_boxes(data["text"], data["words"])
+        raise Exception("Stop here")
         get_matched_flashcards_to_text(data["doc_id"], data["text"], data["page"], data["boxes"], user)
         return JsonResponse({'status': 'success'})
     return JsonResponse({'error': 'Invalid request'}, status=400)

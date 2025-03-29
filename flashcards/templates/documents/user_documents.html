@@ -366,8 +366,39 @@ document.getElementById('aiButton').addEventListener('click', function(e) {
         }, 2000);
         return;
     }
+
     // Send the selection data to the server
-    console.log("Sending selection data to server:");
+    console.log("Sending selection data to server:", lastSelectionData);
+
+    fetch('/process-selection/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCsrfToken()
+        },
+        body: JSON.stringify(lastSelectionData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log("Server response:", data);
+        // Refresh the flashcards after successful processing
+        if (currentDocumentId) {
+            fetchAndCreateHighlights(currentDocumentId);
+        }
+    })
+    .catch(error => {
+        console.error("Error:", error);
+        // Show error notification
+        const notification = document.createElement('div');
+        notification.className = 'fixed bottom-4 right-4 bg-red-600 text-white px-4 py-2 rounded-lg shadow-lg z-50';
+        notification.textContent = 'Error processing selection. Please try again.';
+        document.body.appendChild(notification);
+        
+        // Remove the notification after 2 seconds
+        setTimeout(() => {
+            notification.remove();
+        }, 2000);
+    });
 });
 
 // Fetch flashcards for the current document and create highlights
