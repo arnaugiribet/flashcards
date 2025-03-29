@@ -305,14 +305,27 @@ function getStartAndEndPage(range) {
     if (endNode.nodeType === Node.TEXT_NODE) endNode = endNode.parentElement;
     
     // Find the closest page elements
-    const startPage = startNode.closest('.page');
-    const endPage = endNode.closest('.page');
-    console.log("startPage:", startPage);
-    console.log("endPage:", endPage);
-    if (startPage && endPage) {
+    const startPageElement = startNode.closest('.page');
+    const endPageElement = endNode.closest('.page');
+    
+    // If either element is present, use it for both
+    if (startPageElement || endPageElement) {
+        startPage = startPageElement ? parseInt(startPageElement.dataset.pageNumber, 10) : null;
+        endPage = endPageElement ? parseInt(endPageElement.dataset.pageNumber, 10) : null;
+        
+        // If one is missing, copy the other one
+        if (startPage && !endPage) {
+            endPage = startPage;
+        }
+        if (!startPage && endPage) {
+            startPage = endPage;
+        }
+        
+        console.log("startPage:", startPage);
+        console.log("endPage:", endPage);
         return {
-            startPage: parseInt(startPage.dataset.pageNumber, 10),
-            endPage: parseInt(endPage.dataset.pageNumber, 10)
+            startPage: startPage,
+            endPage: endPage
         };
     }
     return null;
