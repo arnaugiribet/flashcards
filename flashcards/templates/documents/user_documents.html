@@ -519,7 +519,7 @@ function createHighlights(flashcards) {
 
     flashcards.forEach((flashcard, index) => {
         // Skip if missing required data
-        if (!flashcard.bbox || !Array.isArray(flashcard.bbox) || flashcard.bbox.length === 0 || flashcard.page === undefined) {
+        if (!flashcard.bbox || !Array.isArray(flashcard.bbox) || flashcard.bbox.length === 0) {
             console.warn("Skipping flashcard with missing data:", flashcard);
             return;
         }

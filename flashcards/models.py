@@ -161,7 +161,6 @@ class Flashcard(models.Model):
     ease_factor = models.FloatField(default=1.5)  # Starting ease factor
     history = models.JSONField(default=list)
     document = models.ForeignKey(UserDocument, on_delete=models.SET_NULL, null=True, blank=True, related_name='flashcards')
-    page_number = models.IntegerField(null=True, blank=True)
     bounding_box = models.JSONField(default=list, null=True, blank=True)
 
     # Relationship to Deck and User
@@ -178,7 +177,6 @@ class Flashcard(models.Model):
                 f"Interval: {self.current_interval}\n"
                 f"Ease Factor: {self.ease_factor}\n"
                 f"Document: {self.document}\n"
-                f"Page Nuber: {self.page_number}\n"
                 f"Bounding Box: {self.bounding_box}")
 
     def short_str(self):

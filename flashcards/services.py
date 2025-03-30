@@ -17,15 +17,17 @@ logger.addHandler(console_handler)
 def match_selected_text_to_word_boxes(text, words):
     logger.debug(f"Matching selected text to word boxes...")
     words_list = [word['text'] for word in words]
-    # Example usage
+    
     best_start, best_end, best_score = find_best_match_edit_distance(text, words_list)
 
-    if best_start is not None:
-        logger.debug(f"Best Match: {' '.join(words_list[best_start:best_end])}")
-        logger.debug(f"Start Index: {best_start}, End Index: {best_end - 1}")
-        logger.debug(f"Distance: {best_score}")
+    logger.debug(f"Best Match: {' '.join(words_list[best_start:best_end])}")
+    logger.debug(f"Start Index: {best_start}, End Index: {best_end - 1}")
+    logger.debug(f"Distance: {best_score}")
 
-    return True
+    # Return selected boxes
+    boxes = words[best_start:best_end]
+
+    return boxes
     
 
 def find_best_match_edit_distance(text, words):
@@ -37,15 +39,15 @@ def find_best_match_edit_distance(text, words):
     best_score = float('inf')
     best_start, best_end = None, None
     
-    logger.debug(f"Text original: {text}")
-    logger.debug(f"Words original: {words}")
-    logger.debug(f"vectored_text: {vectored_text}")
-    logger.debug(f"vectored_text_with_spaces: {vectored_text_with_spaces}")
+    # logger.debug(f"Text original: {text}")
+    # logger.debug(f"Words original: {words}")
+    # logger.debug(f"vectored_text: {vectored_text}")
+    # logger.debug(f"vectored_text_with_spaces: {vectored_text_with_spaces}")
     for i in range(len(words) - len(vectored_text_with_spaces) + 1):
         span = words[i:i + len(vectored_text_with_spaces)]
-        logger.debug(f"Now checking span: {span}")
+        # logger.debug(f"Now checking span: {span}")
         distance = Levenshtein.distance("".join(vectored_text_with_spaces), " ".join(span))
-        logger.debug(f"Distance: {distance}")
+        # logger.debug(f"Distance: {distance}")
         if distance < best_score:
             best_score = distance
             best_start, best_end = i, i + len(vectored_text_with_spaces)
@@ -53,13 +55,13 @@ def find_best_match_edit_distance(text, words):
     return best_start, best_end, best_score
 
 
-def get_matched_flashcards_to_text(doc_id, text, page, boxes, user):
+def get_matched_flashcards_to_text(doc_id, text, boxes, user):
     logger.debug(f"Processing selected text...")
 
     flashcards = generate_flashcards(content=text, content_format='raw_string', context='', user=user)
     for flashcard in flashcards:
         logger.debug(f"Matching flashcard:\n{flashcard}")
-        match_flashcard_to_text(flashcard, doc_id, text, page, boxes)
+        match_flashcard_to_text(flashcard, doc_id, text, boxes)
         flashcard.save()
         logger.debug(f"Stored flashcard in db")
 
@@ -74,7 +76,7 @@ def format_boxes(boxes):
     formatted_boxes = '\n'.join(formatted_boxes)
     return formatted_boxes
 
-def match_flashcard_to_text(flashcard, doc_id, text, page, boxes):
+def match_flashcard_to_text(flashcard, doc_id, text, boxes):
 
     formatted_boxes = format_boxes(boxes)
 # Prepare prompt for the LLM
@@ -114,13 +116,12 @@ If no boxes seem relevant, return "None".
         logger.error(f"Original response: {indices_response}")
         box_indices = []
     
-    # Store in flashcard: page, docId and boxes
+    # Store in flashcard: docId and boxes
     user_document = UserDocument.objects.get(id=doc_id)
-    flashcard.page_number = page
     flashcard.document = user_document
     for idx in box_indices:
         if 0 <= idx < len(boxes):
-            box_i = boxes[idx]['box']
+            box_i = boxes[idx]
             flashcard.bounding_box.append(box_i)
         
     print(flashcard)

@@ -247,10 +247,9 @@ def get_document_flashcards(request, document_id):
         # Format the response data
         flashcard_data = []
         for card in flashcards:
-            if card.page_number is not None and card.bounding_box is not None:
+            if card.bounding_box is not None:
                 flashcard_data.append({
                     'id': str(card.id),
-                    'page': card.page_number,
                     'bbox': card.bounding_box,
                     'question': card.question,
                     'answer': card.answer
@@ -330,9 +329,8 @@ def process_selection(request):
 
         logger.debug(f"Received selection data")
         logger.debug(f"{data.keys()}")  # Process as needed
-        match_selected_text_to_word_boxes(data["text"], data["words"])
-        raise Exception("Stop here")
-        get_matched_flashcards_to_text(data["doc_id"], data["text"], data["page"], data["boxes"], user)
+        boxes = match_selected_text_to_word_boxes(data["text"], data["words"])
+        get_matched_flashcards_to_text(data["doc_id"], data["text"], boxes, user)
         return JsonResponse({'status': 'success'})
     return JsonResponse({'error': 'Invalid request'}, status=400)
 
