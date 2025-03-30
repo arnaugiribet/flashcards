@@ -5,6 +5,7 @@ from src.backend.input_content_processors import get_docx, get_pdf
 import logging
 from django.conf import settings
 from flashcards.models import TokenUsage, UserDocument
+from rapidfuzz.distance import Levenshtein
 
 logger = logging.getLogger("services.py")
 logger.setLevel(logging.DEBUG)
@@ -16,8 +17,37 @@ logger.addHandler(console_handler)
 def match_selected_text_to_word_boxes(text, words):
     logger.debug(f"Matching selected text to word boxes...")
     logger.debug(f"Text: {text}")
-    logger.debug(f"Words: {words}")
+    words_list = [word['text'] for word in words]
+    logger.debug(f"Words: {words_list}")
+    # Example usage
+    best_start, best_end, best_score = find_best_match_edit_distance(text, words_list)
+
+    if best_start is not None:
+        logger.debug(f"Best Match: {' '.join(words_list[best_start:best_end])}")
+        logger.debug(f"Start Index: {best_start}, End Index: {best_end - 1}")
+        logger.debug(f"Distance: {best_score}")
+
     return True
+    
+
+def find_best_match_edit_distance(text, words):
+    cleaned_words = [w for w in words if w.strip()]
+    text_words = text.split()
+    
+    best_score = float('inf')
+    best_start, best_end = None, None
+    
+    for i in range(len(cleaned_words) - len(text_words) + 1):
+        span = cleaned_words[i:i + len(text_words)]
+        logger.debug(f"Now checking span: {span}")
+        distance = Levenshtein.distance(" ".join(text_words), " ".join(span))
+        logger.debug(f"Distance: {distance}")
+        if distance < best_score:
+            best_score = distance
+            best_start, best_end = i, i + len(text_words)
+
+    return best_start, best_end, best_score
+
 
 def get_matched_flashcards_to_text(doc_id, text, page, boxes, user):
     logger.debug(f"Processing selected text...")
