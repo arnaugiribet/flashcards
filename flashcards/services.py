@@ -16,9 +16,7 @@ logger.addHandler(console_handler)
 
 def match_selected_text_to_word_boxes(text, words):
     logger.debug(f"Matching selected text to word boxes...")
-    logger.debug(f"Text: {text}")
     words_list = [word['text'] for word in words]
-    logger.debug(f"Words: {words_list}")
     # Example usage
     best_start, best_end, best_score = find_best_match_edit_distance(text, words_list)
 
@@ -31,20 +29,26 @@ def match_selected_text_to_word_boxes(text, words):
     
 
 def find_best_match_edit_distance(text, words):
-    cleaned_words = [w for w in words if w.strip()]
-    text_words = text.split()
+    # Split text into words and spaces
+    vectored_text = text.split()
+    vectored_text_with_spaces = [" "] * (len(vectored_text) * 2 - 1)
+    vectored_text_with_spaces[::2] = vectored_text
     
     best_score = float('inf')
     best_start, best_end = None, None
     
-    for i in range(len(cleaned_words) - len(text_words) + 1):
-        span = cleaned_words[i:i + len(text_words)]
+    logger.debug(f"Text original: {text}")
+    logger.debug(f"Words original: {words}")
+    logger.debug(f"vectored_text: {vectored_text}")
+    logger.debug(f"vectored_text_with_spaces: {vectored_text_with_spaces}")
+    for i in range(len(words) - len(vectored_text_with_spaces) + 1):
+        span = words[i:i + len(vectored_text_with_spaces)]
         logger.debug(f"Now checking span: {span}")
-        distance = Levenshtein.distance(" ".join(text_words), " ".join(span))
+        distance = Levenshtein.distance("".join(vectored_text_with_spaces), " ".join(span))
         logger.debug(f"Distance: {distance}")
         if distance < best_score:
             best_score = distance
-            best_start, best_end = i, i + len(text_words)
+            best_start, best_end = i, i + len(vectored_text_with_spaces)
 
     return best_start, best_end, best_score
 
