@@ -508,14 +508,12 @@ function createHighlights(flashcards) {
     console.log("Creating highlights...");
     clearHighlights();
 
-    const pdfContainer = document.querySelector('.pdfViewer'); 
-    if (!pdfContainer) {
-        console.error('PDF container not found');
+    // Get the PDF viewer using the same reference as in the getSelectionWordCoords function
+    const pdfViewer = window.appPdfViewer;
+    if (!pdfViewer) {
+        console.error('PDF viewer not found');
         return;
     }
-
-    // Get the PDF container position (to adjust for scrolling)
-    const pdfRect = pdfContainer.getBoundingClientRect();
 
     flashcards.forEach((flashcard, index) => {
         // Skip if missing required data
@@ -527,34 +525,35 @@ function createHighlights(flashcards) {
         // Log the flashcard and bbox info
         console.log(`Flashcard ${index + 1}:`, {
             id: flashcard.id,
-            page: flashcard.page,
             bboxes: flashcard.bbox
         });
 
         // Process each bbox in the array
         flashcard.bbox.forEach((bbox, bboxIndex) => {
             // Skip if this specific bbox is missing required properties
-            if (!bbox.x || !bbox.y || !bbox.width || !bbox.height) {
+            if (!bbox.x || !bbox.y || !bbox.width || !bbox.height || !bbox.page) {
                 console.warn(`Skipping invalid bbox at index ${bboxIndex} for flashcard:`, flashcard);
                 return;
             }
             
+            // Get the correct page container
+            const pageView = pdfViewer.getPageView(bbox.page - 1);
+            if (!pageView || !pageView.div) {
+                console.warn(`Page ${bbox.page} view not found for highlight`);
+                return;
+            }
+            const pageContainer = pageView.div;
+
             // Create highlight element
             const highlight = document.createElement('div');
             highlight.className = 'pdf-highlight';
             highlight.dataset.flashcardId = flashcard.id;
             highlight.id = `flashcard-highlight-${flashcard.id}-${bboxIndex}`;
 
-            // CANCELLED - Adjust coordinates relative to the PDF container
-            const adjustedX = bbox.x; //- pdfRect.left;
-            const adjustedY = bbox.y; //- pdfRect.top;
-
-            
-
             // Apply styles
             highlight.style.position = 'absolute';
-            highlight.style.left = `${adjustedX}px`;
-            highlight.style.top = `${adjustedY}px`;
+            highlight.style.left = `${bbox.x}px`;
+            highlight.style.top = `${pageView.viewport.height - bbox.y}px`;
             highlight.style.width = `${bbox.width}px`;
             highlight.style.height = `${bbox.height}px`;
             highlight.style.backgroundColor = 'rgba(255, 255, 0, 0.2)';
@@ -598,7 +597,7 @@ function createHighlights(flashcards) {
                 }
             });
 
-            pdfContainer.appendChild(highlight);
+            pageContainer.appendChild(highlight);
         });
     });
 }
