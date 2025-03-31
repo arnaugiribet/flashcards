@@ -531,8 +531,9 @@ function createHighlights(flashcards) {
         // Process each bbox in the array
         flashcard.bbox.forEach((bbox, bboxIndex) => {
             // Skip if this specific bbox is missing required properties
-            if (!bbox.x || !bbox.y || !bbox.width || !bbox.height || !bbox.page) {
-                console.warn(`Skipping invalid bbox at index ${bboxIndex} for flashcard:`, flashcard);
+            if (!bbox.x || !bbox.y || !bbox.page) {
+                console.warn(`Skipping invalid bbox at index ${bboxIndex} for flashcard:`, flashcard.id);
+                console.warn(`Bbox properties:`, bbox);
                 return;
             }
             

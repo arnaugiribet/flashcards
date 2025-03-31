@@ -19,6 +19,7 @@ def match_selected_text_to_word_boxes(text, words):
     words_list = [word['text'] for word in words]
     
     best_start, best_end, best_score = find_best_match_edit_distance(text, words_list)
+    logger.debug(f"best_start: {best_start}, best_end: {best_end}")
 
     logger.debug(f"Best Match: {' '.join(words_list[best_start:best_end])}")
     logger.debug(f"Start Index: {best_start}, End Index: {best_end - 1}")
@@ -33,24 +34,26 @@ def match_selected_text_to_word_boxes(text, words):
 def find_best_match_edit_distance(text, words):
     # Split text into words and spaces
     vectored_text = text.split()
-    vectored_text_with_spaces = [" "] * (len(vectored_text) * 2 - 1)
-    vectored_text_with_spaces[::2] = vectored_text
     
     best_score = float('inf')
     best_start, best_end = None, None
     
-    # logger.debug(f"Text original: {text}")
-    # logger.debug(f"Words original: {words}")
-    # logger.debug(f"vectored_text: {vectored_text}")
-    # logger.debug(f"vectored_text_with_spaces: {vectored_text_with_spaces}")
-    for i in range(len(words) - len(vectored_text_with_spaces) + 1):
-        span = words[i:i + len(vectored_text_with_spaces)]
-        # logger.debug(f"Now checking span: {span}")
-        distance = Levenshtein.distance("".join(vectored_text_with_spaces), " ".join(span))
-        # logger.debug(f"Distance: {distance}")
-        if distance < best_score:
-            best_score = distance
-            best_start, best_end = i, i + len(vectored_text_with_spaces)
+    logger.debug(f"Starting loop to check for best match. len(words): {len(words)}, len(vectored_text): {len(vectored_text)}")
+    for i in range(len(words)):
+        span = []
+        j = i
+        while j < len(words) and len("".join(span).split()) < len(vectored_text):
+            span.append(words[j])
+            j += 1
+
+        # Only calculate distance if we have a valid span
+        if len("".join(span).split()) >= len(vectored_text):
+            current_text = " ".join(span)
+            distance = Levenshtein.distance(" ".join(vectored_text), current_text)
+            
+            if distance < best_score:
+                best_score = distance
+                best_start, best_end = i, j
 
     return best_start, best_end, best_score
 
