@@ -516,15 +516,12 @@ function createHighlights(flashcards) {
     }
 
     flashcards.forEach((flashcard, index) => {
-        // Skip if missing required data
-        if (!flashcard.bbox || !Array.isArray(flashcard.bbox) || flashcard.bbox.length === 0) {
-            console.warn("Skipping flashcard with missing data:", flashcard);
-            return;
-        }
-        
+        // It's possible that some cards do not have a bbox
+
         // Log the flashcard and bbox info
         console.log(`Flashcard ${index + 1}:`, {
             id: flashcard.id,
+            q: flashcard.question,
             bboxes: flashcard.bbox
         });
 
@@ -554,7 +551,7 @@ function createHighlights(flashcards) {
             // Apply styles
             highlight.style.position = 'absolute';
             highlight.style.left = `${bbox.x}px`;
-            highlight.style.top = `${pageView.viewport.height - bbox.y}px`;
+            highlight.style.top = `${pageView.viewport.height - bbox.y - bbox.height}px`;
             highlight.style.width = `${bbox.width}px`;
             highlight.style.height = `${bbox.height}px`;
             highlight.style.backgroundColor = 'rgba(255, 255, 0, 0.2)';
