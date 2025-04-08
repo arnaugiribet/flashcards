@@ -455,10 +455,12 @@ function displayFlashcards(flashcards) {
             `;
         flashcardElement.innerHTML = flashcardContent
         
-        // Add click handler
-        flashcardElement.addEventListener('click', () => {
-            
-
+        // Add click handler for the flashcard body
+        flashcardElement.addEventListener('click', (e) => {
+            // Ignore clicks on the edit button
+            if (e.target.closest('.edit-card-btn')) {
+                return;
+            }
             // Check if this flashcard is already selected
             const isCurrentlySelected = flashcardElement.classList.contains('bg-blue-50');
             
@@ -501,6 +503,13 @@ function displayFlashcards(flashcards) {
                     });
                 }
             }
+        });
+        
+        // Add separate click handler for the edit button
+        const editButton = flashcardElement.querySelector('.edit-card-btn');
+        editButton.addEventListener('click', (e) => {
+            console.log("clicked edit button")
+            showEditPanel(flashcard);
         });
 
         // Add hover handlers - only activate highlights if the card is not selected
