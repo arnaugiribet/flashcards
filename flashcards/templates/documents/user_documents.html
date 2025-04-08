@@ -434,7 +434,9 @@ function displayFlashcards(flashcards) {
         if (!flashcard.bbox || flashcard.bbox.length === 0) {
             flashcardElement.style.backgroundColor = "#fffce0"; // Soft yellow (lemonchiffon)
         }
-
+        flashcardElement.style.borderRadius = "8px"; // Rounded edges
+        flashcardElement.style.margin = "0 4px 4px 0"; // Small margin for better visual separation
+        
         flashcardElement.dataset.flashcardId = flashcard.id;
         
         flashcardElement.innerHTML = `
