@@ -429,6 +429,12 @@ function displayFlashcards(flashcards) {
     flashcards.forEach(flashcard => {
         const flashcardElement = document.createElement("div");
         flashcardElement.classList.add("p-4", "border-b", "cursor-pointer", "hover:bg-gray-50");
+
+        // Add soft yellow background for flashcards with no bboxes
+        if (!flashcard.bbox || flashcard.bbox.length === 0) {
+            flashcardElement.style.backgroundColor = "#fffce0"; // Soft yellow (lemonchiffon)
+        }
+
         flashcardElement.dataset.flashcardId = flashcard.id;
         
         flashcardElement.innerHTML = `
