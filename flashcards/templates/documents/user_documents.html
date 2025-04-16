@@ -439,9 +439,9 @@ function displayFlashcards(flashcards) {
         // Create an indicator for cards with no bbox
         const hasBBox = flashcard.bbox && flashcard.bbox.length > 0;
         
-        // Add soft yellow background for flashcards with no bboxes
+        // Add soft red background for flashcards with no bboxes
         if (!hasBBox) {
-            flashcardElement.style.backgroundColor = "#fdf4f4"; // Soft yellow (lemonchiffon)
+            flashcardElement.style.backgroundColor = "#fdf4f4"; // Soft red
         }
 
         // Populate flashcard content

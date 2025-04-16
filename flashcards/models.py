@@ -162,9 +162,10 @@ class Flashcard(models.Model):
     history = models.JSONField(default=list)
     document = models.ForeignKey(UserDocument, on_delete=models.SET_NULL, null=True, blank=True, related_name='flashcards')
     bounding_box = models.JSONField(default=list, null=True, blank=True)
-
+    accepted = models.BooleanField(default=False)
+    
     # Relationship to Deck and User
-    deck = models.ForeignKey(Deck, on_delete=models.CASCADE, related_name='flashcards', null=True, blank=True)
+    deck = models.ForeignKey(Deck, on_delete=models.CASCADE, related_name='flashcards')
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='flashcards')
         
     def __str__(self):
