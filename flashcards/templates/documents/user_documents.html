@@ -5,6 +5,14 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf_viewer.min.js"></script>
 
+<!-- Global spinner (hidden by default) -->
+<div id="delete-spinner" class="hidden fixed top-0 left-0 right-0 bottom-0 flex justify-center items-center bg-opacity-50 bg-gray-800 z-50">
+    <div class="text-white">
+        Deleting...
+        <span class="animate-spin inline-block ml-2">⏳</span>
+    </div>
+</div>
+
 <div class="container mx-auto p-6">
     <!-- Single panel for files -->
     <div class="bg-white rounded-lg shadow-md p-6">
@@ -270,8 +278,27 @@ function confirmDelete(documentId, documentName) {
 
 function deleteDocument(documentId, documentName) {
     console.log(`Deleting document: ${documentName} (ID: ${documentId})`);
-    // You can add more functionality here later
-    // For example: confirmation dialog, API call to delete, etc.
+    
+    const spinner = document.getElementById('delete-spinner');
+    spinner.classList.remove('hidden');  // Show the spinner
+
+    const deleteUrl = `/documents/delete/${documentId}/`;
+    fetch(deleteUrl, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCsrfToken(),
+        },
+    })
+    .then(response => {
+        spinner.classList.add('hidden');  // Hide the spinner after delete
+        if (!response.ok) throw new Error('Delete failed');
+        window.location.reload();
+    })
+    .catch(error => {
+        spinner.classList.add('hidden');  // Hide the spinner if error
+        alert('Delete failed. Please try again.');
+        console.error(error);
+    });
 }
 
 function closeViewer() {

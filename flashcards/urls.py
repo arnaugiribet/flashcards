@@ -9,6 +9,7 @@ urlpatterns = [
     path('document/<uuid:document_id>/url/', views.get_document_url, name='get_document_url'),
     path('document/<uuid:document_id>/flashcards/', views.get_document_flashcards, name='get_document_flashcards'),
     path('documents/upload/', views.upload_document, name='upload_document'),
+    path('documents/delete/<uuid:document_id>/', views.delete_document, name='delete_document'),
     path('process-selection/', views.process_selection, name='process_selection'),
     path('manage_cards/', views.manage_cards, name='manage_cards'),    
     path('delete_card/<uuid:card_id>/', views.delete_card, name='delete_card'),

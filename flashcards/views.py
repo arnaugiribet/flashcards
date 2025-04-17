@@ -15,7 +15,7 @@ from django.utils.translation import activate
 import json
 from .services import generate_flashcards, get_matched_flashcards_to_text, match_selected_text_to_word_boxes
 from .forms import CustomUserCreationForm
-from django.views.decorators.http import require_http_methods
+from django.views.decorators.http import require_http_methods, require_POST
 from django.core.exceptions import ValidationError
 from django.db.models import Count, Q, Prefetch
 import random
@@ -318,6 +318,26 @@ def upload_document(request):
         form = DocumentUploadForm()
     
     return render(request, 'documents/user_documents.html', {'form': form})
+
+@login_required
+@require_POST
+def delete_document(request, document_id):
+    logger.debug(f"delete_document called")
+    document = get_object_or_404(UserDocument, id=document_id, user=request.user)
+
+    # Delete from S3
+    s3_client = boto3_client(
+        's3',
+        aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
+        aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
+        region_name=settings.AWS_S3_REGION_NAME
+    )
+    try:
+        s3_client.delete_object(Bucket=settings.AWS_STORAGE_BUCKET_NAME, Key=document.s3_key)
+        document.delete()
+        return JsonResponse({'success': True})
+    except ClientError:
+        return JsonResponse({'success': False}, status=500)
 
 # Pass selected text to LLM
 @login_required
