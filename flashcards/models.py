@@ -9,17 +9,6 @@ from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
-class UserDocument(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    name = models.CharField(max_length=255)
-    file_type = models.CharField(max_length=10)  # pdf, txt, docx
-    s3_key = models.CharField(max_length=255)
-    uploaded_at = models.DateTimeField(auto_now_add=True)
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-
-    def __str__(self):
-        return f"{self.s3_key} ({self.file_type}) {self.user} - {self.uploaded_at}"
-
 class UserPlan(models.Model):
     
     FREE = 'free'
@@ -144,6 +133,18 @@ class Deck(models.Model):
             descendants.append(child)
             descendants.extend(child.get_descendants())  # Recursive call for deeper levels
         return descendants
+
+class UserDocument(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=255)
+    file_type = models.CharField(max_length=10)  # pdf, txt, docx
+    s3_key = models.CharField(max_length=255)
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    deck = models.ForeignKey(Deck, on_delete=models.CASCADE, related_name='documents')
+
+    def __str__(self):
+        return f"{self.s3_key} ({self.file_type}) {self.user} - {self.uploaded_at}"
 
 class Flashcard(models.Model):
     """
@@ -294,6 +295,8 @@ class Flashcard(models.Model):
 
         # Save the updated state
         self.save()
+
+
 
 class FailedFeedback(models.Model):
     name = models.CharField(max_length=255)

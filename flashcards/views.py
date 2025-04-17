@@ -265,7 +265,7 @@ def upload_document(request):
     logger.debug(f"Upload function called")
     if request.method == 'POST':
         logger.info(f"POST request received for file upload to s3")
-        form = DocumentUploadForm(request.POST, request.FILES)
+        form = DocumentUploadForm(request.POST, request.FILES, user=request.user)
         if form.is_valid():
             logger.debug(f"Form is valid request received for file upload to s3")
             document = form.cleaned_data['document']
@@ -315,7 +315,7 @@ def upload_document(request):
         else:
             logger.error(f"Form errors: {form.errors}")  # <-- Debugging
     else:
-        form = DocumentUploadForm()
+        form = DocumentUploadForm(user = request.user)
     
     return render(request, 'documents/user_documents.html', {'form': form})
 

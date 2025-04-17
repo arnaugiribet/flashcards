@@ -13,8 +13,13 @@ class DocumentUploadForm(forms.ModelForm):
 
     class Meta:
         model = UserDocument
-        fields = ['document']
+        fields = ['document', 'deck']
 
+    def __init__(self, *args, user=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if user:
+            self.fields['deck'].queryset = Deck.objects.filter(user=user)
+            
     def clean_document(self):
         document = self.cleaned_data.get('document')
         if document:
