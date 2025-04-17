@@ -3,23 +3,23 @@ from django.contrib.auth.models import User
 from django.contrib.auth.forms import UserCreationForm
 from django.urls import reverse
 from django.utils.safestring import mark_safe
-from flashcards.models import UserDocument
+from flashcards.models import UserDocument, Deck
 
 class DocumentUploadForm(forms.ModelForm):
     document = forms.FileField(
         widget=forms.FileInput(attrs={'class': 'form-control'}),
         help_text='Accepted formats: PDF, TXT, DOCX'
     )
-
+    deck_name = forms.CharField(
+        max_length=200,
+        required=True,
+        widget=forms.TextInput(attrs={'class': 'form-control'}),
+        help_text='Enter deck name'
+    )
     class Meta:
         model = UserDocument
-        fields = ['document', 'deck']
+        fields = ['document', 'deck_name']
 
-    def __init__(self, *args, user=None, **kwargs):
-        super().__init__(*args, **kwargs)
-        if user:
-            self.fields['deck'].queryset = Deck.objects.filter(user=user)
-            
     def clean_document(self):
         document = self.cleaned_data.get('document')
         if document:

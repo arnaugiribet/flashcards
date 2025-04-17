@@ -265,18 +265,29 @@ def upload_document(request):
     logger.debug(f"Upload function called")
     if request.method == 'POST':
         logger.info(f"POST request received for file upload to s3")
-        form = DocumentUploadForm(request.POST, request.FILES, user=request.user)
+        form = DocumentUploadForm(request.POST, request.FILES)
         if form.is_valid():
             logger.debug(f"Form is valid request received for file upload to s3")
             document = form.cleaned_data['document']
+            deck_name = form.cleaned_data['deck_name']
             file_type = document.name.split('.')[-1].lower()
             name = document.name
             
+            # Create a new deck
+            deck = Deck(
+                name=deck_name,
+                description=f'Deck for document: {name}',
+                user=request.user,
+                parent_deck=None  # Root level deck
+            )
+            deck.save()
+
             # Create the UserDocument instance but don't save yet
             user_document = form.save(commit=False)
             user_document.user = request.user
             user_document.file_type = file_type
             user_document.name = name
+            user_document.deck = deck
             
             logger.debug(f"Generating S3 key")
             # Generate S3 key
@@ -310,12 +321,14 @@ def upload_document(request):
                 logger.debug(f"user_document saved. Redirecting...")
                 return redirect('user_documents')  # Redirect to your documents list view
                 
-            except ClientError as e:
+            except Exception as e:
+                deck.delete()
+                logger.error(f"Error during upload: {str(e)}")
                 form.add_error(None, 'Failed to upload document. Please try again.')
         else:
             logger.error(f"Form errors: {form.errors}")  # <-- Debugging
     else:
-        form = DocumentUploadForm(user = request.user)
+        form = DocumentUploadForm()
     
     return render(request, 'documents/user_documents.html', {'form': form})
 

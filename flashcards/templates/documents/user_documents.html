@@ -20,16 +20,13 @@
             <h2 class="text-xl font-semibold">Your Files</h2>
             
             <!-- Upload button in header -->
-            <div class="relative">
-                <label for="file-upload" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg cursor-pointer hover:bg-blue-700 transition-colors">
-                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-                    </svg>
-                    Upload File
-                </label>
-                <input id="file-upload" type="file" name="document" class="hidden" accept=".pdf,.txt,.docx">
-                <div id="upload-progress" class="hidden absolute top-full right-0 mt-2 text-sm text-gray-600"></div>
-            </div>
+            <button id="open-upload-modal"
+                class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+            </svg>
+            Upload File
+        </button>
         </div>
 
         {% if form.non_field_errors %}
@@ -105,6 +102,64 @@
         {% endif %}
     </div>
 </div>
+
+<!-- Upload Document Modal -->
+<!-- Upload Modal -->
+<div id="upload-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 hidden">
+    <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md transform transition-all duration-300 scale-95">
+        <h2 class="text-xl font-semibold text-gray-800 mb-6">Upload a Document</h2>
+
+        <form method="post" action="{% url 'upload_document' %}" enctype="multipart/form-data" class="space-y-5">
+            {% csrf_token %}
+            
+            <!-- File Selection Section -->
+            <div>
+                <label class="block text-sm font-medium text-gray-600 mb-1" for="file-upload">Select File</label>
+                
+                <!-- Choose File Button -->
+                <label for="file-upload" class="inline-block bg-blue-600 text-white px-4 py-2 rounded-lg cursor-pointer hover:bg-blue-700 transition">
+                    Choose File
+                </label>
+                
+                <!-- File Input (hidden but accessible for validation) -->
+                <input id="file-upload" type="file" name="document" accept=".pdf,.txt,.docx" required 
+                       class="hidden" onchange="this.nextElementSibling.innerText = this.files[0].name;">
+                
+                <!-- Display Selected File Name -->
+                <div class="text-sm text-gray-600 mt-2">
+                    <span id="file-name">No file selected</span>
+                </div>
+            </div>
+
+            <!-- Deck Name Input -->
+            <div>
+                <label class="block text-sm font-medium text-gray-600 mb-1" for="deck_name">Deck Name</label>
+                <input type="text" name="deck_name" id="deck_name" required
+                       class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 mt-3">
+            </div>
+
+            <div class="flex justify-end space-x-3 mt-5">
+                <button type="button" id="cancel-upload"
+                        class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition">
+                    Cancel
+                </button>
+                <button type="submit"
+                        class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition">
+                    Upload
+                </button>
+            </div>
+
+            {% if form.errors %}
+                <div class="text-red-500 text-sm mt-3">
+                    {{ form.errors }}
+                </div>
+            {% endif %}
+        </form>
+    </div>
+</div>
+
+
+
 
 <!-- Custom Dialog HTML (hidden by default) -->
 <div id="deleteDialog" class="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50 hidden">
@@ -184,29 +239,17 @@
 </div>
 
 <script>
-document.getElementById('file-upload').addEventListener('change', function() {
-    if (this.files[0]) {
-        const formData = new FormData();
-        formData.append('document', this.files[0]);
-        formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
-        
-        const progressElement = document.getElementById('upload-progress');
-        progressElement.textContent = 'Uploading...';
-        progressElement.classList.remove('hidden');
-        
-        fetch('{% url "upload_document" %}', {
-            method: 'POST',
-            body: formData
-        })
-        .then(response => {
-            if (!response.ok) throw new Error('Upload failed');
-            window.location.reload();
-        })
-        .catch(error => {
-            progressElement.textContent = 'Upload failed. Please try again.';
-            progressElement.classList.add('text-red-500');
-        });
-    }
+// === Upload Modal Logic ===
+const openBtn = document.getElementById('open-upload-modal');
+const modal = document.getElementById('upload-modal');
+const cancelBtn = document.getElementById('cancel-upload');
+
+openBtn.addEventListener('click', () => {
+    modal.classList.remove('hidden');
+});
+
+cancelBtn.addEventListener('click', () => {
+    modal.classList.add('hidden');
 });
 
 // Initialize PDF.js
