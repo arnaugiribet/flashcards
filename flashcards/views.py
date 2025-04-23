@@ -240,9 +240,10 @@ def get_document_flashcards(request, document_id):
     try:
         # Ensure the document exists and belongs to the current user
         document = UserDocument.objects.get(id=document_id, user=request.user)
-        
-        # Get all flashcards for this document
-        flashcards = Flashcard.objects.filter(document=document)
+        # Get the deck associated with this document
+        deck = document.deck
+        # Get all flashcards for the document's deck
+        flashcards = Flashcard.objects.filter(deck=deck)
         
         # Format the response data
         flashcard_data = []
