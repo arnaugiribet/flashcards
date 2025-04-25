@@ -258,6 +258,7 @@ const pdfjsViewer = window.pdfjsViewer;
 
 let currentPDF = null;
 let currentPage = 1;
+let currentDeckId = null;
 
 async function viewDocument(documentId, documentName) {
     console.log("Retrieving document with id:", documentId);
@@ -269,10 +270,9 @@ async function viewDocument(documentId, documentName) {
         const data = await response.json();
         
         // Store the deck information globally
-        window.currentDeckId = data.deck_id;
-        window.currentDeckName = data.deck_name;
-        console.log("Document belongs to deck:", data.deck_name, data.deck_id);
-        
+        currentDeckId = data.deck_id;
+        console.log("Document belongs to deck:", data.deck_name, currentDeckId);
+
         // Update the viewer title
         document.getElementById("viewerTitle").innerText = documentName;
         const container = document.getElementById('viewerContainer');
@@ -505,7 +505,7 @@ document.getElementById('aiButton').addEventListener('click', function(e) {
         },
         body: JSON.stringify({
             selection: lastSelectionData,
-            deckName: 'test'
+            deck_id: currentDeckId
         })
     })
     .then(response => response.json())

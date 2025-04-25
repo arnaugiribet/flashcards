@@ -204,9 +204,8 @@ def get_document_url(request, document_id):
 
     try:
         document = get_object_or_404(UserDocument, id=document_id, user=request.user)
-        deck_id = document.deck.id
-        deck_name = document.deck.name       
-        logger.debug(f"Document found: {document.id}, S3 Key: {document.s3_key}")
+        deck_id = document.deck.id    
+        logger.debug(f"Document found: {document.id}\nS3 Key: {document.s3_key}\ndeck_id: {deck_id}")
     except Exception as e:
         logger.error(f"Document lookup failed: {e}")
         return JsonResponse({'error': 'Document not found'}, status=404)
@@ -234,8 +233,7 @@ def get_document_url(request, document_id):
     logger.debug(f"Presigned URL generated successfully: {presigned_url}")
     return JsonResponse({
         'url': presigned_url,
-        'deck_id': deck_id,
-        'deck_name': deck_name
+        'deck_id': deck_id
         })
 
 @login_required
@@ -373,14 +371,15 @@ def process_selection(request):
 
         # Extract the selection data and deck name
         selection_data = data.get("selection")
-        deck_name = data.get("deckName")
-        
+        deck_id = data.get("deck_id")
+        deck = Deck.objects.get(id=deck_id)
+
         # Log what we received for debugging
         logger.debug(f"Selection data keys: {selection_data.keys()}")
-        logger.debug(f"Deck name: {deck_name}")
+        logger.debug(f"deck_id is: {deck_id}")
 
         boxes = match_selected_text_to_word_boxes(selection_data["text"], selection_data["words"])
-        get_matched_flashcards_to_text(selection_data["doc_id"], selection_data["text"], boxes, user, deck_name)
+        get_matched_flashcards_to_text(selection_data["doc_id"], selection_data["text"], boxes, user, deck)
         return JsonResponse({'status': 'success'})
     return JsonResponse({'error': 'Invalid request'}, status=400)
 
