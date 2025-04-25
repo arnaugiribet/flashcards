@@ -488,7 +488,7 @@ document.getElementById('aiButton').addEventListener('click', function(e) {
         }, 2000);
         return;
     }
-
+    
     // Send the selection data to the server
     console.log("Sending selection data to server:", lastSelectionData);
 
@@ -498,7 +498,10 @@ document.getElementById('aiButton').addEventListener('click', function(e) {
             'Content-Type': 'application/json',
             'X-CSRFToken': getCsrfToken()
         },
-        body: JSON.stringify(lastSelectionData)
+        body: JSON.stringify({
+            selection: lastSelectionData,
+            deckName: 'test'
+        })
     })
     .then(response => response.json())
     .then(data => {

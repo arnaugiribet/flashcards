@@ -362,10 +362,18 @@ def process_selection(request):
         data = json.loads(request.body)
         user = request.user
 
-        logger.debug(f"Received selection data")
-        logger.debug(f"{data.keys()}")  # Process as needed
-        boxes = match_selected_text_to_word_boxes(data["text"], data["words"])
-        get_matched_flashcards_to_text(data["doc_id"], data["text"], boxes, user, deck)
+        logger.debug(f"data keys are: {data.keys()}")
+
+        # Extract the selection data and deck name
+        selection_data = data.get("selection")
+        deck_name = data.get("deckName")
+        
+        # Log what we received for debugging
+        logger.debug(f"Selection data keys: {selection_data.keys()}")
+        logger.debug(f"Deck name: {deck_name}")
+
+        boxes = match_selected_text_to_word_boxes(selection_data["text"], selection_data["words"])
+        get_matched_flashcards_to_text(selection_data["doc_id"], selection_data["text"], boxes, user, deck_name)
         return JsonResponse({'status': 'success'})
     return JsonResponse({'error': 'Invalid request'}, status=400)
 
