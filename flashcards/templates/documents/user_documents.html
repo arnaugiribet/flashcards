@@ -548,20 +548,59 @@ function displayFlashcards(flashcards) {
     const flashcardsContainer = document.getElementById("flashcardsContainer");
     flashcardsContainer.innerHTML = ""; // Clear existing flashcards
     
-    flashcards.forEach(flashcard => {
+    // Filter into two groups
+    const unacceptedFlashcards = flashcards.filter(card => card.accepted !== true);
+    const acceptedFlashcards = flashcards.filter(card => card.accepted === true);
+    
+    // Display unaccepted flashcards section if there are any
+    if (unacceptedFlashcards.length > 0) {
+        // Add section header for unaccepted cards
+        const unacceptedHeader = document.createElement("div");
+        unacceptedHeader.classList.add("py-2", "px-4", "bg-yellow-50", "font-medium", "text-yellow-800", "border-b");
+        unacceptedHeader.textContent = `Pending Review (${unacceptedFlashcards.length})`;
+        flashcardsContainer.appendChild(unacceptedHeader);
+        
+        // Add the unaccepted flashcards
+        unacceptedFlashcards.forEach(flashcard => {
+            addFlashcardElement(flashcard, flashcardsContainer, false);
+        });
+    }
+
+    // Display accepted flashcards section if there are any
+    if (acceptedFlashcards.length > 0) {
+        console.log("Showing accepted flashcards")
+        // Add section header for accepted cards
+        const acceptedHeader = document.createElement("div");
+        acceptedHeader.classList.add("py-2", "px-4", "bg-green-50", "font-medium", "text-green-800", "border-b");
+        acceptedHeader.textContent = `Accepted (${acceptedFlashcards.length})`;
+        flashcardsContainer.appendChild(acceptedHeader);
+        
+        // Add the accepted flashcards
+        acceptedFlashcards.forEach(flashcard => {
+            addFlashcardElement(flashcard, flashcardsContainer, true);
+        });
+    }
+
+    // Helper function to create and add a flashcard element
+    function addFlashcardElement(flashcard, container, isAccepted) {
         const flashcardElement = document.createElement("div");
         flashcardElement.classList.add("p-4", "border-b", "cursor-pointer", "hover:bg-gray-50");
 
-        flashcardElement.style.borderRadius = "8px"; // Rounded edges
-        flashcardElement.style.margin = "0 4px 4px 0"; // Small margin for better visual separation
-        flashcardElement.style.position = "relative"; // For absolute positioning of the button
+        flashcardElement.style.borderRadius = "8px";
+        flashcardElement.style.margin = "0 4px 4px 0";
+        flashcardElement.style.position = "relative";
+        
+        // Style based on acceptance status
+        if (!isAccepted) {
+            flashcardElement.style.backgroundColor = "#fffbeb"; // Light yellow for unaccepted
+        }
 
         flashcardElement.dataset.flashcardId = flashcard.id;
         
-        // Create an indicator for cards with no bbox
+        // Check if flashcard has bounding box
         const hasBBox = flashcard.bbox && flashcard.bbox.length > 0;
         
-        // Add soft red background for flashcards with no bboxes
+        // Add soft red background for flashcards with no bboxes, overriding the acceptance status color
         if (!hasBBox) {
             flashcardElement.style.backgroundColor = "#fdf4f4"; // Soft red
         }
@@ -570,35 +609,64 @@ function displayFlashcards(flashcards) {
         let flashcardContent = `
             <p class="font-semibold">Q: ${flashcard.question}</p>
             <p class="text-gray-600">A: ${flashcard.answer}</p>
-            ${!hasBBox ? `<div class="absolute top-2 right-2">
-                <svg class="w-5 h-5 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
-                </svg>
-            </div>` : ''}
         `;
+        
+        // Add status indicator
+        const statusIndicator = isAccepted ? 
+            `<div class="absolute top-2 right-2">
+                <svg class="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+            </div>` :
+            `<div class="absolute top-2 right-2">
+                <svg class="w-4 h-4 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+            </div>`;
+        
+        flashcardContent += statusIndicator;
+        
+        // Add warning indicator for cards with no bbox, positioned next to status indicator
+        if (!hasBBox) {
+            flashcardContent += `
+                <div class="absolute top-2 right-8">
+                    <svg class="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                    </svg>
+                </div>`;
+        }
+        
         // Add the "Edit" button
         flashcardContent += `
-                <button class="edit-card-btn absolute bottom-2 right-2 flex items-center text-xs bg-white border border-gray-300 rounded-md px-2 py-1 text-gray-600 hover:bg-gray-50 hover:text-blue-600 transition-colors">
-                    <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path>
-                    </svg>
-                </button>
-            `;
-        flashcardElement.innerHTML = flashcardContent
+            <button class="edit-card-btn absolute bottom-2 right-2 flex items-center text-xs bg-white border border-gray-300 rounded-md px-2 py-1 text-gray-600 hover:bg-gray-50 hover:text-blue-600 transition-colors">
+                <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path>
+                </svg>
+                Edit
+            </button>
+        `;
         
-        // Add click handler for the flashcard body
+        flashcardElement.innerHTML = flashcardContent;
+        
+        // Add click handler for the flashcard body (same as original)
         flashcardElement.addEventListener('click', (e) => {
+            // Prevent triggering when clicking the edit button
+            if (e.target.closest('.edit-card-btn')) return;
             
             // Check if this flashcard is already selected
             const isCurrentlySelected = flashcardElement.classList.contains('bg-blue-50');
             
             // Remove selected class from all flashcards and deactivate all highlights
             document.querySelectorAll('#flashcardsContainer > div').forEach(card => {
-                card.classList.remove('bg-blue-50', 'border-blue-200');
-                const cardId = card.dataset.flashcardId;
-                document.querySelectorAll(`.pdf-highlight[data-flashcard-id="${cardId}"]`).forEach(highlight => {
-                    highlight.classList.remove('active');
-                });
+                if (!card.classList.contains('py-2')) { // Skip section headers
+                    card.classList.remove('bg-blue-50', 'border-blue-200');
+                    const cardId = card.dataset.flashcardId;
+                    if (cardId) {
+                        document.querySelectorAll(`.pdf-highlight[data-flashcard-id="${cardId}"]`).forEach(highlight => {
+                            highlight.classList.remove('active');
+                        });
+                    }
+                }
             });
             
             // Only add selected class and activate highlights if the clicked flashcard wasn't already selected
@@ -636,7 +704,6 @@ function displayFlashcards(flashcards) {
         // Add separate click handler for the edit button
         const editButton = flashcardElement.querySelector('.edit-card-btn');
         editButton.addEventListener('click', (e) => {
-            console.log("clicked edit button")
             showEditPanel(flashcard);
         });
 
@@ -659,8 +726,8 @@ function displayFlashcards(flashcards) {
             }
         });
         
-        flashcardsContainer.appendChild(flashcardElement);
-    });
+        container.appendChild(flashcardElement);
+    }
 }
 
 // Set up listeners for PDF.js page rendering events

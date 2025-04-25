@@ -253,7 +253,8 @@ def get_document_flashcards(request, document_id):
                     'id': str(card.id),
                     'bbox': card.bounding_box,
                     'question': card.question,
-                    'answer': card.answer
+                    'answer': card.answer,
+                    'accepted': card.accepted
                 })
         
         return JsonResponse({'flashcards': flashcard_data})
