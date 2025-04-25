@@ -58,13 +58,15 @@ def find_best_match_edit_distance(text, words):
     return best_start, best_end, best_score
 
 
-def get_matched_flashcards_to_text(doc_id, text, boxes, user):
+def get_matched_flashcards_to_text(doc_id, text, boxes, user, deck):
     logger.debug(f"Processing selected text...")
 
-    flashcards = generate_flashcards(content=text, content_format='raw_string', context='', user=user)
+    flashcards = generate_flashcards(content=text, content_format='raw_string', context='', user=user, deck=deck)
+    logger.debug(f"Trying to match flashcards and store them in db...")
     for flashcard in flashcards:
         logger.debug(f"Matching flashcard:\n{flashcard}")
         match_flashcard_to_text(flashcard, doc_id, text, boxes)
+        logger.debug(f"Trying to store flashcards in db...")
         flashcard.save()
         logger.debug(f"Stored flashcard in db")
 
@@ -132,7 +134,7 @@ If no boxes seem relevant, return "None".
     logger.debug(f"Matched indices are:\n{box_indices}")
     return True
 
-def generate_flashcards(content, content_format, context, user):
+def generate_flashcards(content, content_format, context, user, deck):
     """
     Service function to generate flashcards from the input file and context.
 
@@ -195,7 +197,7 @@ def generate_flashcards(content, content_format, context, user):
 
     try:
         # Generate flashcards using the pipeline
-        flashcards, tokens = generator.generate_flashcards(text_input=input_text, user=user)
+        flashcards, tokens = generator.generate_flashcards(text_input=input_text, user=user, deck=deck)
 
         # Update TokenUsage database
         logger.debug(f"Total tokens used: {tokens}")

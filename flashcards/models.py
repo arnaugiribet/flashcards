@@ -173,7 +173,7 @@ class Flashcard(models.Model):
         return (f"Flashcard ID: {self.id}\n"
                 f"Question: {self.question}\n"
                 f"Answer: {self.answer[:40]}...\n"
-                f"Deck: {self.deck.name if self.deck else 'No Deck'}\n"
+                f"Deck: {self.deck.name if hasattr(self, 'deck') else 'No Deck'}\n"
                 f"User: {self.user.username}\n"
                 f"Due: {self.due}\n"
                 f"Interval: {self.current_interval}\n"
