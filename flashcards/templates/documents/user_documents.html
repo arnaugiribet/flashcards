@@ -267,7 +267,12 @@ async function viewDocument(documentId, documentName) {
     try {
         const response = await fetch(`/document/${documentId}/url/`);
         const data = await response.json();
-
+        
+        // Store the deck information globally
+        window.currentDeckId = data.deck_id;
+        window.currentDeckName = data.deck_name;
+        console.log("Document belongs to deck:", data.deck_name, data.deck_id);
+        
         // Update the viewer title
         document.getElementById("viewerTitle").innerText = documentName;
         const container = document.getElementById('viewerContainer');

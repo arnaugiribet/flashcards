@@ -201,8 +201,11 @@ def user_documents(request):
 @login_required
 def get_document_url(request, document_id):
     logger.debug(f"Received request to generate presigned URL for document_id: {document_id}")
+
     try:
         document = get_object_or_404(UserDocument, id=document_id, user=request.user)
+        deck_id = document.deck.id
+        deck_name = document.deck.name       
         logger.debug(f"Document found: {document.id}, S3 Key: {document.s3_key}")
     except Exception as e:
         logger.error(f"Document lookup failed: {e}")
@@ -229,7 +232,11 @@ def get_document_url(request, document_id):
         return JsonResponse({'error': str(e)}, status=500)
         
     logger.debug(f"Presigned URL generated successfully: {presigned_url}")
-    return JsonResponse({'url': presigned_url})
+    return JsonResponse({
+        'url': presigned_url,
+        'deck_id': deck_id,
+        'deck_name': deck_name
+        })
 
 @login_required
 def get_document_flashcards(request, document_id):
