@@ -565,7 +565,7 @@ function displayFlashcards(flashcards) {
         // Add section header for unaccepted cards
         const unacceptedHeader = document.createElement("div");
         unacceptedHeader.classList.add("py-2", "px-4", "bg-yellow-50", "font-medium", "text-yellow-800", "border-b");
-        unacceptedHeader.textContent = `Pending Review (${unacceptedFlashcards.length})`;
+        unacceptedHeader.textContent = `Pending Acceptance (${unacceptedFlashcards.length})`;
         flashcardsContainer.appendChild(unacceptedHeader);
         
         // Add the unaccepted flashcards
@@ -615,31 +615,44 @@ function displayFlashcards(flashcards) {
 
         // Populate flashcard content
         let flashcardContent = `
-            <p class="font-semibold">Q: ${flashcard.question}</p>
-            <p class="text-gray-600">A: ${flashcard.answer}</p>
+            <div class="flex flex-col">
+                <div class="flex justify-end mb-2 h-5">
+                    ${!isAccepted ? `
+                        <div class="flex space-x-2">
+                            ${!hasBBox ? `
+                                <div class="tooltip-container" title="No text selection associated with this flashcard">
+                                    <svg class="w-5 h-5 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                                    </svg>
+                                </div>
+                            ` : ''}
+                            <button class="discard-card-btn flex items-center text-xs bg-red-50 border border-red-300 rounded-md px-2 py-1 text-red-600 hover:bg-red-100 transition-colors">
+                                <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                </svg>
+                                Discard
+                            </button>
+                            <button class="accept-card-btn flex items-center text-xs bg-green-50 border border-green-300 rounded-md px-2 py-1 text-green-600 hover:bg-green-100 transition-colors">
+                                <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                </svg>
+                                Accept
+                            </button>
+                        </div>
+                    ` : !hasBBox ? `
+                        <div class="tooltip-container" title="No text selection associated with this flashcard">
+                            <svg class="w-5 h-5 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                            </svg>
+                        </div>
+                    ` : ''}
+                </div>
+                <div>
+                    <p class="font-semibold">Q: ${flashcard.question}</p>
+                    <p class="text-gray-600">A: ${flashcard.answer}</p>
+                </div>
+            </div>
         `;
-        
-        // Add status indicator only for non-accepted cards
-        if (!isAccepted) {
-            flashcardContent += `
-                <div class="absolute top-2 right-2">
-                    <svg class="w-4 h-4 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                    </svg>
-                </div>`;
-        }
-                
-        // Add warning indicator for cards with no bbox
-        if (!hasBBox) {
-            // If there's no accepted indicator, place it at right-2, otherwise at right-8
-            const rightPosition = !isAccepted ? "right-8" : "right-2";
-            flashcardContent += `
-                <div class="absolute top-2 ${rightPosition}">
-                    <svg class="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
-                    </svg>
-                </div>`;
-        }
         
         // Add the "Edit" button
         flashcardContent += `
@@ -712,6 +725,21 @@ function displayFlashcards(flashcards) {
             showEditPanel(flashcard);
         });
 
+        // Add click handlers for accept and discard buttons for unaccepted cards
+        if (!isAccepted) {
+            const acceptButton = flashcardElement.querySelector('.accept-card-btn');
+            acceptButton.addEventListener('click', (e) => {
+                e.stopPropagation(); // Prevent triggering the card click
+                acceptFlashcard(flashcard.id);
+            });
+            
+            const discardButton = flashcardElement.querySelector('.discard-card-btn');
+            discardButton.addEventListener('click', (e) => {
+                e.stopPropagation(); // Prevent triggering the card click
+                discardFlashcard(flashcard.id);
+            });
+        }
+
         // Add hover handlers - only activate highlights if the card is not selected
         flashcardElement.addEventListener('mouseenter', () => {
             if (!flashcardElement.classList.contains('bg-blue-50')) {
@@ -733,6 +761,35 @@ function displayFlashcards(flashcards) {
         
         container.appendChild(flashcardElement);
     }
+}
+
+// Empty functions to handle accept and discard actions
+function acceptFlashcard(flashcardId) {
+    console.log(`Accepting flashcard with ID: ${flashcardId}`);
+    // TODO: Implement backend call to update the flashcard's accepted status
+    // Example implementation:
+    // updateFlashcardStatus(flashcardId, { accepted: true })
+    //     .then(() => {
+    //         // Refresh the flashcards display or update UI
+    //         loadAndDisplayFlashcards();
+    //     })
+    //     .catch(error => {
+    //         console.error("Error accepting flashcard:", error);
+    //     });
+}
+
+function discardFlashcard(flashcardId) {
+    console.log(`Discarding flashcard with ID: ${flashcardId}`);
+    // TODO: Implement backend call to delete the flashcard or mark it as discarded
+    // Example implementation:
+    // deleteFlashcard(flashcardId)
+    //     .then(() => {
+    //         // Refresh the flashcards display or update UI
+    //         loadAndDisplayFlashcards();
+    //     })
+    //     .catch(error => {
+    //         console.error("Error discarding flashcard:", error);
+    //     });
 }
 
 // Set up listeners for PDF.js page rendering events
