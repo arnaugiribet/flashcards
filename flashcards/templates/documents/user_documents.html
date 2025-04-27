@@ -781,7 +781,7 @@ function acceptFlashcard(flashcardId) {
   })
   .then(data => {
     console.log('Flashcard accepted successfully');
-    // Refresh your UI here (however you do that in your app)
+    // Refresh your UI here
   })
   .catch(error => {
     console.error("Error accepting flashcard:", error);
@@ -800,7 +800,7 @@ function discardFlashcard(flashcardId) {
     .then(response => {
       if (!response.ok) throw new Error('Network response was not ok');
       console.log('Flashcard discarded successfully');
-      // Refresh your UI here (however you do that in your app)
+      // Refresh your UI here
     })
     .catch(error => {
       console.error("Error discarding flashcard:", error);

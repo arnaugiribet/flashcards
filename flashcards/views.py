@@ -359,6 +359,22 @@ def delete_document(request, document_id):
     except ClientError:
         return JsonResponse({'success': False}, status=500)
 
+@login_required
+@require_POST
+def accept_flashcard(request, flashcard_id):
+    logger.debug(f"accept_flashcard called with ID: {flashcard_id}")
+    
+    flashcard = get_object_or_404(Flashcard, id=flashcard_id, user=request.user)
+
+    try:
+        flashcard.accepted = True
+        flashcard.save()
+
+        return JsonResponse({'success': True})
+    except Exception as e:
+        logger.error(f"Error accepting flashcard: {e}")
+        return JsonResponse({'success': False}, status=500)
+
 # Pass selected text to LLM
 @login_required
 def process_selection(request):
