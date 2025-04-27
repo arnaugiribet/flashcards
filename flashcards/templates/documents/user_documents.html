@@ -779,12 +779,12 @@ function acceptFlashcard(flashcardId) {
   console.log(`Accepting flashcard with ID: ${flashcardId}`);
   
   // Call your backend API to update the flashcard
-  fetch(`/api/flashcards/${flashcardId}/accept`, {
+  fetch(`/accept_card/${flashcardId}/`, { 
     method: 'POST',
     headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({ accepted: true })
+      'Content-Type': 'application/json',
+      'X-CSRFToken': getCsrfToken(),
+    }
   })
   .then(response => {
     if (!response.ok) throw new Error('Network response was not ok');
@@ -805,18 +805,27 @@ function discardFlashcard(flashcardId) {
   if (confirm('Are you sure you want to delete this card?')) {
     console.log(`Discarding flashcard with ID: ${flashcardId}`);
     
-    // Call your backend API to delete the flashcard
-    fetch(`/api/flashcards/${flashcardId}`, {
-      method: 'DELETE'
+    fetch(`/delete_card/${flashcardId}/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': getCsrfToken(),
+      },
     })
     .then(response => {
       if (!response.ok) throw new Error('Network response was not ok');
-      console.log('Flashcard discarded successfully');
-      // Refresh UI
-        fetchAndCreateHighlights(currentDocumentId);
+      return response.json();
+    })
+    .then(data => {
+      if (data.success) {
+        console.log('Flashcard discarded successfully');
+        fetchAndCreateHighlights(currentDocumentId); // Refresh UI
+      } else {
+        console.error('Failed to discard flashcard:', data.message);
+      }
     })
     .catch(error => {
-      console.error("Error discarding flashcard:", error);
+      console.error('Error discarding flashcard:', error);
     });
   }
 }

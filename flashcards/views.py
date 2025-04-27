@@ -361,10 +361,10 @@ def delete_document(request, document_id):
 
 @login_required
 @require_POST
-def accept_flashcard(request, flashcard_id):
-    logger.debug(f"accept_flashcard called with ID: {flashcard_id}")
+def accept_card(request, card_id):
+    logger.debug(f"accept_card called with ID: {card_id}")
     
-    flashcard = get_object_or_404(Flashcard, id=flashcard_id, user=request.user)
+    flashcard = get_object_or_404(Flashcard, id=card_id, user=request.user)
 
     try:
         flashcard.accepted = True
