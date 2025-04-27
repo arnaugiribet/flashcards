@@ -533,6 +533,9 @@ document.getElementById('aiButton').addEventListener('click', function(e) {
 
 // Fetch flashcards for the current document and create highlights
 async function fetchAndCreateHighlights(documentId) {
+    const flashcardsContainer = document.getElementById("flashcardsContainer");
+    const previousScrollTop = flashcardsContainer ? flashcardsContainer.scrollTop : 0;
+
     try {
         const response = await fetch(`/document/${documentId}/flashcards/`);
         
@@ -542,14 +545,22 @@ async function fetchAndCreateHighlights(documentId) {
         
         const data = await response.json();
         window.flashcards = data.flashcards;
+
         displayFlashcards(data.flashcards);
         createHighlights(window.flashcards, true); // creates all highlights on pdf startup
         setupPageRenderingListeners(); // will listen for rendering of pdf pages to trigger createHighlights again
+
+        // After rendering flashcards, restore scroll position
+        requestAnimationFrame(() => {
+            if (flashcardsContainer) {
+                flashcardsContainer.scrollTop = previousScrollTop;
+            }
+        });
+
     } catch (error) {
         console.error("Error fetching flashcards:", error);
     }
 }
-
 
 // Function to display flashcards in the right column
 function displayFlashcards(flashcards) {
@@ -781,7 +792,8 @@ function acceptFlashcard(flashcardId) {
   })
   .then(data => {
     console.log('Flashcard accepted successfully');
-    // Refresh your UI here
+    // Refresh UI
+    fetchAndCreateHighlights(currentDocumentId);
   })
   .catch(error => {
     console.error("Error accepting flashcard:", error);
@@ -800,7 +812,8 @@ function discardFlashcard(flashcardId) {
     .then(response => {
       if (!response.ok) throw new Error('Network response was not ok');
       console.log('Flashcard discarded successfully');
-      // Refresh your UI here
+      // Refresh UI
+        fetchAndCreateHighlights(currentDocumentId);
     })
     .catch(error => {
       console.error("Error discarding flashcard:", error);
