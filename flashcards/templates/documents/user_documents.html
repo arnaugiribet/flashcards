@@ -763,33 +763,49 @@ function displayFlashcards(flashcards) {
     }
 }
 
-// Empty functions to handle accept and discard actions
+// Handle accept and discard actions
 function acceptFlashcard(flashcardId) {
-    console.log(`Accepting flashcard with ID: ${flashcardId}`);
-    // TODO: Implement backend call to update the flashcard's accepted status
-    // Example implementation:
-    // updateFlashcardStatus(flashcardId, { accepted: true })
-    //     .then(() => {
-    //         // Refresh the flashcards display or update UI
-    //         loadAndDisplayFlashcards();
-    //     })
-    //     .catch(error => {
-    //         console.error("Error accepting flashcard:", error);
-    //     });
+  console.log(`Accepting flashcard with ID: ${flashcardId}`);
+  
+  // Call your backend API to update the flashcard
+  fetch(`/api/flashcards/${flashcardId}/accept`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ accepted: true })
+  })
+  .then(response => {
+    if (!response.ok) throw new Error('Network response was not ok');
+    return response.json();
+  })
+  .then(data => {
+    console.log('Flashcard accepted successfully');
+    // Refresh your UI here (however you do that in your app)
+  })
+  .catch(error => {
+    console.error("Error accepting flashcard:", error);
+  });
 }
 
 function discardFlashcard(flashcardId) {
+  // Simple confirmation dialog
+  if (confirm('Are you sure you want to delete this card?')) {
     console.log(`Discarding flashcard with ID: ${flashcardId}`);
-    // TODO: Implement backend call to delete the flashcard or mark it as discarded
-    // Example implementation:
-    // deleteFlashcard(flashcardId)
-    //     .then(() => {
-    //         // Refresh the flashcards display or update UI
-    //         loadAndDisplayFlashcards();
-    //     })
-    //     .catch(error => {
-    //         console.error("Error discarding flashcard:", error);
-    //     });
+    
+    // Call your backend API to delete the flashcard
+    fetch(`/api/flashcards/${flashcardId}`, {
+      method: 'DELETE'
+    })
+    .then(response => {
+      if (!response.ok) throw new Error('Network response was not ok');
+      console.log('Flashcard discarded successfully');
+      // Refresh your UI here (however you do that in your app)
+    })
+    .catch(error => {
+      console.error("Error discarding flashcard:", error);
+    });
+  }
 }
 
 // Set up listeners for PDF.js page rendering events
