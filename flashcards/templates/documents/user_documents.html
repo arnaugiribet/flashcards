@@ -908,7 +908,12 @@ function createHighlights(flashcards, showFlashcardsLog) {
             highlight.style.top = `${pageView.viewport.height - bbox.y - bbox.height}px`;
             highlight.style.width = `${bbox.width}px`;
             highlight.style.height = `${bbox.height}px`;
-            highlight.style.backgroundColor = 'rgba(255, 255, 0, 0.2)';
+            let bgColor = 'rgba(255, 255, 0, 0.2)'; // accepted: yellow
+            if (flashcard.accepted !== true) {
+                bgColor = 'rgba(112, 128, 144, 0.3)'; // not accepted: 
+            }
+
+            highlight.style.backgroundColor = bgColor; 
             highlight.style.pointerEvents = 'auto';
             highlight.style.zIndex = '100';
             highlight.style.cursor = 'pointer';  // Add pointer cursor
