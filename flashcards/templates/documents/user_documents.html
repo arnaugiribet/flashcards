@@ -627,37 +627,39 @@ function displayFlashcards(flashcards) {
         // Populate flashcard content
         let flashcardContent = `
             <div class="flex flex-col">
-                <div class="flex justify-end mb-2 h-5">
-                    ${!isAccepted ? `
-                        <div class="flex space-x-2">
-                            ${!hasBBox ? `
-                                <div class="tooltip-container" title="No text selection associated with this flashcard">
-                                    <svg class="w-5 h-5 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                ${(!isAccepted || (!isAccepted && !hasBBox)) ? `
+                    <div class="flex justify-end mb-2 h-5">
+                        ${!isAccepted ? `
+                            <div class="flex space-x-2">
+                                ${!hasBBox ? `
+                                    <div class="tooltip-container" title="No text selection associated with this flashcard">
+                                        <svg class="w-5 h-5 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                                        </svg>
+                                    </div>
+                                ` : ''}
+                                <button class="discard-card-btn flex items-center text-xs bg-red-50 border border-red-300 rounded-md px-2 py-1 text-red-600 hover:bg-red-100 transition-colors">
+                                    <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                                     </svg>
-                                </div>
-                            ` : ''}
-                            <button class="discard-card-btn flex items-center text-xs bg-red-50 border border-red-300 rounded-md px-2 py-1 text-red-600 hover:bg-red-100 transition-colors">
-                                <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                    Discard
+                                </button>
+                                <button class="accept-card-btn flex items-center text-xs bg-green-50 border border-green-300 rounded-md px-2 py-1 text-green-600 hover:bg-green-100 transition-colors">
+                                    <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                    </svg>
+                                    Accept
+                                </button>
+                            </div>
+                        ` : !hasBBox ? `
+                            <div class="tooltip-container" title="No text selection associated with this flashcard">
+                                <svg class="w-5 h-5 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
                                 </svg>
-                                Discard
-                            </button>
-                            <button class="accept-card-btn flex items-center text-xs bg-green-50 border border-green-300 rounded-md px-2 py-1 text-green-600 hover:bg-green-100 transition-colors">
-                                <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                                </svg>
-                                Accept
-                            </button>
-                        </div>
-                    ` : !hasBBox ? `
-                        <div class="tooltip-container" title="No text selection associated with this flashcard">
-                            <svg class="w-5 h-5 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
-                            </svg>
-                        </div>
-                    ` : ''}
-                </div>
+                            </div>
+                        ` : ''}
+                    </div>
+                ` : ''}
                 <div>
                     <p class="font-semibold">Q: ${flashcard.question}</p>
                     <p class="text-gray-600">A: ${flashcard.answer}</p>
