@@ -618,16 +618,11 @@ function displayFlashcards(flashcards) {
         
         // Check if flashcard has bounding box
         const hasBBox = flashcard.bbox && flashcard.bbox.length > 0;
-        
-        // Add soft red background for flashcards with no bboxes, overriding the acceptance status color
-        if (!hasBBox) {
-            flashcardElement.style.backgroundColor = "#fdf4f4"; // Soft red
-        }
 
         // Populate flashcard content
         let flashcardContent = `
             <div class="flex flex-col">
-                ${(!isAccepted || (!isAccepted && !hasBBox)) ? `
+                ${(!isAccepted || (!hasBBox)) ? `
                     <div class="flex justify-end mb-2 h-5">
                         ${!isAccepted ? `
                             <div class="flex space-x-2">
