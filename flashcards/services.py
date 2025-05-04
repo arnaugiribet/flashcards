@@ -6,6 +6,8 @@ import logging
 from django.conf import settings
 from flashcards.models import TokenUsage, UserDocument
 from rapidfuzz.distance import Levenshtein
+from botocore.exceptions import ClientError
+from boto3 import client as boto3_client
 
 logger = logging.getLogger("services.py")
 logger.setLevel(logging.DEBUG)
@@ -13,6 +15,22 @@ console_handler = logging.StreamHandler()
 formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s: %(message)s")
 console_handler.setFormatter(formatter)
 logger.addHandler(console_handler)
+
+
+def delete_document_from_s3(document):
+    s3_client = boto3_client(
+        's3',
+        aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
+        aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
+        region_name=settings.AWS_S3_REGION_NAME
+    )
+    try:
+        s3_client.delete_object(Bucket=settings.AWS_STORAGE_BUCKET_NAME, Key=document.s3_key)
+        document.delete()
+        return True
+    except ClientError as e:
+        logger.error(f"Error deleting document {document.id} from S3: {e}")
+        return False
 
 def match_selected_text_to_word_boxes(text, words):
     logger.debug(f"Matching selected text to word boxes...")

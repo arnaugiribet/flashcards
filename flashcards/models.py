@@ -138,6 +138,10 @@ class Deck(models.Model):
     def has_document(self):
         return self.documents.exists()
 
+    def document_id(self):
+        doc = self.documents.first()
+        return doc.id if doc else None
+
 
 class UserDocument(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

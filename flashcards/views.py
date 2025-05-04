@@ -13,7 +13,7 @@ from flashcards.models import Flashcard, Deck, FailedFeedback, UserDocument
 from flashcards.forms import DocumentUploadForm
 from django.utils.translation import activate
 import json
-from .services import generate_flashcards, get_matched_flashcards_to_text, match_selected_text_to_word_boxes
+from .services import delete_document_from_s3, generate_flashcards, get_matched_flashcards_to_text, match_selected_text_to_word_boxes
 from .forms import CustomUserCreationForm
 from django.views.decorators.http import require_http_methods, require_POST
 from django.core.exceptions import ValidationError
@@ -167,6 +167,7 @@ def delete_card(request, card_id):
 def delete_deck(request, deck_id):
     """
     View to delete a deck and all its nested sub-decks along with their flashcards.
+    Will also delete the document if tied to one.
     """
     logger.debug("Deleting deck...")
     if request.method == 'POST':
@@ -174,6 +175,11 @@ def delete_deck(request, deck_id):
             # Attempt to retrieve the deck
             deck = Deck.objects.get(id=deck_id, user=request.user)
             
+            # Delete associated document
+            document = UserDocument.objects.filter(deck=deck, user=request.user).first()
+            if document:
+                delete_document_from_s3(document)
+
             # Get all descendant decks and include the current deck
             all_decks = deck.get_descendants()
             all_decks.append(deck)
@@ -342,22 +348,14 @@ def upload_document(request):
 @login_required
 @require_POST
 def delete_document(request, document_id):
-    logger.debug(f"delete_document called")
+    logger.debug("delete_document called")
     document = get_object_or_404(UserDocument, id=document_id, user=request.user)
-
-    # Delete from S3
-    s3_client = boto3_client(
-        's3',
-        aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
-        aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
-        region_name=settings.AWS_S3_REGION_NAME
-    )
-    try:
-        s3_client.delete_object(Bucket=settings.AWS_STORAGE_BUCKET_NAME, Key=document.s3_key)
-        document.delete()
+    success = delete_document_from_s3(document)
+    if success:
         return JsonResponse({'success': True})
-    except ClientError:
+    else:
         return JsonResponse({'success': False}, status=500)
+
 
 @login_required
 @require_POST
