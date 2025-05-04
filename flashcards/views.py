@@ -444,7 +444,7 @@ def user_decks(request):
 
     # Add due cards today count
     for deck in decks:
-        deck.due_cards_today = deck.flashcards.filter(due__lte=today).count()
+        deck.due_cards_today = deck.flashcards.filter(due__lte=today, accepted=True).count()
 
     # Order the decks hierarchically using the class method
     ordered_decks = Deck.order_decks(decks)
@@ -486,7 +486,8 @@ def study(request):
     due_cards = Flashcard.objects.filter(
         user=request.user,
         deck_id__in=deck_ids,
-        due__lte=timezone.now().date()
+        due__lte=timezone.now().date(),
+        accepted=True
     ).order_by('due')
     
     # If no cards are due, render a specific template
@@ -545,7 +546,8 @@ def review_card(request):
         card = Flashcard.objects.only('id', 'user', 'deck_id', 'question', 'answer', 'due').get(
             id=card_id,
             user=request.user,
-            deck_id__in=deck_ids  # Make sure the card belongs to the specified deck or its children
+            deck_id__in=deck_ids,  # Make sure the card belongs to the specified deck or its children
+            accepted=True
         )
         
         # Update the due date based on the review result
@@ -562,7 +564,8 @@ def review_card(request):
         due_cards = Flashcard.objects.filter(
             user=request.user,
             deck_id__in=deck_ids,  # Filter by deck_id and its children
-            due__lte=current_date
+            due__lte=current_date,
+            accepted=True
         ).order_by('due')
 
         # If there is more than one card in the due cards list, handle the "again" card
