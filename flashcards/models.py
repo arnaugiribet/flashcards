@@ -134,6 +134,11 @@ class Deck(models.Model):
             descendants.extend(child.get_descendants())  # Recursive call for deeper levels
         return descendants
 
+    @property
+    def has_document(self):
+        return self.documents.exists()
+
+
 class UserDocument(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=255)
