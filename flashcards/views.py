@@ -201,7 +201,7 @@ def delete_deck(request, deck_id):
 
 @login_required
 def user_documents(request):
-    user_documents = UserDocument.objects.filter(user=request.user)
+    user_documents = UserDocument.objects.filter(user=request.user).select_related('deck')
     return render(request, 'documents/user_documents.html', {'user_documents': user_documents})
 
 @login_required
@@ -350,6 +350,27 @@ def upload_document(request):
 def delete_document(request, document_id):
     logger.debug("delete_document called")
     document = get_object_or_404(UserDocument, id=document_id, user=request.user)
+    try:
+        # Get the associated deck
+        deck = document.deck
+
+        # Get all descendant decks and include the current deck
+        all_decks = deck.get_descendants()
+        all_decks.append(deck)
+
+        # Collect all flashcards associated with these decks
+        flashcards_to_delete = Flashcard.objects.filter(deck__in=all_decks)
+
+        # Delete all collected flashcards and decks
+        flashcards_to_delete.delete()
+        for d in all_decks:
+            d.delete()
+        
+        logger.debug(f"Successfully deleted deck '{deck.name}' and its descendants")
+    except Exception as e:
+        logger.error(f"Error deleting deck structure: {str(e)}")
+        # Continue with document deletion even if deck deletion fails
+
     success = delete_document_from_s3(document)
     if success:
         return JsonResponse({'success': True})
