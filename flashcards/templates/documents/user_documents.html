@@ -203,15 +203,19 @@
         <!-- Right section -->
         <div id="rightSection" class="w-1/4 h-full">
             <!-- Flashcards header -->
-            <div class="flex justify-between items-center p-4 border-b">
-                <h3 class="text-lg font-semibold">Flashcards</h3>
-                <button onclick="closeViewer()" class="text-gray-500 hover:text-gray-700">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                    </svg>
-                </button>
+            <div class="flex flex-col p-4 border-b">
+                <div class="flex justify-between items-center">
+                    <h3 class="text-lg font-semibold">Flashcards</h3>
+                    <button onclick="closeViewer()" class="text-gray-500 hover:text-gray-700">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+                <div class="mt-1 text-sm">
+                    Deck: <a href="#" class="text-blue-500 hover:underline"></a>
+                </div>
             </div>
-
             <!-- Options subheader -->
             <div class="px-4 py-2 border-b flex gap-2">
                 <button id="aiButton" class="text-sm text-gray-400 flex items-center cursor-not-allowed disabled:hover:text-gray-400" title="Select text to generate AI cards" disabled>
@@ -273,6 +277,7 @@ let currentDeckId = null;
 
 async function viewDocument(documentId, documentName) {
     console.log("Retrieving document with id:", documentId);
+
     document.getElementById('outerContainerModal').classList.remove('hidden');
     currentDocumentId = documentId;
 
@@ -282,10 +287,22 @@ async function viewDocument(documentId, documentName) {
         
         // Store the deck information globally
         currentDeckId = data.deck_id;
-        console.log("Document belongs to deck:", data.deck_name, currentDeckId);
+        const displayDeckName = data.deck_name;
+        console.log("Document belongs to deck:", displayDeckName, currentDeckId);
 
         // Update the viewer title
         document.getElementById("viewerTitle").innerText = documentName;
+
+        // Update the deck info in the right sidebar
+        const deckInfoElement = document.querySelector('#rightSection .mt-1.text-sm');
+        if (deckInfoElement) {
+            // Create the URL for the deck
+            const deckUrl = `/study/?deck_id=${currentDeckId}`;
+            deckInfoElement.innerHTML = `Deck: <a href="${deckUrl}" class="text-blue-500 hover:underline">${displayDeckName}</a>`;
+        } else {
+            console.error("Deck info element not found");
+        }
+
         const container = document.getElementById('viewerContainer');
         const viewer = document.getElementById('viewer');
         
