@@ -7,34 +7,47 @@
         {% if decks %}
             <ul style="list-style: none; padding: 0;">
                 {% for deck in decks %}
-                    <li>
-                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 0; border-bottom: 1px solid #e2e8e5; padding-left: {{ deck.indentation_level|default:0 }}rem;">
-                            <div>
-                                <a href="{% url 'study' %}?deck_id={{ deck.id }}" 
-                                   style="color: #6b8276; text-decoration: none; font-weight: bold; transition: color 0.2s;">
-                                    {{ deck.name }}
-                                </a>
-                            </div>
-                            <div style="display: flex; align-items: center; gap: 1rem;">
-                                <span style="color: #9daca2; font-size: 0.9rem; font-weight: 500;">
-                                    {{ deck.due_cards_today }}
-                                </span>
-                                <!-- Three dots button to open the menu -->
-                                <button onclick="openMenu('{{ deck.id }}', this)" style="background: none; border: none; color: #9daca2; font-size: 1.2rem; cursor: pointer;">
-                                    &#8942;
-                                </button>
+                <li>
+                    <div style="
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                        padding: 0.75rem 1rem;
+                        border-bottom: 1px solid #e2e8e5;
+                        border-radius: 8px;
+                        margin-bottom: 0.5rem;
+                        {% if deck.has_document %}background-color: #eef6f9;{% endif %}
+                        padding-left: {{ deck.indentation_level|default:0 }}rem;
+                    ">
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            {% if deck.has_document %}
+                            <i class="fas fa-file-alt" style="color: #6b8276; margin-left: 0.5rem;"></i>
+                            {% endif %}
+                            <a href="{% url 'study' %}?deck_id={{ deck.id }}"
+                            style="color: #6b8276; text-decoration: none; font-weight: 600; font-size: 1rem;">
+                                {{ deck.name }}
+                            </a>
+                        </div>
+                        
+                        <div style="display: flex; align-items: center; gap: 1rem;">
+                            <span style="color: #9daca2; font-size: 0.9rem; font-weight: 500;">
+                                {{ deck.due_cards_today }}
+                            </span>
+                            <button onclick="openMenu('{{ deck.id }}', this)"
+                                    style="background: none; border: none; color: #9daca2; font-size: 1.2rem; cursor: pointer;">
+                                &#8942;
+                            </button>
 
-                                <!-- Hidden Modal (Menu) -->
-                                <div id="optionsModal_{{ deck.id }}" class="options-modal hidden absolute" 
-                                    style="background-color: rgba(240, 240, 240, 0.5); shadow-lg p-4 rounded mt-2 z-10;">
-                                    <button onclick="showDeleteModal('{{ deck.id }}')"
-                                        style="display: block; padding: 0.5rem; background-color: #9daca2; color: white; border: none; border-radius: 5px; width: 100%; margin-bottom: 0.5rem; text-align: center; font-family: Arial, sans-serif; font-size: 1rem; cursor: pointer; transition: background-color 0.3s ease, transform 0.2s ease;">
-                                        Delete Deck
-                                    </button>
-                                </div>
+                            <div id="optionsModal_{{ deck.id }}" class="options-modal hidden absolute"
+                                style="background-color: rgba(240, 240, 240, 0.5); box-shadow: 0 2px 10px rgba(0,0,0,0.1); padding: 0.75rem; border-radius: 8px; z-index: 10;">
+                                <button onclick="showDeleteModal('{{ deck.id }}')"
+                                        style="display: block; width: 100%; background-color: #9daca2; color: white; border: none; padding: 0.5rem; border-radius: 5px; font-size: 0.95rem; font-family: Arial, sans-serif; cursor: pointer;">
+                                    Delete Deck
+                                </button>
                             </div>
                         </div>
-                    </li>
+                    </div>
+                </li>
                 {% endfor %}
             </ul>
         {% else %}
@@ -140,7 +153,9 @@
 <div id="delete-deck-modal" class="fixed inset-0 bg-gray-800 bg-opacity-50 flex justify-center items-center hidden">
     <div class="bg-white rounded-lg p-6 w-96 shadow-lg">
         <h2 class="text-xl font-semibold text-center text-gray-700 mb-4">Delete deck, subdecks and all of their flashcards?</h2>
-        <p class="text-center text-gray-600 mb-6">This will delete all of the flashcards inside the deck and any subdecks inside. Do you wish to proceed?</p>
+        <p class="text-center text-gray-600 mb-6">This will delete all of the flashcards inside the deck and any subdecks inside.</p>
+        <p class="text-center text-gray-600 mb-6">Any associated document will also be deleted.</p>
+        <p class="text-center text-gray-600 mb-6">Do you wish to proceed?</p>
         <div class="flex justify-center gap-4">
             <button id="cancel-delete" class="btn cancel-btn px-4 py-2 bg-gray-300 rounded-md text-sm text-gray-800 hover:bg-gray-400 transition">Cancel</button>
             <button id="confirm-delete" class="btn delete-deck-btn px-4 py-2 text-white rounded-md text-sm bg-[#d4a8a8] hover:bg-[#9daca2] transition">Delete</button>

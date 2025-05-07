@@ -5,6 +5,14 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf_viewer.min.js"></script>
 
+<!-- Global spinner (hidden by default) -->
+<div id="delete-spinner" class="hidden fixed top-0 left-0 right-0 bottom-0 flex justify-center items-center bg-opacity-50 bg-gray-800 z-50">
+    <div class="text-white">
+        Deleting...
+        <span class="animate-spin inline-block ml-2">⏳</span>
+    </div>
+</div>
+
 <div class="container mx-auto p-6">
     <!-- Single panel for files -->
     <div class="bg-white rounded-lg shadow-md p-6">
@@ -12,16 +20,13 @@
             <h2 class="text-xl font-semibold">Your Files</h2>
             
             <!-- Upload button in header -->
-            <div class="relative">
-                <label for="file-upload" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg cursor-pointer hover:bg-blue-700 transition-colors">
-                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-                    </svg>
-                    Upload File
-                </label>
-                <input id="file-upload" type="file" name="document" class="hidden" accept=".pdf,.txt,.docx">
-                <div id="upload-progress" class="hidden absolute top-full right-0 mt-2 text-sm text-gray-600"></div>
-            </div>
+            <button id="open-upload-modal"
+                class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+            </svg>
+            Upload File
+        </button>
         </div>
 
         {% if form.non_field_errors %}
@@ -56,7 +61,7 @@
                     
                     <!-- File info -->
                     <div class="flex-grow">
-                        <h3 class="font-medium cursor-pointer hover:text-blue-600" onclick="viewDocument('{{ document.id }}')">{{ document.name }}</h3>
+                        <h3 class="font-medium cursor-pointer hover:text-blue-600" onclick="viewDocument('{{ document.id }}', '{{ document.name }}')">{{ document.name }}</h3>
                         <div class="text-sm text-gray-500">
                             {{ document.file_type|upper }} • Uploaded {{ document.uploaded_at|date:"M d, Y" }} at {{ document.uploaded_at|date:"H:i" }}
                         </div>
@@ -66,14 +71,17 @@
                     <div class="flex gap-2">
                         <!-- Modified view button with onclick handler -->
                         <button 
-                            onclick="viewDocument('{{ document.id }}')"
+                            onclick="viewDocument('{{ document.id }}', '{{ document.name }}')"
                             class="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
                             </svg>
                         </button>
-                        <button class="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors">
+                        <!-- Delete button -->
+                        <button 
+                            onclick="confirmDelete('{{ document.id }}', '{{ document.name }}', '{{ document.deck.name }}')"
+                            class="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
                             </svg>
@@ -95,50 +103,168 @@
     </div>
 </div>
 
-<!-- Document viewer modal -->
-<div id="documentViewerModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center">
-    <div class="bg-white w-11/12 h-5/6 rounded-lg flex flex-col relative"> <!-- relative here -->
-        <!-- Viewer header -->
-        <div class="flex justify-between items-center p-4 border-b">
-            <h3 class="text-lg font-semibold">Document Viewer</h3>
-            <button onclick="closeViewer()" class="text-gray-500 hover:text-gray-700">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                </svg>
-            </button>
-        </div>
+<!-- Upload Document Modal -->
+<div id="upload-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 hidden">
+    <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md transform transition-all duration-300 scale-95">
+        <h2 class="text-xl font-semibold text-gray-800 mb-6">Upload a Document</h2>
+
+        <form method="post" action="{% url 'upload_document' %}" enctype="multipart/form-data" class="space-y-5">
+            {% csrf_token %}
+            
+            <!-- File Selection Section -->
+            <div>
+                <label class="block text-sm font-medium text-gray-600 mb-1" for="file-upload">Select File</label>
+                
+                <!-- Choose File Button -->
+                <label for="file-upload" class="inline-block bg-blue-600 text-white px-4 py-2 rounded-lg cursor-pointer hover:bg-blue-700 transition">
+                    Choose File
+                </label>
+                
+                <!-- File Input (hidden but accessible for validation) -->
+                <input id="file-upload" type="file" name="document" accept=".pdf,.txt,.docx" required 
+                       class="hidden" onchange="this.nextElementSibling.innerText = this.files[0].name;">
+                
+                <!-- Display Selected File Name -->
+                <div class="text-sm text-gray-600 mt-2">
+                    <span id="file-name">No file selected</span>
+                </div>
+            </div>
+
+            <!-- Deck Name Input -->
+            <div>
+                <label class="block text-sm font-medium text-gray-600 mb-1" for="deck_name">Deck Name</label>
+                <input type="text" name="deck_name" id="deck_name" required
+                       class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 mt-3">
+            </div>
+
+            <div class="flex justify-end space-x-3 mt-5">
+                <button type="button" id="cancel-upload"
+                        class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition">
+                    Cancel
+                </button>
+                <button type="submit"
+                        class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition">
+                    Upload
+                </button>
+            </div>
+
+            {% if form.errors %}
+                <div class="text-red-500 text-sm mt-3">
+                    {{ form.errors }}
+                </div>
+            {% endif %}
+        </form>
+    </div>
+</div>
+
+<!-- Custom Dialog HTML (hidden by default) -->
+<div id="deleteDialog" class="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50 hidden">
+    <div class="bg-white rounded-lg shadow-lg p-6 max-w-sm w-full">
+        <h3 class="text-lg font-medium text-gray-900 mb-3">Confirm Deletion</h3>
+        <p class="text-gray-600 mb-4" id="deleteMessage"></p>
         
-        <!-- PDF viewer container -->
-        <div id="viewerContainer" class="absolute inset-0 mt-16 overflow-auto"> <!-- absolute positioning -->
-            <div id="viewer" class="pdfViewer"></div>
+        <div class="flex justify-end space-x-3">
+            <button 
+                onclick="document.getElementById('deleteDialog').classList.add('hidden')"
+                class="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300">
+                Cancel
+            </button>
+            <button 
+                id="confirmDeleteButton"
+                class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">
+                Delete
+            </button>
         </div>
     </div>
 </div>
 
+<!-- Outer container modal -->
+<div id="outerContainerModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center">
+    <div class="bg-white w-11/12 h-5/6 rounded-lg flex flex-row relative">
+        <!-- Left section - Original document viewer modal (without the fixed positioning) -->
+        <div id="leftSection" class="w-3/4 h-full">
+            <!-- Document viewer modal (keeping original structure) -->
+            <div id="documentViewerModal" class="h-full flex flex-col relative">
+                <!-- Viewer header -->
+                <div class="flex justify-between items-center p-4 border-b">
+                    <h3 id="viewerTitle" class="text-lg font-semibold"></h3>
+                </div>
+                
+                <!-- PDF viewer container -->
+                <div id="viewerContainer" class="absolute inset-0 mt-16 overflow-auto">
+                    <div id="viewer" class="pdfViewer"></div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Resizable divider -->
+        <div id="divider" class="w-1 bg-gray-300 h-full cursor-col-resize hover:bg-blue-500 active:bg-blue-700"></div>
+        
+        <!-- Right section -->
+        <div id="rightSection" class="w-1/4 h-full">
+            <!-- Flashcards header -->
+            <div class="flex flex-col p-4 border-b">
+                <div class="flex justify-between items-center">
+                    <h3 class="text-lg font-semibold">Flashcards</h3>
+                    <button onclick="closeViewer()" class="text-gray-500 hover:text-gray-700">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+                <div class="mt-1 text-sm">
+                    Deck: <a href="#" class="text-blue-500 hover:underline"></a>
+                </div>
+            </div>
+            <!-- Options subheader -->
+            <div class="px-4 py-2 border-b flex gap-2">
+                <button id="aiButton" class="text-sm text-gray-400 flex items-center cursor-not-allowed disabled:hover:text-gray-400" title="Select text to generate AI cards" disabled>
+                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                    </svg>
+                    AI
+                </button>
+                <button class="custom-button text-sm text-gray-600 hover:text-gray-900 flex items-center" title="Create custom cards">
+                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                    </svg>
+                    Custom
+                </button>
+            </div>
+
+            <!-- Flashcards list -->
+            <div id="flashcardsContainer" class="p-4 overflow-auto h-full"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Confirm discard flashcard modal -->
+<div id="confirm-discard-flashcard" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+    <div class="bg-white p-6 rounded-xl shadow-lg text-center max-w-sm w-full">
+      <p class="mb-4 text-sm text-gray-800">Are you sure you want to delete this card?</p>
+      <div class="flex justify-center gap-3">
+        <button id="confirm-yes" class="text-sm bg-red-50 border border-red-300 rounded-md px-4 py-1.5 text-red-600 hover:bg-red-100 transition-colors">
+          Yes
+        </button>
+        <button id="confirm-no" class="text-sm bg-gray-50 border border-gray-300 rounded-md px-4 py-1.5 text-gray-700 hover:bg-gray-100 transition-colors">
+          Cancel
+        </button>
+      </div>
+    </div>
+  </div>
+
 <script>
-document.getElementById('file-upload').addEventListener('change', function() {
-    if (this.files[0]) {
-        const formData = new FormData();
-        formData.append('document', this.files[0]);
-        formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
-        
-        const progressElement = document.getElementById('upload-progress');
-        progressElement.textContent = 'Uploading...';
-        progressElement.classList.remove('hidden');
-        
-        fetch('{% url "upload_document" %}', {
-            method: 'POST',
-            body: formData
-        })
-        .then(response => {
-            if (!response.ok) throw new Error('Upload failed');
-            window.location.reload();
-        })
-        .catch(error => {
-            progressElement.textContent = 'Upload failed. Please try again.';
-            progressElement.classList.add('text-red-500');
-        });
-    }
+// === Upload Modal Logic ===
+const openBtn = document.getElementById('open-upload-modal');
+const modal = document.getElementById('upload-modal');
+const cancelBtn = document.getElementById('cancel-upload');
+
+openBtn.addEventListener('click', () => {
+    modal.classList.remove('hidden');
+});
+
+cancelBtn.addEventListener('click', () => {
+    modal.classList.add('hidden');
 });
 
 // Initialize PDF.js
@@ -147,16 +273,36 @@ const pdfjsViewer = window.pdfjsViewer;
 
 let currentPDF = null;
 let currentPage = 1;
+let currentDeckId = null;
 
-async function viewDocument(documentId) {
+async function viewDocument(documentId, documentName) {
     console.log("Retrieving document with id:", documentId);
-    document.getElementById('documentViewerModal').classList.remove('hidden');
+
+    document.getElementById('outerContainerModal').classList.remove('hidden');
     currentDocumentId = documentId;
 
     try {
         const response = await fetch(`/document/${documentId}/url/`);
         const data = await response.json();
         
+        // Store the deck information globally
+        currentDeckId = data.deck_id;
+        const displayDeckName = data.deck_name;
+        console.log("Document belongs to deck:", displayDeckName, currentDeckId);
+
+        // Update the viewer title
+        document.getElementById("viewerTitle").innerText = documentName;
+
+        // Update the deck info in the right sidebar
+        const deckInfoElement = document.querySelector('#rightSection .mt-1.text-sm');
+        if (deckInfoElement) {
+            // Create the URL for the deck
+            const deckUrl = `/study/?deck_id=${currentDeckId}`;
+            deckInfoElement.innerHTML = `Deck: <a href="${deckUrl}" class="text-blue-500 hover:underline">${displayDeckName}</a>`;
+        } else {
+            console.error("Deck info element not found");
+        }
+
         const container = document.getElementById('viewerContainer');
         const viewer = document.getElementById('viewer');
         
@@ -177,14 +323,62 @@ async function viewDocument(documentId) {
         });
         
         pdfViewer.setDocument(pdfDoc);
+        window.appPdfViewer = pdfViewer; // Store the viewer instance globally
 
     } catch (error) {
         console.error("Error loading PDF:", error);
     }
 }
 
+function confirmDelete(documentId, documentName, deckName) {
+    // Update dialog message
+    const messageEl = document.getElementById('deleteMessage');
+    messageEl.innerHTML = `Are you sure you want to delete <strong>${documentName}</strong>?<br><br>This action will also delete the associated deck <strong>${deckName}</strong> and all of its flashcards and subdecks.`;
+    
+    // Set up confirm button to call delete with the current document info
+    const confirmBtn = document.getElementById('confirmDeleteButton');
+    
+    // Remove any existing event listeners
+    const newConfirmBtn = confirmBtn.cloneNode(true);
+    confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
+    
+    // Add new event listener with document info closure
+    newConfirmBtn.addEventListener('click', function() {
+        deleteDocument(documentId, documentName);
+        document.getElementById('deleteDialog').classList.add('hidden');
+    });
+    
+    // Show the dialog
+    document.getElementById('deleteDialog').classList.remove('hidden');
+}
+
+function deleteDocument(documentId, documentName) {
+    console.log(`Deleting document: ${documentName} (ID: ${documentId})`);
+    
+    const spinner = document.getElementById('delete-spinner');
+    spinner.classList.remove('hidden');  // Show the spinner
+
+    const deleteUrl = `/documents/delete/${documentId}/`;
+    fetch(deleteUrl, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCsrfToken(),
+        },
+    })
+    .then(response => {
+        spinner.classList.add('hidden');  // Hide the spinner after delete
+        if (!response.ok) throw new Error('Delete failed');
+        window.location.reload();
+    })
+    .catch(error => {
+        spinner.classList.add('hidden');  // Hide the spinner if error
+        alert('Delete failed. Please try again.');
+        console.error(error);
+    });
+}
+
 function closeViewer() {
-    document.getElementById('documentViewerModal').classList.add('hidden');
+    document.getElementById('outerContainerModal').classList.add('hidden');
     // Remove all existing highlights when closing the viewer
     clearHighlights();
     currentDocumentId = null;
@@ -196,79 +390,180 @@ function clearHighlights() {
     existingHighlights.forEach(highlight => highlight.remove());
 }
 
-// Listen for text selections in the PDF viewer
-document.addEventListener("mouseup", function() {
+let hasSelectedText = false;
+var lastSelectionData = null;
+
+async function getSelectionWordCoords(startPage, endPage) {
+    const pdfViewer = window.appPdfViewer;
+    let allWords = [];
+
+    // Get coordinates for each page in the range
+    for (let pageNum = startPage; pageNum <= endPage; pageNum++) {
+        const page = pdfViewer.getPageView(pageNum - 1).pdfPage;
+        const viewport = pdfViewer.getPageView(pageNum - 1).viewport;
+
+        const textContent = await page.getTextContent();
+        const pageWords = textContent.items.map(item => {
+            const [x, y] = viewport.convertToViewportPoint(item.transform[4], item.transform[5]);
+            return {
+                text: item.str,
+                x: x,
+                y: viewport.height - y, // Flip Y-axis for correct PDF coordinate system
+                width: item.width,
+                height: item.height,
+                page: pageNum
+            };
+        });
+        allWords = allWords.concat(pageWords);
+    }
+    return allWords;
+}
+
+// Attach event listener to detect text selection
+window.addEventListener('mouseup', function() {
     const selection = window.getSelection();
-    if (!selection.rangeCount) return;
-
-    const selectedText = selection.toString().trim();
-    if (!selectedText) return;
-
     const range = selection.getRangeAt(0);
-    const rects = range.getClientRects(); // Get multiple bounding boxes
-
-    let node = range.startContainer;
-    if (node.nodeType === Node.TEXT_NODE) node = node.parentElement;
-    
-    const pageElement = node.closest(".page");
-    if (!pageElement) return;
-    const pageNumber = parseInt(pageElement.dataset.pageNumber, 10);
-
-    // Get PDF container position
-    const pdfContainer = document.querySelector('.pdfViewer');
-    const pdfRect = pdfContainer.getBoundingClientRect();
-
-    // Find all text spans inside the selected range
-    const textLayer = pageElement.querySelector('.textLayer');
-    const spans = [...textLayer.querySelectorAll('span')];
-
-    // Map each span to its bounding box
-    const wordBoxes = spans
-        .filter(span => selection.containsNode(span, true)) // Only selected words
-        .map(span => ({
-            text: span.textContent.trim(),
-            box: (() => {
-                const rect = span.getBoundingClientRect();
-                return {
-                    x: rect.x - pdfRect.left,
-                    y: rect.y - pdfRect.top,
-                    width: rect.width,
-                    height: rect.height
+    const selectionText = selection.toString();
+    const selectionLength = selectionText.length;
+    if (selectionLength > 2) {
+        // Get start and end pages
+        const pages = getStartAndEndPage(range);
+        if (pages) {
+            // Get the coordinates of the selected text for all pages in range
+            getSelectionWordCoords(pages.startPage, pages.endPage).then(data => {
+                // Store the selection data
+                lastSelectionData = {
+                    text: selectionText,
+                    words: data,
+                    doc_id: currentDocumentId
                 };
-            })()
-        }));
+                console.log("Selected text is:", lastSelectionData);
+                // Update UI to reflect selection
+                hasSelectedText = true;
+                updateAIButton();
+            });
+        }
+    } else {
+        // Clear selection data if no text is selected
+        lastSelectionData = null;
+        hasSelectedText = false;
+        updateAIButton();
+    }
+});
 
-    const selectionData = {
-        text: selectedText,
-        boxes: wordBoxes, // Each word with its own bounding box
-        page: pageNumber,
-        doc_id: currentDocumentId
-    };
+function getStartAndEndPage(range) {
+    let startNode = range.startContainer;
+    let endNode = range.endContainer;
+    
+    // Navigate up to parent elements if we're in text nodes
+    if (startNode.nodeType === Node.TEXT_NODE) startNode = startNode.parentElement;
+    if (endNode.nodeType === Node.TEXT_NODE) endNode = endNode.parentElement;
+    
+    // Find the closest page elements
+    const startPageElement = startNode.closest('.page');
+    const endPageElement = endNode.closest('.page');
+    
+    // If either element is present, use it for both
+    if (startPageElement || endPageElement) {
+        startPage = startPageElement ? parseInt(startPageElement.dataset.pageNumber, 10) : null;
+        endPage = endPageElement ? parseInt(endPageElement.dataset.pageNumber, 10) : null;
+        
+        // If one is missing, copy the other one
+        if (startPage && !endPage) {
+            endPage = startPage;
+        }
+        if (!startPage && endPage) {
+            startPage = endPage;
+        }
+        
+        console.log("startPage:", startPage);
+        console.log("endPage:", endPage);
+        return {
+            startPage: startPage,
+            endPage: endPage
+        };
+    }
+    return null;
+}
 
-    console.log("Captured selection with word-level bounding boxes:", selectionData);
+function updateAIButton() {
+    const aiButton = document.getElementById('aiButton');
+    if (hasSelectedText) {
+        aiButton.disabled = false;
+        aiButton.classList.remove('text-gray-400', 'cursor-not-allowed', 'disabled:hover:text-gray-400');
+        aiButton.classList.add('text-gray-600', 'hover:text-gray-900', 'button-flash');
+        aiButton.title = "AI will generate cards from your selection";
+        
+        // Remove the animation class after it completes
+        aiButton.addEventListener('animationend', () => {
+            aiButton.classList.remove('button-flash');
+        }, { once: true });
+    } else {
+        aiButton.disabled = true;
+        aiButton.classList.remove('text-gray-600', 'hover:text-gray-900', 'button-flash');
+        aiButton.classList.add('text-gray-400', 'cursor-not-allowed', 'disabled:hover:text-gray-400');
+        aiButton.title = "Select text to generate AI cards";
+    }
+}
 
-    /*
+// Add click handler for AI button
+document.getElementById('aiButton').addEventListener('click', function(e) {
+    if (this.disabled || !lastSelectionData) {
+        // Show a tooltip or notification that text needs to be selected
+        const notification = document.createElement('div');
+        notification.className = 'fixed bottom-4 right-4 bg-gray-800 text-white px-4 py-2 rounded-lg shadow-lg z-50';
+        notification.textContent = 'Please select text first';
+        document.body.appendChild(notification);
+        
+        // Remove the notification after 2 seconds
+        setTimeout(() => {
+            notification.remove();
+        }, 2000);
+        return;
+    }
+    
+    // Send the selection data to the server
+    console.log("Sending selection data to server:", lastSelectionData);
+
     fetch('/process-selection/', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
             'X-CSRFToken': getCsrfToken()
         },
-        body: JSON.stringify(selectionData)
+        body: JSON.stringify({
+            selection: lastSelectionData,
+            deck_id: currentDeckId
+        })
     })
     .then(response => response.json())
-    .then(data => console.log("Server response:", data))
-    .catch(error => console.error("Error:", error));
-    */
-
-    function getCsrfToken() {
-        return document.querySelector('[name=csrfmiddlewaretoken]').value;
-    }
-
+    .then(data => {
+        console.log("Server response:", data);
+        // Refresh the flashcards after successful processing
+        if (currentDocumentId) {
+            fetchAndCreateHighlights(currentDocumentId);
+        }
+    })
+    .catch(error => {
+        console.error("Error:", error);
+        // Show error notification
+        const notification = document.createElement('div');
+        notification.className = 'fixed bottom-4 right-4 bg-red-600 text-white px-4 py-2 rounded-lg shadow-lg z-50';
+        notification.textContent = 'Error processing selection. Please try again.';
+        document.body.appendChild(notification);
+        
+        // Remove the notification after 2 seconds
+        setTimeout(() => {
+            notification.remove();
+        }, 2000);
+    });
 });
 
 // Fetch flashcards for the current document and create highlights
 async function fetchAndCreateHighlights(documentId) {
+    const flashcardsContainer = document.getElementById("flashcardsContainer");
+    const previousScrollTop = flashcardsContainer ? flashcardsContainer.scrollTop : 0;
+
     try {
         const response = await fetch(`/document/${documentId}/flashcards/`);
         
@@ -277,69 +572,389 @@ async function fetchAndCreateHighlights(documentId) {
         }
         
         const data = await response.json();
-        createHighlights(data.flashcards);
+        window.flashcards = data.flashcards;
+
+        displayFlashcards(data.flashcards);
+        createHighlights(window.flashcards, true); // creates all highlights on pdf startup
+        setupPageRenderingListeners(); // will listen for rendering of pdf pages to trigger createHighlights again
+
+        // After rendering flashcards, restore scroll position
+        requestAnimationFrame(() => {
+            if (flashcardsContainer) {
+                flashcardsContainer.scrollTop = previousScrollTop;
+            }
+        });
+
     } catch (error) {
         console.error("Error fetching flashcards:", error);
     }
 }
 
+// Function to display flashcards in the right column
+function displayFlashcards(flashcards) {
+    const flashcardsContainer = document.getElementById("flashcardsContainer");
+    flashcardsContainer.innerHTML = ""; // Clear existing flashcards
+    
+    // Filter into two groups
+    const unacceptedFlashcards = flashcards.filter(card => card.accepted !== true);
+    const acceptedFlashcards = flashcards.filter(card => card.accepted === true);
+    
+    // Display unaccepted flashcards section if there are any
+    if (unacceptedFlashcards.length > 0) {
+        // Add section header for unaccepted cards
+        const unacceptedHeader = document.createElement("div");
+        unacceptedHeader.classList.add("py-2", "px-4", "bg-yellow-50", "font-medium", "text-yellow-800", "border-b");
+        unacceptedHeader.textContent = `Pending Acceptance (${unacceptedFlashcards.length})`;
+        flashcardsContainer.appendChild(unacceptedHeader);
+        
+        // Add the unaccepted flashcards
+        unacceptedFlashcards.forEach(flashcard => {
+            addFlashcardElement(flashcard, flashcardsContainer, false);
+        });
+    }
+
+    // Display accepted flashcards section if there are any
+    if (acceptedFlashcards.length > 0) {
+        console.log("Showing accepted flashcards")
+        // Add section header for accepted cards
+        const acceptedHeader = document.createElement("div");
+        acceptedHeader.classList.add("py-2", "px-4", "bg-green-50", "font-medium", "text-green-800", "border-b");
+        acceptedHeader.textContent = `My Flashcards`;
+        flashcardsContainer.appendChild(acceptedHeader);
+        
+        // Add the accepted flashcards
+        acceptedFlashcards.forEach(flashcard => {
+            addFlashcardElement(flashcard, flashcardsContainer, true);
+        });
+    }
+
+    // Helper function to create and add a flashcard element
+    function addFlashcardElement(flashcard, container, isAccepted) {
+        const flashcardElement = document.createElement("div");
+        flashcardElement.classList.add("p-4", "border-b", "cursor-pointer", "hover:bg-gray-50");
+
+        flashcardElement.style.borderRadius = "8px";
+        flashcardElement.style.margin = "0 4px 4px 0";
+        flashcardElement.style.position = "relative";
+        
+        // Style based on acceptance status
+        if (!isAccepted) {
+            flashcardElement.style.backgroundColor = "#fffbeb"; // Light yellow for unaccepted
+        }
+
+        flashcardElement.dataset.flashcardId = flashcard.id;
+        
+        // Check if flashcard has bounding box
+        const hasBBox = flashcard.bbox && flashcard.bbox.length > 0;
+
+        // Populate flashcard content
+        let flashcardContent = `
+            <div class="flex flex-col">
+                ${(!isAccepted || (!hasBBox)) ? `
+                    <div class="flex justify-end mb-2 h-5">
+                        ${!isAccepted ? `
+                            <div class="flex space-x-2">
+                                ${!hasBBox ? `
+                                    <div class="tooltip-container" title="No text selection associated with this flashcard">
+                                        <svg class="w-5 h-5 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                                        </svg>
+                                    </div>
+                                ` : ''}
+                                <button class="discard-card-btn flex items-center text-xs bg-red-50 border border-red-300 rounded-md px-2 py-1 text-red-600 hover:bg-red-100 transition-colors">
+                                    <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                    </svg>
+                                    Discard
+                                </button>
+                                <button class="accept-card-btn flex items-center text-xs bg-green-50 border border-green-300 rounded-md px-2 py-1 text-green-600 hover:bg-green-100 transition-colors">
+                                    <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                    </svg>
+                                    Accept
+                                </button>
+                            </div>
+                        ` : !hasBBox ? `
+                            <div class="tooltip-container" title="No text selection associated with this flashcard">
+                                <svg class="w-5 h-5 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                                </svg>
+                            </div>
+                        ` : ''}
+                    </div>
+                ` : ''}
+                <div>
+                    <p class="font-semibold">Q: ${flashcard.question}</p>
+                    <p class="text-gray-600">A: ${flashcard.answer}</p>
+                </div>
+            </div>
+        `;
+        
+        // Add the "Edit" button
+        flashcardContent += `
+            <button class="edit-card-btn absolute bottom-2 right-2 flex items-center text-xs bg-white border border-gray-300 rounded-md px-2 py-1 text-gray-600 hover:bg-gray-50 hover:text-blue-600 transition-colors">
+                <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path>
+                </svg>
+                Edit
+            </button>
+        `;
+        
+        flashcardElement.innerHTML = flashcardContent;
+        
+        // Add click handler for the flashcard body (same as original)
+        flashcardElement.addEventListener('click', (e) => {
+            // Prevent triggering when clicking the edit button
+            if (e.target.closest('.edit-card-btn')) return;
+            
+            // Check if this flashcard is already selected
+            const isCurrentlySelected = flashcardElement.classList.contains('bg-blue-50');
+            
+            // Remove selected class from all flashcards and deactivate all highlights
+            document.querySelectorAll('#flashcardsContainer > div').forEach(card => {
+                if (!card.classList.contains('py-2')) { // Skip section headers
+                    card.classList.remove('bg-blue-50', 'border-blue-200');
+                    const cardId = card.dataset.flashcardId;
+                    if (cardId) {
+                        document.querySelectorAll(`.pdf-highlight[data-flashcard-id="${cardId}"]`).forEach(highlight => {
+                            highlight.classList.remove('active');
+                        });
+                    }
+                }
+            });
+            
+            // Only add selected class and activate highlights if the clicked flashcard wasn't already selected
+            if (!isCurrentlySelected) {
+                flashcardElement.classList.add('bg-blue-50', 'border-blue-200');
+                const flashcardId = flashcard.id;
+                const highlights = document.querySelectorAll(`.pdf-highlight[data-flashcard-id="${flashcardId}"]`);
+                
+                // Activate all highlights for this flashcard
+                highlights.forEach(highlight => {
+                    highlight.classList.add('active');
+                });
+
+                // Get the first highlight element to scroll to
+                if (highlights.length > 0) {
+                    const firstHighlight = highlights[0];
+                    const pdfContainer = document.querySelector('#viewerContainer');
+                    
+                    // Get the highlight's position relative to the container
+                    const highlightRect = firstHighlight.getBoundingClientRect();
+                    const containerRect = pdfContainer.getBoundingClientRect();
+                    
+                    // Calculate the scroll position (adding some padding above)
+                    const scrollTop = highlightRect.top - containerRect.top + pdfContainer.scrollTop - 100;
+                    
+                    // Smooth scroll to the highlight
+                    pdfContainer.scrollTo({
+                        top: scrollTop,
+                        behavior: 'smooth'
+                    });
+                }
+            }
+        });
+        
+        // Add separate click handler for the edit button
+        const editButton = flashcardElement.querySelector('.edit-card-btn');
+        editButton.addEventListener('click', (e) => {
+            showEditPanel(flashcard);
+        });
+
+        // Add click handlers for accept and discard buttons for unaccepted cards
+        if (!isAccepted) {
+            const acceptButton = flashcardElement.querySelector('.accept-card-btn');
+            acceptButton.addEventListener('click', (e) => {
+                e.stopPropagation(); // Prevent triggering the card click
+                acceptFlashcard(flashcard.id);
+            });
+            
+            const discardButton = flashcardElement.querySelector('.discard-card-btn');
+            discardButton.addEventListener('click', (e) => {
+                e.stopPropagation(); // Prevent triggering the card click
+                discardFlashcard(flashcard.id);
+            });
+        }
+
+        // Add hover handlers - only activate highlights if the card is not selected
+        flashcardElement.addEventListener('mouseenter', () => {
+            if (!flashcardElement.classList.contains('bg-blue-50')) {
+                const flashcardId = flashcard.id;
+                document.querySelectorAll(`.pdf-highlight[data-flashcard-id="${flashcardId}"]`).forEach(highlight => {
+                    highlight.classList.add('active');
+                });
+            }
+        });
+
+        flashcardElement.addEventListener('mouseleave', () => {
+            if (!flashcardElement.classList.contains('bg-blue-50')) {
+                const flashcardId = flashcard.id;
+                document.querySelectorAll(`.pdf-highlight[data-flashcard-id="${flashcardId}"]`).forEach(highlight => {
+                    highlight.classList.remove('active');
+                });
+            }
+        });
+        
+        container.appendChild(flashcardElement);
+    }
+}
+
+// Handle accept and discard actions
+function acceptFlashcard(flashcardId) {
+  console.log(`Accepting flashcard with ID: ${flashcardId}`);
+  
+  // Call your backend API to update the flashcard
+  fetch(`/accept_card/${flashcardId}/`, { 
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRFToken': getCsrfToken(),
+    }
+  })
+  .then(response => {
+    if (!response.ok) throw new Error('Network response was not ok');
+    return response.json();
+  })
+  .then(data => {
+    console.log('Flashcard accepted successfully');
+    // Refresh UI
+    fetchAndCreateHighlights(currentDocumentId);
+  })
+  .catch(error => {
+    console.error("Error accepting flashcard:", error);
+  });
+}
+
+function discardFlashcard(flashcardId) {
+  const modal = document.getElementById('confirm-discard-flashcard');
+  const yesBtn = document.getElementById('confirm-yes');
+  const noBtn = document.getElementById('confirm-no');
+
+  modal.style.display = 'flex';
+
+  yesBtn.onclick = () => {
+    modal.style.display = 'none';
+    console.log(`Discarding flashcard with ID: ${flashcardId}`);
+
+    fetch(`/delete_card/${flashcardId}/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': getCsrfToken(),
+      },
+    })
+    .then(response => {
+      if (!response.ok) throw new Error('Network response was not ok');
+      return response.json();
+    })
+    .then(data => {
+      if (data.success) {
+        console.log('Flashcard discarded successfully');
+        fetchAndCreateHighlights(currentDocumentId);
+      } else {
+        console.error('Failed to discard flashcard:', data.message);
+      }
+    })
+    .catch(error => {
+      console.error('Error discarding flashcard:', error);
+    });
+  };
+
+  noBtn.onclick = () => {
+    modal.style.display = 'none';
+  };
+}
+
+// Set up listeners for PDF.js page rendering events
+function setupPageRenderingListeners() {
+    // Scrolling to new pages makes the DOM forget old pages
+    // this means old highlights are removed
+    // we need to create them all again
+    console.log("launching setupPageRenderingListeners")
+    const pdfViewer = window.appPdfViewer;
+    if (!pdfViewer || !pdfViewer.eventBus) {
+        console.error('PDF viewer or eventBus not found');
+        return;
+    }
+    
+    // Listen for page rendering events
+    pdfViewer.eventBus.on('pagerendered', function(evt) {
+        const pageNumber = evt.pageNumber;
+        // console.log("Page", pageNumber, "rendered")
+        createHighlights(window.flashcards, false);
+    });
+}
+
 // Function to create highlights
-function createHighlights(flashcards) {
-    console.log("Creating highlights...");
+function createHighlights(flashcards, showFlashcardsLog) {
+    if (showFlashcardsLog === true) {
+        console.log("Creating highlights...");
+    }
     clearHighlights();
 
-    const pdfContainer = document.querySelector('.pdfViewer'); 
-    if (!pdfContainer) {
-        console.error('PDF container not found');
+    // Get the PDF viewer using the same reference as in the getSelectionWordCoords function
+    const pdfViewer = window.appPdfViewer;
+    if (!pdfViewer) {
+        if (showFlashcardsLog === true) {
+            console.error('PDF viewer not found');
+        }
         return;
     }
 
-    // Get the PDF container position (to adjust for scrolling)
-    const pdfRect = pdfContainer.getBoundingClientRect();
-
     flashcards.forEach((flashcard, index) => {
-        // Skip if missing required data
-        if (!flashcard.bbox || !Array.isArray(flashcard.bbox) || flashcard.bbox.length === 0 || flashcard.page === undefined) {
-            console.warn("Skipping flashcard with missing data:", flashcard);
-            return;
-        }
+        // It's possible that some cards do not have a bbox
         
-        // Log the flashcard and bbox info
-        console.log(`Flashcard ${index + 1}:`, {
-            id: flashcard.id,
-            page: flashcard.page,
-            bboxes: flashcard.bbox
-        });
+        // Log the flashcard info if showFlashcardsLog is true
+        if (showFlashcardsLog === true) {
+            console.log(`Flashcard ${index + 1}:`, {
+                id: flashcard.id,
+                q: flashcard.question,
+                bboxes: flashcard.bbox
+            });
+        }
 
         // Process each bbox in the array
         flashcard.bbox.forEach((bbox, bboxIndex) => {
             // Skip if this specific bbox is missing required properties
-            if (!bbox.x || !bbox.y || !bbox.width || !bbox.height) {
-                console.warn(`Skipping invalid bbox at index ${bboxIndex} for flashcard:`, flashcard);
+            if (!bbox.x || !bbox.y || !bbox.page) {
+                if (showFlashcardsLog === true) {
+                    console.warn(`Skipping invalid bbox at index ${bboxIndex} for flashcard:`, flashcard.id);
+                    console.warn(`Bbox properties:`, bbox);
+                }
                 return;
             }
             
+            // Get the correct page container
+            const pageView = pdfViewer.getPageView(bbox.page - 1);
+            if (!pageView || !pageView.div) {
+                if (showFlashcardsLog === true) {
+                    console.warn(`Page ${bbox.page} view not found for highlight`);
+                }
+                return;
+            }
+            const pageContainer = pageView.div;
+
             // Create highlight element
             const highlight = document.createElement('div');
             highlight.className = 'pdf-highlight';
             highlight.dataset.flashcardId = flashcard.id;
             highlight.id = `flashcard-highlight-${flashcard.id}-${bboxIndex}`;
 
-            // CANCELLED - Adjust coordinates relative to the PDF container
-            const adjustedX = bbox.x; //- pdfRect.left;
-            const adjustedY = bbox.y; //- pdfRect.top;
-
-            
-
             // Apply styles
             highlight.style.position = 'absolute';
-            highlight.style.left = `${adjustedX}px`;
-            highlight.style.top = `${adjustedY}px`;
+            highlight.style.left = `${bbox.x}px`;
+            highlight.style.top = `${pageView.viewport.height - bbox.y - bbox.height}px`;
             highlight.style.width = `${bbox.width}px`;
             highlight.style.height = `${bbox.height}px`;
-            highlight.style.backgroundColor = 'rgba(255, 255, 0, 0.3)';
+            let bgColor = 'rgba(255, 255, 0, 0.2)'; // accepted: yellow
+            if (flashcard.accepted !== true) {
+                bgColor = 'rgba(112, 128, 144, 0.3)'; // not accepted: 
+            }
+
+            highlight.style.backgroundColor = bgColor; 
             highlight.style.pointerEvents = 'auto';
             highlight.style.zIndex = '100';
+            highlight.style.cursor = 'pointer';  // Add pointer cursor
             
             // Add hover event to show flashcard content
             highlight.addEventListener('mouseenter', function() {
@@ -351,10 +966,57 @@ function createHighlights(flashcards) {
                 hideFlashcardTooltip();
             });
 
-            pdfContainer.appendChild(highlight);
+            // Add click handler to select and scroll to the corresponding flashcard
+            highlight.addEventListener('click', function() {
+                const flashcardId = flashcard.id;
+                const flashcardElement = document.querySelector(`#flashcardsContainer > div[data-flashcard-id="${flashcardId}"]`);
+                
+                if (flashcardElement) {
+                    // Remove selected class from all flashcards and deactivate all highlights
+                    document.querySelectorAll('#flashcardsContainer > div').forEach(card => {
+                        card.classList.remove('bg-blue-50', 'border-blue-200');
+                        const cardId = card.dataset.flashcardId;
+                        document.querySelectorAll(`.pdf-highlight[data-flashcard-id="${cardId}"]`).forEach(highlight => {
+                            highlight.classList.remove('active');
+                        });
+                    });
+                    
+                    // Add selected class to the clicked flashcard and activate its highlights
+                    flashcardElement.classList.add('bg-blue-50', 'border-blue-200');
+                    document.querySelectorAll(`.pdf-highlight[data-flashcard-id="${flashcardId}"]`).forEach(highlight => {
+                        highlight.classList.add('active');
+                    });
+
+                    // Scroll the flashcard into view
+                    flashcardElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            });
+
+            pageContainer.appendChild(highlight);
         });
     });
 }
+
+// Add event listeners to track the Ctrl key state, allow selecting highlighted texts
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Control') {
+        // Change pointer-events for all highlights when Ctrl is pressed
+        document.querySelectorAll('.pdf-highlight').forEach(highlight => {
+            highlight.style.pointerEvents = 'none';
+        });
+    }
+});
+
+document.addEventListener('keyup', function(e) {
+    if (e.key === 'Control') {
+        // Restore pointer-events when Ctrl is released
+        document.querySelectorAll('.pdf-highlight').forEach(highlight => {
+            highlight.style.pointerEvents = 'auto';
+        });
+    }
+});
+
+
 
 // Function to show flashcard tooltip
 function showFlashcardTooltip(flashcard, highlightElement) {
@@ -402,6 +1064,167 @@ function hideFlashcardTooltip() {
     }
 }
 
+// Control the width of the flashcards right column
+document.addEventListener('DOMContentLoaded', function() {
+    const divider = document.getElementById('divider');
+    const leftSection = document.getElementById('leftSection');
+    const rightSection = document.getElementById('rightSection');
+    const container = divider.parentElement;
+    
+    let isDragging = false;
+    
+    divider.addEventListener('mousedown', function(e) {
+        isDragging = true;
+        e.preventDefault();
+    });
+    
+    document.addEventListener('mousemove', function(e) {
+        if (!isDragging) return;
+        
+        const containerRect = container.getBoundingClientRect();
+        const containerWidth = containerRect.width;
+        const mouseX = e.clientX - containerRect.left;
+        
+        // Calculate percentage (clamped between 20% and 80%)
+        const percentage = Math.max(60, Math.min(80, (mouseX / containerWidth) * 100));
+        
+        // Apply the new widths
+        leftSection.style.width = `${percentage}%`;
+        rightSection.style.width = `${100 - percentage}%`;
+    });
+    
+    document.addEventListener('mouseup', function() {
+        isDragging = false;
+    });
+});
+
+// Function to show the edit panel
+function showEditPanel(flashcard) {
+    // Get containers
+    const rightSection = document.getElementById('rightSection');
+    const optionsSubheader = rightSection.querySelector('.px-4.py-2.border-b');
+    const flashcardsContainer = document.getElementById('flashcardsContainer');
+    
+    // Hide the options subheader and flashcards container
+    optionsSubheader.style.display = 'none';
+    flashcardsContainer.style.display = 'none';
+    
+    // Create the edit panel if it doesn't exist
+    let editPanel = document.getElementById('editPanel');
+    if (!editPanel) {
+        editPanel = document.createElement('div');
+        editPanel.id = 'editPanel';
+        editPanel.className = 'flex-1 flex flex-col p-4 overflow-auto';
+        rightSection.appendChild(editPanel);
+    }
+
+    // Determine if the flashcard has a bbox
+    const hasBBox = flashcard.bbox && flashcard.bbox.length > 0;
+    const textPlacementLabel = hasBBox ? "Edit Text Placement" : "Set Text Placement";
+    
+    // Populate the edit panel
+    editPanel.innerHTML = `
+        <div class="flex items-center mb-4">
+            <button id="backToFlashcards" class="p-2 text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-full transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                </svg>
+            </button>
+            <span class="ml-2 text-lg font-medium">Edit Flashcard</span>
+        </div>
+        
+        <div class="space-y-4">
+            <div>
+                <label for="question" class="block text-sm font-medium text-gray-700 mb-1">Question</label>
+                <textarea id="question" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 h-24">${flashcard.question}</textarea>
+            </div>
+            
+            <div>
+                <label for="answer" class="block text-sm font-medium text-gray-700 mb-1">Answer</label>
+                <textarea id="answer" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 h-24">${flashcard.answer}</textarea>
+            </div>
+            
+            <div class="flex justify-between items-center gap-4">
+                <button id="textPlacement" data-flashcard-id="${flashcard.id}" class="flex items-center px-4 py-2 border ${hasBBox ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-yellow-50 border-yellow-300 text-yellow-800'} rounded-md hover:${hasBBox ? 'bg-emerald-100 hover:text-emerald-800' : 'bg-yellow-100'} transition-colors w-auto font-medium shadow-sm">
+                    ${!hasBBox ? `<svg class="w-5 h-5 mr-2 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                    </svg>` : ''}
+                    ${textPlacementLabel}
+                </button>
+                
+                <button id="saveFlashcard" data-flashcard-id="${flashcard.id}" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">
+                    Save Changes
+                </button>
+            </div>
+        </div>
+    `;
+    
+    // Display the edit panel
+    editPanel.style.display = 'flex';
+    
+    // Add click handler for the back button
+    document.getElementById('backToFlashcards').addEventListener('click', hideEditPanel);
+    
+    // Add click handler for the text placement button
+    document.getElementById('textPlacement').addEventListener('click', function() {
+        const flashcardId = this.dataset.flashcardId;
+        console.log('Text placement clicked for flashcard:', flashcardId);
+        // Placeholder for the text placement functionality
+        alert('Text placement functionality will be implemented later.');
+    });
+    
+    // Add click handler for the save button (placeholder for now)
+    document.getElementById('saveFlashcard').addEventListener('click', function() {
+        const updatedQuestion = document.getElementById('question').value;
+        const updatedAnswer = document.getElementById('answer').value;
+        const flashcardId = this.dataset.flashcardId;
+        
+        // Here you would typically send the updated data to the server
+        console.log('Saving changes to flashcard:', {
+            id: flashcardId,
+            question: updatedQuestion,
+            answer: updatedAnswer
+        });
+        
+        // For now, just update the local data and return to flashcards view
+        const flashcard = window.flashcards.find(fc => fc.id == flashcardId);
+        if (flashcard) {
+            flashcard.question = updatedQuestion;
+            flashcard.answer = updatedAnswer;
+            
+            // Update the displayed flashcard
+            const flashcardElement = document.querySelector(`#flashcardsContainer > div[data-flashcard-id="${flashcardId}"]`);
+            if (flashcardElement) {
+                const questionEl = flashcardElement.querySelector('p:first-child');
+                const answerEl = flashcardElement.querySelector('p:nth-child(2)');
+                
+                if (questionEl) questionEl.innerHTML = `Q: ${updatedQuestion}`;
+                if (answerEl) answerEl.innerHTML = `A: ${updatedAnswer}`;
+            }
+        }
+        
+        hideEditPanel();
+    });
+}
+
+// Function to hide the edit panel and return to flashcards view
+function hideEditPanel() {
+    // Get containers
+    const rightSection = document.getElementById('rightSection');
+    const optionsSubheader = rightSection.querySelector('.px-4.py-2.border-b');
+    const flashcardsContainer = document.getElementById('flashcardsContainer');
+    const editPanel = document.getElementById('editPanel');
+    
+    // Show the options subheader and flashcards container
+    optionsSubheader.style.display = 'flex';
+    flashcardsContainer.style.display = 'block';
+    
+    // Hide the edit panel
+    if (editPanel) {
+        editPanel.style.display = 'none';
+    }
+}
+
 // Add some CSS to the page
 const style = document.createElement('style');
 style.textContent = `
@@ -419,8 +1242,90 @@ style.textContent = `
     .flashcard-answer {
         color: #333;
     }
+    .pdf-highlight {
+        transition: all 0.2s ease;
+    }
+    .pdf-highlight.active {
+        background-color: rgba(255, 196, 0, 0.5) !important;
+        box-shadow: 0 0 8px rgba(255, 196, 0, 0.5);
+        z-index: 101 !important;
+    }
+    #rightSection {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+    }
+    #flashcardsContainer {
+        flex: 1;
+        overflow-y: auto;
+        overflow-x: hidden;
+    }
+    #flashcardsContainer > div {
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+    }
+    #flashcardsContainer > div:hover:not(.bg-blue-50) {
+        background-color: rgb(243 244 246) !important;
+    }
+    #flashcardsContainer > div.bg-blue-50 {
+        background-color: rgb(239 246 255) !important;
+    }
+    @keyframes buttonFlash {
+        0% { 
+            color: rgb(107, 114, 128);
+            transform: scale(1);
+            box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7);
+        }
+        25% { 
+            color: rgb(34, 197, 94);
+            transform: scale(1.03);
+            box-shadow: 0 0 0 8px rgba(34, 197, 94, 0);
+        }
+        50% { 
+            color: rgb(34, 197, 94);
+            transform: scale(1);
+            box-shadow: 0 0 0 0 rgba(34, 197, 94, 0);
+        }
+        75% { 
+            color: rgb(34, 197, 94);
+            transform: scale(1);
+            box-shadow: 0 0 0 0 rgba(34, 197, 94, 0);
+        }
+        100% { 
+            color: rgb(75, 85, 99);
+            transform: scale(1);
+            box-shadow: 0 0 0 0 rgba(34, 197, 94, 0);
+        }
+    }
+    .button-flash {
+        animation: buttonFlash 2s ease;
+        position: relative;
+        overflow: visible;
+    }
+    .button-flash svg {
+        animation: buttonFlash 2s ease;
+    }
 `;
 document.head.appendChild(style);
+
+// Add click handler to clear selection when clicking outside highlights
+document.getElementById('viewerContainer').addEventListener('click', function(e) {
+    // Check if the click was on a highlight
+    if (!e.target.classList.contains('pdf-highlight')) {
+        // Remove selected class from all flashcards and deactivate all highlights
+        document.querySelectorAll('#flashcardsContainer > div').forEach(card => {
+            card.classList.remove('bg-blue-50', 'border-blue-200');
+            const cardId = card.dataset.flashcardId;
+            document.querySelectorAll(`.pdf-highlight[data-flashcard-id="${cardId}"]`).forEach(highlight => {
+                highlight.classList.remove('active');
+            });
+        });
+    }
+});
+
+function getCsrfToken() {
+    return document.querySelector('[name=csrfmiddlewaretoken]').value;
+}
 
 </script>
 {% endblock %}

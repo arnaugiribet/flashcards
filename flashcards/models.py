@@ -9,17 +9,6 @@ from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
-class UserDocument(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    name = models.CharField(max_length=255)
-    file_type = models.CharField(max_length=10)  # pdf, txt, docx
-    s3_key = models.CharField(max_length=255)
-    uploaded_at = models.DateTimeField(auto_now_add=True)
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-
-    def __str__(self):
-        return f"{self.s3_key} ({self.file_type}) {self.user} - {self.uploaded_at}"
-
 class UserPlan(models.Model):
     
     FREE = 'free'
@@ -145,6 +134,27 @@ class Deck(models.Model):
             descendants.extend(child.get_descendants())  # Recursive call for deeper levels
         return descendants
 
+    @property
+    def has_document(self):
+        return self.documents.exists()
+
+    def document_id(self):
+        doc = self.documents.first()
+        return doc.id if doc else None
+
+
+class UserDocument(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=255)
+    file_type = models.CharField(max_length=10)  # pdf, txt, docx
+    s3_key = models.CharField(max_length=255)
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    deck = models.ForeignKey(Deck, on_delete=models.CASCADE, related_name='documents')
+
+    def __str__(self):
+        return f"{self.s3_key} ({self.file_type}) {self.user} - {self.uploaded_at}"
+
 class Flashcard(models.Model):
     """
     Django model representing a flashcard.
@@ -161,24 +171,23 @@ class Flashcard(models.Model):
     ease_factor = models.FloatField(default=1.5)  # Starting ease factor
     history = models.JSONField(default=list)
     document = models.ForeignKey(UserDocument, on_delete=models.SET_NULL, null=True, blank=True, related_name='flashcards')
-    page_number = models.IntegerField(null=True, blank=True)
     bounding_box = models.JSONField(default=list, null=True, blank=True)
-
+    accepted = models.BooleanField(default=False)
+    
     # Relationship to Deck and User
-    deck = models.ForeignKey(Deck, on_delete=models.CASCADE, related_name='flashcards', null=True, blank=True)
+    deck = models.ForeignKey(Deck, on_delete=models.CASCADE, related_name='flashcards')
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='flashcards')
         
     def __str__(self):
         return (f"Flashcard ID: {self.id}\n"
                 f"Question: {self.question}\n"
                 f"Answer: {self.answer[:40]}...\n"
-                f"Deck: {self.deck.name if self.deck else 'No Deck'}\n"
+                f"Deck: {self.deck.name if hasattr(self, 'deck') else 'No Deck'}\n"
                 f"User: {self.user.username}\n"
                 f"Due: {self.due}\n"
                 f"Interval: {self.current_interval}\n"
                 f"Ease Factor: {self.ease_factor}\n"
                 f"Document: {self.document}\n"
-                f"Page Nuber: {self.page_number}\n"
                 f"Bounding Box: {self.bounding_box}")
 
     def short_str(self):
@@ -295,6 +304,8 @@ class Flashcard(models.Model):
 
         # Save the updated state
         self.save()
+
+
 
 class FailedFeedback(models.Model):
     name = models.CharField(max_length=255)

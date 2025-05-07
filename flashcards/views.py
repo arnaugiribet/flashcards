@@ -13,9 +13,9 @@ from flashcards.models import Flashcard, Deck, FailedFeedback, UserDocument
 from flashcards.forms import DocumentUploadForm
 from django.utils.translation import activate
 import json
-from .services import generate_flashcards, get_matched_flashcards_to_text
+from .services import delete_document_from_s3, generate_flashcards, get_matched_flashcards_to_text, match_selected_text_to_word_boxes
 from .forms import CustomUserCreationForm
-from django.views.decorators.http import require_http_methods
+from django.views.decorators.http import require_http_methods, require_POST
 from django.core.exceptions import ValidationError
 from django.db.models import Count, Q, Prefetch
 import random
@@ -167,6 +167,7 @@ def delete_card(request, card_id):
 def delete_deck(request, deck_id):
     """
     View to delete a deck and all its nested sub-decks along with their flashcards.
+    Will also delete the document if tied to one.
     """
     logger.debug("Deleting deck...")
     if request.method == 'POST':
@@ -174,6 +175,11 @@ def delete_deck(request, deck_id):
             # Attempt to retrieve the deck
             deck = Deck.objects.get(id=deck_id, user=request.user)
             
+            # Delete associated document
+            document = UserDocument.objects.filter(deck=deck, user=request.user).first()
+            if document:
+                delete_document_from_s3(document)
+
             # Get all descendant decks and include the current deck
             all_decks = deck.get_descendants()
             all_decks.append(deck)
@@ -195,15 +201,18 @@ def delete_deck(request, deck_id):
 
 @login_required
 def user_documents(request):
-    user_documents = UserDocument.objects.filter(user=request.user)
+    user_documents = UserDocument.objects.filter(user=request.user).select_related('deck')
     return render(request, 'documents/user_documents.html', {'user_documents': user_documents})
 
 @login_required
 def get_document_url(request, document_id):
     logger.debug(f"Received request to generate presigned URL for document_id: {document_id}")
+
     try:
         document = get_object_or_404(UserDocument, id=document_id, user=request.user)
-        logger.debug(f"Document found: {document.id}, S3 Key: {document.s3_key}")
+        deck_id = document.deck.id
+        deck_name = document.deck.name
+        logger.debug(f"Document found: {document.id}\nS3 Key: {document.s3_key}\ndeck_id: {deck_id}")
     except Exception as e:
         logger.error(f"Document lookup failed: {e}")
         return JsonResponse({'error': 'Document not found'}, status=404)
@@ -229,7 +238,11 @@ def get_document_url(request, document_id):
         return JsonResponse({'error': str(e)}, status=500)
         
     logger.debug(f"Presigned URL generated successfully: {presigned_url}")
-    return JsonResponse({'url': presigned_url})
+    return JsonResponse({
+        'url': presigned_url,
+        'deck_id': deck_id,
+        'deck_name': deck_name
+        })
 
 @login_required
 def get_document_flashcards(request, document_id):
@@ -240,20 +253,21 @@ def get_document_flashcards(request, document_id):
     try:
         # Ensure the document exists and belongs to the current user
         document = UserDocument.objects.get(id=document_id, user=request.user)
-        
-        # Get all flashcards for this document
-        flashcards = Flashcard.objects.filter(document=document)
+        # Get the deck associated with this document
+        deck = document.deck
+        # Get all flashcards for the document's deck
+        flashcards = Flashcard.objects.filter(deck=deck)
         
         # Format the response data
         flashcard_data = []
         for card in flashcards:
-            if card.page_number is not None and card.bounding_box is not None:
+            if card.bounding_box is not None:
                 flashcard_data.append({
                     'id': str(card.id),
-                    'page': card.page_number,
                     'bbox': card.bounding_box,
                     'question': card.question,
-                    'answer': card.answer
+                    'answer': card.answer,
+                    'accepted': card.accepted
                 })
         
         return JsonResponse({'flashcards': flashcard_data})
@@ -270,14 +284,25 @@ def upload_document(request):
         if form.is_valid():
             logger.debug(f"Form is valid request received for file upload to s3")
             document = form.cleaned_data['document']
+            deck_name = form.cleaned_data['deck_name']
             file_type = document.name.split('.')[-1].lower()
             name = document.name
             
+            # Create a new deck
+            deck = Deck(
+                name=deck_name,
+                description=f'Deck for document: {name}',
+                user=request.user,
+                parent_deck=None  # Root level deck
+            )
+            deck.save()
+
             # Create the UserDocument instance but don't save yet
             user_document = form.save(commit=False)
             user_document.user = request.user
             user_document.file_type = file_type
             user_document.name = name
+            user_document.deck = deck
             
             logger.debug(f"Generating S3 key")
             # Generate S3 key
@@ -311,7 +336,9 @@ def upload_document(request):
                 logger.debug(f"user_document saved. Redirecting...")
                 return redirect('user_documents')  # Redirect to your documents list view
                 
-            except ClientError as e:
+            except Exception as e:
+                deck.delete()
+                logger.error(f"Error during upload: {str(e)}")
                 form.add_error(None, 'Failed to upload document. Please try again.')
         else:
             logger.error(f"Form errors: {form.errors}")  # <-- Debugging
@@ -320,16 +347,76 @@ def upload_document(request):
     
     return render(request, 'documents/user_documents.html', {'form': form})
 
+@login_required
+@require_POST
+def delete_document(request, document_id):
+    logger.debug("delete_document called")
+    document = get_object_or_404(UserDocument, id=document_id, user=request.user)
+    try:
+        # Get the associated deck
+        deck = document.deck
+
+        # Get all descendant decks and include the current deck
+        all_decks = deck.get_descendants()
+        all_decks.append(deck)
+
+        # Collect all flashcards associated with these decks
+        flashcards_to_delete = Flashcard.objects.filter(deck__in=all_decks)
+
+        # Delete all collected flashcards and decks
+        flashcards_to_delete.delete()
+        for d in all_decks:
+            d.delete()
+        
+        logger.debug(f"Successfully deleted deck '{deck.name}' and its descendants")
+    except Exception as e:
+        logger.error(f"Error deleting deck structure: {str(e)}")
+        # Continue with document deletion even if deck deletion fails
+
+    success = delete_document_from_s3(document)
+    if success:
+        return JsonResponse({'success': True})
+    else:
+        return JsonResponse({'success': False}, status=500)
+
+
+@login_required
+@require_POST
+def accept_card(request, card_id):
+    logger.debug(f"accept_card called with ID: {card_id}")
+    
+    flashcard = get_object_or_404(Flashcard, id=card_id, user=request.user)
+
+    try:
+        flashcard.accepted = True
+        flashcard.save()
+
+        return JsonResponse({'success': True})
+    except Exception as e:
+        logger.error(f"Error accepting flashcard: {e}")
+        return JsonResponse({'success': False}, status=500)
+
 # Pass selected text to LLM
 @login_required
 def process_selection(request):
+
     if request.method == 'POST':
         data = json.loads(request.body)
         user = request.user
 
-        logger.debug(f"Received selection data")
-        logger.debug(f"{data.keys()}")  # Process as needed
-        get_matched_flashcards_to_text(data["doc_id"], data["text"], data["page"], data["boxes"], user)
+        logger.debug(f"data keys are: {data.keys()}")
+
+        # Extract the selection data and deck name
+        selection_data = data.get("selection")
+        deck_id = data.get("deck_id")
+        deck = Deck.objects.get(id=deck_id)
+
+        # Log what we received for debugging
+        logger.debug(f"Selection data keys: {selection_data.keys()}")
+        logger.debug(f"deck_id is: {deck_id}")
+
+        boxes = match_selected_text_to_word_boxes(selection_data["text"], selection_data["words"])
+        get_matched_flashcards_to_text(selection_data["doc_id"], selection_data["text"], boxes, user, deck)
         return JsonResponse({'status': 'success'})
     return JsonResponse({'error': 'Invalid request'}, status=400)
 
@@ -378,7 +465,7 @@ def user_decks(request):
 
     # Add due cards today count
     for deck in decks:
-        deck.due_cards_today = deck.flashcards.filter(due__lte=today).count()
+        deck.due_cards_today = deck.flashcards.filter(due__lte=today, accepted=True).count()
 
     # Order the decks hierarchically using the class method
     ordered_decks = Deck.order_decks(decks)
@@ -420,7 +507,8 @@ def study(request):
     due_cards = Flashcard.objects.filter(
         user=request.user,
         deck_id__in=deck_ids,
-        due__lte=timezone.now().date()
+        due__lte=timezone.now().date(),
+        accepted=True
     ).order_by('due')
     
     # If no cards are due, render a specific template
@@ -479,7 +567,8 @@ def review_card(request):
         card = Flashcard.objects.only('id', 'user', 'deck_id', 'question', 'answer', 'due').get(
             id=card_id,
             user=request.user,
-            deck_id__in=deck_ids  # Make sure the card belongs to the specified deck or its children
+            deck_id__in=deck_ids,  # Make sure the card belongs to the specified deck or its children
+            accepted=True
         )
         
         # Update the due date based on the review result
@@ -496,7 +585,8 @@ def review_card(request):
         due_cards = Flashcard.objects.filter(
             user=request.user,
             deck_id__in=deck_ids,  # Filter by deck_id and its children
-            due__lte=current_date
+            due__lte=current_date,
+            accepted=True
         ).order_by('due')
 
         # If there is more than one card in the due cards list, handle the "again" card

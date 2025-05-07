@@ -2,37 +2,26 @@
 {% load static %}
 {% block content %}
 <div style="text-align: center; max-width: 800px; margin: 0 auto; padding: 2rem;">
-    <div style="display: flex; align-items: center; justify-content: start; margin-bottom: 2rem;"> <!-- Added margin-bottom here -->
-        <img src="{% static 'images/bibo-dibo-logo.png' %}" alt="BiboDibo Logo" style="max-width: 150px; margin-right: 1.5rem;">
-        <div style="text-align: left;"> <!-- Added text-align: left to keep text aligned to the left of the container -->
-            <h1 style="color: #9daca2; font-size: 2.5rem; margin-bottom: 1rem;">
-                Welcome to BiboDibo
-            </h1>
-            <p style="color: #666; line-height: 1.6; font-size: 1.2rem; margin-bottom: 2rem;">
-                Accelerate your learning with AI-assisted flashcard creation
-            </p>
+    <!-- Box -->
+    <div style="background-color: #f4f6f5; padding: 1rem 2rem 2rem 2rem; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+        <div style="display: flex; justify-content: center; margin-bottom: 1rem;">
+            <img src="{% static 'images/doctude-original-no-bg-horizontal.png' %}" alt="doctude Logo" style="max-width: 250px;">
         </div>
-    </div>
-
-    <div style="background-color: #f4f6f5; padding: 2rem; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-        <h2 style="color: #9daca2; margin-bottom: 1rem; text-align: center;">AI-Powered Learning Tools</h2> <!-- Centered this h2 -->
-        <p style="color: #333; line-height: 1.6; margin-bottom: 1.5rem; text-align: center;"> <!-- Centered this p -->
-            BiboDibo helps you create flashcards faster than ever using AI-assisted tools that extract key information directly from your documents. 
-            Turn lecture notes, PDFs, and more into ready-to-use cards with ease.
-        </p>
-        <p style="color: #333; line-height: 1.6; margin-bottom: 1.5rem; text-align: center;"> <!-- Centered this p -->
-            This is our beta version, focusing on AI generated flashcards—but we’re building more! In upcoming releases, expect features like:
+        <h1 style="color: #66815E; margin-bottom: 1rem; text-align: center; font-size: 1.5rem; font-weight: 500;">
+            Cards with context
+        </h1>         
+        <p style="color: #333; line-height: 1.6; margin-bottom: 1.5rem; text-align: center;">
+            Create flashcards that stay connected to your study material — each card is linked to its exact place in your documents.
+            Use AI to help generate cards faster, or craft your own.
+        </p>        
+        <p style="color: #333; line-height: 1.6; margin-bottom: 1.5rem; text-align: center;">
+            In upcoming releases, expect features like:
         </p>
         <ul style="text-align: center; color: #333; line-height: 1.6; margin-left: 1.5rem; list-style-position: inside;">
             <li>🔍 Browsing and sharing decks</li>
             <li>⚡ Cram mode for last-minute reviews</li>
-            <li>🔗 Traceability from cards back to documents</li>
-            <li>📊 AI generated diagrams and other study methods</li>
-            <li>🎯 A full suite of tools to help you digest information</li>
+            <li>📊 Track what you've covered from your material — and what you've missed</li>
         </ul>
-        <p style="color: #333; line-height: 1.6; margin-top: 1.5rem; text-align: center;"> <!-- Centered this p -->
-            Join us on this journey as we evolve into your go-to learning assistant!
-        </p>
     </div>
 </div>
 {% endblock %}
