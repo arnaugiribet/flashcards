@@ -12,7 +12,7 @@
         .custom-logo {
             width: 30px;
             height: 30px;
-            background-image: url('{% static "images/doctude-logo-white.png" %}');
+            background-image: url('{% static "images/doctude-logo-white-nobg.png" %}');
             background-size: contain;  /* Ensures the entire image fits within the box */
             background-position: center;  /* Centers the logo in case it doesn't cover the whole area */
             background-repeat: no-repeat;  /* Prevents the logo from repeating */
@@ -27,7 +27,7 @@
                 <!-- Left Section: Home Button -->
                 <div class="flex items-center">
                     <a href="{% url 'home' %}" class="flex items-center text-white hover:text-gray-200">
-                        <div class="custom-logo mr-2"></div>
+                        <div class="custom-logo mr-1"></div>
                         doctude
                     </a>
                 </div>
@@ -56,7 +56,7 @@
                         </a>
                         <form action="{% url 'logout' %}" method="post" class="inline">
                             {% csrf_token %}
-                            <button type="submit" class="bg-[#9daca2] text-white hover:text-gray-200">
+                            <button type="submit" class="text-white hover:text-gray-200 bg-transparent p-0 m-0 border-none">
                                 Log Out
                             </button>
                         </form>
