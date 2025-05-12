@@ -6,13 +6,13 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}BiboDibo{% endblock %}</title>
+    <title>{% block title %}doctude{% endblock %}</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .custom-logo {
             width: 30px;
             height: 30px;
-            background-image: url('{% static "images/bibo-dibo-cup-distilled.png" %}');
+            background-image: url('{% static "images/doctude-logo-white-nobg.png" %}');
             background-size: contain;  /* Ensures the entire image fits within the box */
             background-position: center;  /* Centers the logo in case it doesn't cover the whole area */
             background-repeat: no-repeat;  /* Prevents the logo from repeating */
@@ -27,8 +27,8 @@
                 <!-- Left Section: Home Button -->
                 <div class="flex items-center">
                     <a href="{% url 'home' %}" class="flex items-center text-white hover:text-gray-200">
-                        <div class="custom-logo mr-2"></div>
-                        BiboDibo
+                        <div class="custom-logo mr-1"></div>
+                        doctude
                     </a>
                 </div>
 
@@ -56,7 +56,7 @@
                         </a>
                         <form action="{% url 'logout' %}" method="post" class="inline">
                             {% csrf_token %}
-                            <button type="submit" class="bg-[#9daca2] text-white hover:bg-opacity-90 px-3 py-2 rounded-md text-sm font-medium">
+                            <button type="submit" class="text-white hover:text-gray-200 bg-transparent p-0 m-0 border-none">
                                 Log Out
                             </button>
                         </form>
@@ -112,7 +112,7 @@
                 </a>
             </div>
             <div class="text-sm text-gray-400">
-                <p>&copy; 2025 BiboDibo. All rights reserved.</p>
+                <p>&copy; 2025 doctude. All rights reserved.</p>
             </div>
         </div>
     </footer>
@@ -122,7 +122,7 @@
         data-name="BMC-Widget" 
         data-cfasync="false" 
         src="https://cdnjs.buymeacoffee.com/1.0.0/widget.prod.min.js" 
-        data-id="bibodibo" 
+        data-id="doctude" 
         data-description="Support me on Buy me a coffee!" 
         data-message="" 
         data-color="#FF5F5F" 

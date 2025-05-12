@@ -51,7 +51,7 @@
 
 /* PDF Viewer options*/
 #viewerContainer {
-    position: relative;
+    position: absolute;
     width: 100%;
     height: calc(100% - 4rem);
 }
