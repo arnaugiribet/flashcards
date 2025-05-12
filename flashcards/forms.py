@@ -3,6 +3,31 @@ from django.contrib.auth.models import User
 from django.contrib.auth.forms import UserCreationForm
 from django.urls import reverse
 from django.utils.safestring import mark_safe
+from flashcards.models import UserDocument, Deck
+
+class DocumentUploadForm(forms.ModelForm):
+    document = forms.FileField(
+        widget=forms.FileInput(attrs={'class': 'form-control'}),
+        help_text='Accepted formats: PDF, TXT, DOCX'
+    )
+    deck_name = forms.CharField(
+        max_length=200,
+        required=True,
+        widget=forms.TextInput(attrs={'class': 'form-control'}),
+        help_text='Enter deck name'
+    )
+    class Meta:
+        model = UserDocument
+        fields = ['document', 'deck_name']
+
+    def clean_document(self):
+        document = self.cleaned_data.get('document')
+        if document:
+            file_type = document.name.split('.')[-1].lower()
+            if file_type not in ['pdf', 'txt', 'docx']:
+                raise forms.ValidationError('File type not supported. Please upload PDF, TXT, or DOCX files only.')
+            return document
+
 
 class CustomUserCreationForm(UserCreationForm):
     email = forms.EmailField(required=True, help_text="Enter a valid email address.")

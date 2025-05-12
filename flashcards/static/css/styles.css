@@ -33,3 +33,30 @@
     text-align: center;  /* Center the button */
     margin-top: 10px;  /* Space above the button */
 }
+
+/* How the opacity and visibility properties should animate in the sidebar*/
+.sidebar-link {
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+/* Add transition for smooth sidebar collapse/expand */
+.sidebar {
+    transition: width 0.3s ease;
+}
+
+/* Adjust main content when sidebar is collapsed */
+.main-content {
+    transition: margin-left 0.3s ease;
+}
+
+/* PDF Viewer options*/
+#viewerContainer {
+    position: absolute;
+    width: 100%;
+    height: calc(100% - 4rem);
+}
+
+#viewer {
+    position: absolute;
+    width: 100%;
+}

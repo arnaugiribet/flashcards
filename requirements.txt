@@ -7,3 +7,9 @@ whitenoise==6.8.2
 dj-database-url==2.3.0
 python-docx==1.1.2
 pdfplumber==0.11.5
+django-storages==1.14.5
+boto3==1.36.22
+botocore==1.36.22
+jmespath==1.0.1
+s3transfer==0.11.2
+rapidfuzz==3.12.2
