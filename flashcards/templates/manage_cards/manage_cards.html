@@ -9,41 +9,36 @@
         <table class="table-auto w-full">
             <thead class="bg-[#a2b8d0] text-white">
                 <tr>
-                    <th class="px-4 py-2 text-left w-6/20">
+                    <th class="px-4 py-2 text-left" style="width: 30%;">
                         <a href="?sort_by=question" class="hover:text-[#7f8c8d]">Card Question</a>
                     </th>
-                    <th class="px-4 py-2 text-left w-6/20">
+                    <th class="px-4 py-2 text-left" style="width: 30%;">
                         <a href="?sort_by=answer" class="hover:text-[#7f8c8d]">Card Answer</a>
                     </th>
-                    <th class="px-4 py-2 text-left w-3/20 max-w-xs overflow-hidden">
+                    <th class="px-4 py-2 text-left" style="width: 12%;">
                         <a href="?sort_by=deck" class="hover:text-[#7f8c8d]">Deck</a>
                     </th>
-                    <th class="px-4 py-2 text-left w-3/20">
+                    <th class="px-4 py-2 text-left" style="width: 13%;">
                         <a href="?sort_by=due" class="hover:text-[#7f8c8d]">Due Date</a>
                     </th>
-                    <th class="px-4 py-2 text-left w-2/20">
+                    <th class="px-4 py-2 text-left" style="width: 13%;">
                         <a href="?sort_by=creation_date" class="hover:text-[#7f8c8d]">Creation Date</a>
                     </th>
-                    <th class="px-4 py-2 w-12"></th>
+                    <th class="px-4 py-2" style="width: 2%;"></th>
                 </tr>                
             </thead>
             <tbody>
                 {% for card in cards %}
                 <tr class="bg-[#f4f6f5] hover:bg-gray-100">
                     <td class="px-4 py-2">
-                        <input type="text" value="{{ card.question }}" class="edit-field w-full" data-card-id="{{ card.id }}" data-field="question">
+                        <textarea class="edit-field w-full" data-card-id="{{ card.id }}" data-field="question">{{ card.question }}</textarea>
                     </td>
                     <td class="px-4 py-2">
-                        <input type="text" value="{{ card.answer }}" class="edit-field w-full" data-card-id="{{ card.id }}" data-field="answer">
+                        <textarea class="edit-field w-full" data-card-id="{{ card.id }}" data-field="answer">{{ card.answer }}</textarea>
                     </td>
+                    
                     <td class="px-4 py-2">
-                        <select class="edit-deck w-full" data-card-id="{{ card.id }}" data-field="deck">
-                            {% for deck in decks %}
-                                <option value="{{ deck.id }}" {% if card.deck.id == deck.id %}selected{% endif %}>
-                                    {{ deck.name }}
-                                </option>
-                            {% endfor %}
-                        </select>
+                        {{ card.deck.name }}
                     </td>
                     <td class="px-4 py-2">{{ card.due }}</td>
                     <td class="px-4 py-2">{{ card.creation_date }}</td>
