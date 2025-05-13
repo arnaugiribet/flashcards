@@ -181,7 +181,7 @@ EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend' # For production
 EMAIL_HOST = 'mail.privateemail.com'  # Your mail server
 EMAIL_PORT = 465  # For SSL (use 587 for TLS)
 EMAIL_USE_SSL = True  # Use SSL for secure connection
-EMAIL_HOST_USER = 'info@bibodibo.com'  # Your email address
+EMAIL_HOST_USER = 'info@doctude.com'  # Your email address
 EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")  # Your email password (or App Password if using 2FA)
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER  # From address for outgoing emails
 
