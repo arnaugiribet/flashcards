@@ -803,6 +803,57 @@ def activate(request, uidb64, token):
     else:
         return render(request, 'registration/activation_failed.html')  # Show failure page
 
+@login_required
+def create_flashcard_from_document(request):
+    """
+    API endpoint to handle flashcard creation from document viewer
+    """
+    if request.method != "POST":
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+    
+    try:
+        print(f"creating flashcard manually from document viewer")
+        data = json.loads(request.body)
+        deck_id = data.get('deck_id')
+        document_id = data.get('document_id')
+        question = data.get('question')
+        answer = data.get('answer')
+        
+        # Ensure all required fields are present
+        if not (deck_id and question and answer):
+            return JsonResponse({'error': 'Missing required fields'}, status=400)
+            
+        # Validate deck ownership
+        deck = Deck.objects.get(id=deck_id, user=request.user)
+        
+        # If document_id is provided, validate document ownership
+        document = None
+        if document_id:
+            document = UserDocument.objects.get(id=document_id, user=request.user)
+        
+        # Create the flashcard with UUID
+        flashcard = Flashcard.objects.create(
+            deck=deck,
+            question=question,
+            answer=answer,
+            user=request.user,
+            document=document
+        )
+        print('card successfully created')
+        return JsonResponse({
+            'success': True,
+            'id': str(flashcard.id),  # Convert UUID to string for JSON
+            'message': 'Flashcard created successfully'
+        })
+        
+    except Deck.DoesNotExist:
+        return JsonResponse({'error': 'Invalid deck specified'}, status=404)
+    except UserDocument.DoesNotExist:
+        return JsonResponse({'error': 'Invalid document specified'}, status=404)
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'Invalid JSON data'}, status=400)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
 
 @login_required
 def create_manually(request):

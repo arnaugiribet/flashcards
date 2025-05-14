@@ -263,7 +263,6 @@
                             Set Text Placement
                         </button>
 
-
                         <button id="saveNewFlashcard" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">
                             Create Card
                         </button>
@@ -624,12 +623,82 @@ document.getElementById('saveNewFlashcard').addEventListener('click', () => {
     const answer = document.getElementById('newAnswer').value.trim();
 
     if (!question || !answer) {
-        alert("Please fill out both question and answer.");
+        // Show error message
+        const notification = document.createElement('div');
+        notification.className = 'fixed bottom-4 right-4 bg-yellow-600 text-white px-4 py-2 rounded-lg shadow-lg z-50';
+        notification.textContent = 'Please fill in both question and answer fields';
+        document.body.appendChild(notification);
+        
+        setTimeout(() => {
+            notification.remove();
+        }, 2000);
         return;
     }
 
-});
+    // Create the flashcard data to send to the server
+    const flashcardData = {
+        question: question,
+        answer: answer,
+        deck_id: currentDeckId,
+        document_id: currentDocumentId
+    };
 
+    const saveButton = document.getElementById('saveNewFlashcard');
+    const originalText = saveButton.textContent;
+    saveButton.textContent = 'Creating...';
+    saveButton.disabled = true;
+
+    // Send the data to your server endpoint
+    fetch('/create-flashcard/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCsrfToken()
+        },
+        body: JSON.stringify(flashcardData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log("Flashcard created:", data);
+        
+        // Show success notification
+        const notification = document.createElement('div');
+        notification.className = 'fixed bottom-4 right-4 bg-green-600 text-white px-4 py-2 rounded-lg shadow-lg z-50';
+        notification.textContent = 'Flashcard created successfully';
+        document.body.appendChild(notification);
+        
+        setTimeout(() => {
+            notification.remove();
+        }, 2000);
+
+        // Clear the input fields
+        document.getElementById('newQuestion').value = '';
+        document.getElementById('newAnswer').value = '';
+
+        // // Refresh the flashcards list
+        // if (currentDocumentId) {
+        //     fetchAndCreateHighlights(currentDocumentId);
+        // }
+    })
+    .catch(error => {
+        console.error("Error creating flashcard:", error);
+        
+        // Show error notification
+        const notification = document.createElement('div');
+        notification.className = 'fixed bottom-4 right-4 bg-red-600 text-white px-4 py-2 rounded-lg shadow-lg z-50';
+        notification.textContent = `Error: ${error.message || 'Could not create flashcard'}`;
+        document.body.appendChild(notification);
+        
+        setTimeout(() => {
+            notification.remove();
+        }, 3000);
+    })
+    .finally(() => {
+        // Reset button state
+        saveButton.textContent = originalText;
+        saveButton.disabled = false;
+    });
+});
 
 // Fetch flashcards for the current document and create highlights
 async function fetchAndCreateHighlights(documentId) {
@@ -756,8 +825,8 @@ function displayFlashcards(flashcards) {
                     </div>
                 ` : ''}
                 <div>
-                    <p class="font-semibold">Q: ${flashcard.question}</p>
-                    <p class="text-gray-600">A: ${flashcard.answer}</p>
+                    <p class="font-semibold">${flashcard.question}</p>
+                    <p class="text-gray-600">${flashcard.answer}</p>
                 </div>
             </div>
         `;
