@@ -318,6 +318,22 @@ let currentDeckId = null;
 async function viewDocument(documentId, documentName) {
     console.log("Retrieving document with id:", documentId);
 
+    // Reset UI state - make sure the create panel is hidden and the flashcard list is visible
+    document.getElementById('createPanel').classList.add('hidden');
+    if (document.querySelector('.px-4.py-2.border-b')) {
+        document.querySelector('.px-4.py-2.border-b').style.display = '';
+    }
+    if (document.getElementById('flashcardsContainer')) {
+        document.getElementById('flashcardsContainer').style.display = '';
+    }
+    // Clear any form inputs from previous sessions
+    if (document.getElementById('newQuestion')) {
+        document.getElementById('newQuestion').value = '';
+    }
+    if (document.getElementById('newAnswer')) {
+        document.getElementById('newAnswer').value = '';
+    }
+    
     document.getElementById('outerContainerModal').classList.remove('hidden');
     currentDocumentId = documentId;
 
@@ -675,10 +691,9 @@ document.getElementById('saveNewFlashcard').addEventListener('click', () => {
         document.getElementById('newQuestion').value = '';
         document.getElementById('newAnswer').value = '';
 
-        // // Refresh the flashcards list
-        // if (currentDocumentId) {
-        //     fetchAndCreateHighlights(currentDocumentId);
-        // }
+        // Refresh the flashcards list
+        fetchAndCreateHighlights(currentDocumentId);
+        
     })
     .catch(error => {
         console.error("Error creating flashcard:", error);
