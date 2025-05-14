@@ -99,11 +99,20 @@
 
         <!-- Section: Add Cards -->
         <div class="mt-3 pt-2 border-t border-gray-200">
-            <button onclick="location.href='{% url 'create_manually' %}'" 
-                class="block w-full text-left text-[#6b8276] hover:bg-gray-100 py-2 px-4 rounded font-semibold">
-                <i class="fas fa-plus mr-2"></i>
-                Add Cards
-            </button>
+            {% if decks %}
+                <button onclick="location.href='{% url 'create_manually' %}'" 
+                    class="block w-full text-left text-[#6b8276] hover:bg-gray-100 py-2 px-4 rounded font-semibold">
+                    <i class="fas fa-plus mr-2"></i>
+                    Add Cards
+                </button>
+            {% else %}
+                <button disabled title="Create a deck first"
+                    class="block w-full text-left text-gray-400 bg-gray-100 py-2 px-4 rounded font-semibold"
+                    style="cursor: default;">
+                    <i class="fas fa-plus mr-2"></i>
+                    Add Cards
+                </button>
+            {% endif %}
         </div>
     </div>
 
