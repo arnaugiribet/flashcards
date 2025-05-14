@@ -7,7 +7,7 @@
         <!-- Header with + New Deck Button -->
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
             <h2 style="margin: 0; font-size: 1.2rem; color: #6b8276;"></h2>
-            <button onclick="openNewDeckMenu()"
+            <button onclick="openNewDeckMenu(event)"
                 class="bg-[#9daca2] hover:bg-opacity-90 text-white p-3 rounded-full shadow-md hover:shadow-lg transition-all duration-200 ease-in-out focus:outline-none">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
                     stroke="currentColor" stroke-width="2">
@@ -87,7 +87,21 @@
             data-outline-color="#000000" data-font-color="#ffffff" data-coffee-color="#FFDD00"></script>
     </div>
     
+    <!-- Create Deck popup -->
+    <div id="newDeckMenu" class="hidden absolute bg-white rounded-lg shadow-lg p-4 z-50"
+        style="min-width: 200px;">
+        <a href="{% url 'user_documents' %}" 
+        class="block py-2 px-4 rounded hover:bg-gray-100 text-[#6b8276] font-semibold transition-all duration-200 whitespace-nowrap overflow-hidden">
+            <i class="fas fa-file-alt mr-2"></i>
+            From Document
+        </a>
 
+        <button onclick="createDeck('standalone')" 
+                class="block w-full text-left text-[#6b8276] hover:bg-gray-100 py-2 px-4 rounded font-semibold">
+            <i class="fas fa-clone mr-2"></i>
+            Standalone Deck
+        </button>
+    </div>
 
 
     <!-- Popup Form for Create Deck -->
@@ -192,6 +206,35 @@
 
 {% block extra_js %}
 <script>
+
+    function openNewDeckMenu(event) {
+        const menu = document.getElementById("newDeckMenu");
+
+        // Close any other modals
+        closeAllOptionModals();
+
+        if (!menu.classList.contains("hidden")) {
+            menu.classList.add("hidden");
+            return;
+        }
+
+        // Position relative to the button
+        const button = event.currentTarget;
+        const rect = button.getBoundingClientRect();
+        menu.style.top = `${rect.bottom + window.scrollY + 10}px`;
+        menu.style.right = `${window.innerWidth - rect.right}px`;
+
+        menu.classList.remove("hidden");
+
+        // Temporarily attach outside click handler
+        document.addEventListener("click", function handler(e) {
+            if (!menu.contains(e.target) && !button.contains(e.target)) {
+                menu.classList.add("hidden");
+                document.removeEventListener("click", handler);
+            }
+        });
+    }
+
 
     // Function to close all modals
     function closeAllOptionModals() {
