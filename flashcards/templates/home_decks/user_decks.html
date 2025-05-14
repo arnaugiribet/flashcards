@@ -96,11 +96,11 @@
             From Document
         </a>
 
-        <button onclick="createDeck('standalone')" 
-                class="block w-full text-left text-[#6b8276] hover:bg-gray-100 py-2 px-4 rounded font-semibold">
+        <button onclick="openCreateDeckPopup()" 
+            class="block w-full text-left text-[#6b8276] hover:bg-gray-100 py-2 px-4 rounded font-semibold">
             <i class="fas fa-clone mr-2"></i>
             Standalone Deck
-        </button>
+    </button>
     </div>
 
 
@@ -233,6 +233,15 @@
                 document.removeEventListener("click", handler);
             }
         });
+    }
+
+    // When clicing on Create Standalone Deck
+    function openCreateDeckPopup() {
+        // Close the floating menu
+        document.getElementById("newDeckMenu").classList.add("hidden");
+
+        // Show the full-screen modal
+        document.getElementById("createDeckPopup").style.display = "flex";
     }
 
 
