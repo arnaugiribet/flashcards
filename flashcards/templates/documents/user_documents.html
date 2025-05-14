@@ -217,19 +217,57 @@
                 </div>
             </div>
             <!-- Options subheader -->
-            <div class="px-4 py-2 border-b flex gap-2">
-                <button id="aiButton" class="text-sm text-gray-400 flex items-center cursor-not-allowed disabled:hover:text-gray-400" title="Select text to generate AI cards" disabled>
-                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-                    </svg>
-                    AI
-                </button>
-                <button class="custom-button text-sm text-gray-600 hover:text-gray-900 flex items-center" title="Create custom cards">
-                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                    </svg>
-                    Custom
-                </button>
+            <div class="px-4 py-2 border-b">
+                <div class="text-xs text-gray-500 uppercase tracking-wide mb-1">Create Cards</div>
+                <div class="flex gap-2">
+                    <button id="aiButton" class="text-sm text-gray-400 flex items-center cursor-not-allowed disabled:hover:text-gray-400" title="Select text to generate AI cards" disabled>
+                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                        </svg>
+                        AI
+                    </button>
+                    <button id="manualCardButton" class="custom-button text-sm text-gray-600 hover:text-gray-900 flex items-center" title="Create custom cards">
+                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                        </svg>
+                        Manually
+                    </button>
+
+                </div>
+            </div>
+            
+            <!-- Create Panel (initially hidden) -->
+            <div id="createPanel" class="hidden flex-1 flex-col p-4 overflow-auto">
+                <div class="flex items-center mb-4">
+                    <button id="backFromCreate" class="p-2 text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-full transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                        </svg>
+                    </button>
+                    <span class="ml-2 text-lg font-medium">Create Flashcard</span>
+                </div>
+
+                <div class="space-y-4">
+                    <div>
+                        <label for="newQuestion" class="block text-sm font-medium text-gray-700 mb-1">Question</label>
+                        <textarea id="newQuestion" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 h-24"></textarea>
+                    </div>
+
+                    <div>
+                        <label for="newAnswer" class="block text-sm font-medium text-gray-700 mb-1">Answer</label>
+                        <textarea id="newAnswer" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 h-24"></textarea>
+                    </div>
+
+                    <div class="flex justify-between items-center gap-4">
+                        <button id="setTextPlacement" class="flex items-center px-4 py-2 border bg-yellow-50 border-yellow-300 text-yellow-800 rounded-md hover:bg-yellow-100 transition-colors font-medium shadow-sm">
+                            Set Text Placement
+                        </button>
+
+                        <button id="saveNewFlashcard" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">
+                            Create Card
+                        </button>
+                    </div>
+                </div>
             </div>
 
             <!-- Flashcards list -->
@@ -237,6 +275,8 @@
         </div>
     </div>
 </div>
+
+
 
 <!-- Confirm discard flashcard modal -->
 <div id="confirm-discard-flashcard" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
@@ -278,6 +318,22 @@ let currentDeckId = null;
 async function viewDocument(documentId, documentName) {
     console.log("Retrieving document with id:", documentId);
 
+    // Reset UI state - make sure the create panel is hidden and the flashcard list is visible
+    document.getElementById('createPanel').classList.add('hidden');
+    if (document.querySelector('.px-4.py-2.border-b')) {
+        document.querySelector('.px-4.py-2.border-b').style.display = '';
+    }
+    if (document.getElementById('flashcardsContainer')) {
+        document.getElementById('flashcardsContainer').style.display = '';
+    }
+    // Clear any form inputs from previous sessions
+    if (document.getElementById('newQuestion')) {
+        document.getElementById('newQuestion').value = '';
+    }
+    if (document.getElementById('newAnswer')) {
+        document.getElementById('newAnswer').value = '';
+    }
+    
     document.getElementById('outerContainerModal').classList.remove('hidden');
     currentDocumentId = documentId;
 
@@ -559,6 +615,106 @@ document.getElementById('aiButton').addEventListener('click', function(e) {
     });
 });
 
+
+document.getElementById('manualCardButton').addEventListener('click', () => {
+    // Show create panel
+    document.getElementById('createPanel').classList.remove('hidden');
+    document.querySelector('.px-4.py-2.border-b').style.display = 'none';
+    document.getElementById('flashcardsContainer').style.display = 'none';
+});
+
+document.getElementById('backFromCreate').addEventListener('click', () => {
+    // Hide create panel and show previous UI
+    document.getElementById('createPanel').classList.add('hidden');
+    document.querySelector('.px-4.py-2.border-b').style.display = '';
+    document.getElementById('flashcardsContainer').style.display = '';
+    
+    // Optional: clear inputs
+    document.getElementById('newQuestion').value = '';
+    document.getElementById('newAnswer').value = '';
+});
+
+document.getElementById('saveNewFlashcard').addEventListener('click', () => {
+    const question = document.getElementById('newQuestion').value.trim();
+    const answer = document.getElementById('newAnswer').value.trim();
+
+    if (!question || !answer) {
+        // Show error message
+        const notification = document.createElement('div');
+        notification.className = 'fixed bottom-4 right-4 bg-yellow-600 text-white px-4 py-2 rounded-lg shadow-lg z-50';
+        notification.textContent = 'Please fill in both question and answer fields';
+        document.body.appendChild(notification);
+        
+        setTimeout(() => {
+            notification.remove();
+        }, 2000);
+        return;
+    }
+
+    // Create the flashcard data to send to the server
+    const flashcardData = {
+        question: question,
+        answer: answer,
+        deck_id: currentDeckId,
+        document_id: currentDocumentId
+    };
+
+    const saveButton = document.getElementById('saveNewFlashcard');
+    const originalText = saveButton.textContent;
+    saveButton.textContent = 'Creating...';
+    saveButton.disabled = true;
+
+    // Send the data to your server endpoint
+    fetch('/create-flashcard/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCsrfToken()
+        },
+        body: JSON.stringify(flashcardData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log("Flashcard created:", data);
+        
+        // Show success notification
+        const notification = document.createElement('div');
+        notification.className = 'fixed bottom-4 right-4 bg-green-600 text-white px-4 py-2 rounded-lg shadow-lg z-50';
+        notification.textContent = 'Flashcard created successfully';
+        document.body.appendChild(notification);
+        
+        setTimeout(() => {
+            notification.remove();
+        }, 2000);
+
+        // Clear the input fields
+        document.getElementById('newQuestion').value = '';
+        document.getElementById('newAnswer').value = '';
+
+        // Refresh the flashcards list
+        fetchAndCreateHighlights(currentDocumentId);
+        
+    })
+    .catch(error => {
+        console.error("Error creating flashcard:", error);
+        
+        // Show error notification
+        const notification = document.createElement('div');
+        notification.className = 'fixed bottom-4 right-4 bg-red-600 text-white px-4 py-2 rounded-lg shadow-lg z-50';
+        notification.textContent = `Error: ${error.message || 'Could not create flashcard'}`;
+        document.body.appendChild(notification);
+        
+        setTimeout(() => {
+            notification.remove();
+        }, 3000);
+    })
+    .finally(() => {
+        // Reset button state
+        saveButton.textContent = originalText;
+        saveButton.disabled = false;
+    });
+});
+
 // Fetch flashcards for the current document and create highlights
 async function fetchAndCreateHighlights(documentId) {
     const flashcardsContainer = document.getElementById("flashcardsContainer");
@@ -684,8 +840,8 @@ function displayFlashcards(flashcards) {
                     </div>
                 ` : ''}
                 <div>
-                    <p class="font-semibold">Q: ${flashcard.question}</p>
-                    <p class="text-gray-600">A: ${flashcard.answer}</p>
+                    <p class="font-semibold">${flashcard.question}</p>
+                    <p class="text-gray-600">${flashcard.answer}</p>
                 </div>
             </div>
         `;

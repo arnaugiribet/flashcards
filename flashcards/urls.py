@@ -22,6 +22,7 @@ urlpatterns = [
     path('study/no_cards_due', views.no_cards_due, name='no_cards_due'),
     path('add_flashcards/manual/', views.create_manually, name='create_manually'),
     path('add_flashcards/automatic/', views.create_automatically, name='create_automatically'),
+    path('create-flashcard/', views.create_flashcard_from_document, name='create_flashcard_from_document'),
     path('process_file_and_context/', views.process_file_and_context, name='process_file_and_context'),
     path('signup/', views.signup, name='signup'),
     path('resend_activation_email/<int:user_id>/', views.resend_activation_email, name='resend_activation_email'),
