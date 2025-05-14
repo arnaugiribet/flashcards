@@ -68,17 +68,6 @@
             </p>
         {% endif %}
     </div>
-    
-    <!-- Buttons Container: Create Deck and Add Cards -->
-    <div class="flex justify-center gap-4 mt-6">
-        <button id="createDeckButton" class="bg-[#9daca2] hover:bg-opacity-90 text-white px-6 py-3 rounded-md text-sm font-medium shadow-sm transition-all duration-200 ease-in-out hover:shadow-md">
-            Create Deck
-        </button>
-        
-        <button id="addCardsButton" class="bg-[#9daca2] hover:bg-opacity-90 text-white px-6 py-3 rounded-md text-sm font-medium shadow-sm transition-all duration-200 ease-in-out hover:shadow-md">
-            Add Cards
-        </button>
-    </div>
 
     <!-- Buy Me a Coffee Button -->
     <div style="margin-top: 2rem; display: flex; justify-content: center; align-items: center; width: 100%; max-width: 100vw; overflow: hidden; transform: scale(0.7);">
@@ -148,42 +137,6 @@
                     Cancel
                 </button>
             </form>   
-        </div>
-    </div>
-
-    <!-- Popup Form for Add Cards -->
-    <div id="addCardsPopup" class="hidden fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
-        <div class="bg-white p-8 rounded-lg shadow-lg w-[400px]">
-            {% if decks %}
-                <h3 class="mb-6 text-[#9daca2] text-xl font-medium text-center">Add Cards</h3>
-                <div class="flex flex-col gap-4">
-                    <!-- Option to Create Card -->
-                    <button 
-                        id="createCardButton"
-                        onclick="location.href='{% url 'create_manually' %}'"
-                        class="bg-[#a4b8c4] hover:bg-opacity-90 text-white py-3 px-6 rounded-md font-medium transition-all duration-200 ease-in-out hover:shadow-md text-sm">
-                        Create Manually
-                    </button>
-                    
-                    <!-- Option to Generate From File -->
-                    <button
-                        id="generateFromFileButton"
-                        onclick="location.href='{% url 'create_automatically' %}'"
-                        class="bg-[#9db4a2] hover:bg-opacity-90 text-white py-3 px-6 rounded-md font-medium transition-all duration-200 ease-in-out hover:shadow-md text-sm">
-                        Generate From File
-                    </button>
-                </div>
-            {% else %}
-                <h3 class="mb-6 text-[#9daca2] text-xl font-medium text-center">No Decks Available</h3>
-                <p class="text-center text-gray-600 mb-6">Please create a deck first before adding cards.</p>
-            {% endif %}
-
-            <button 
-                type="button" 
-                id="cancelAddCards" 
-                class="mt-6 mx-auto block bg-gray-400 hover:bg-gray-500 text-white py-2 px-6 rounded-md font-medium transition-all duration-200 ease-in-out text-sm">
-                Cancel
-            </button>
         </div>
     </div>
 </div>
@@ -379,11 +332,6 @@
     //     });
     // }
 
-    // Show the Create Deck popup when the button is clicked
-    document.getElementById("createDeckButton").addEventListener("click", function() {
-        document.getElementById("createDeckPopup").style.display = "flex";
-    });
-
     // Hide the Create Deck popup when the cancel button is clicked
     document.getElementById("cancelCreateDeck").addEventListener("click", function() {
         document.getElementById("createDeckPopup").style.display = "none";
@@ -411,24 +359,5 @@
         .catch(error => console.error("Error creating deck:", error));
     });
 
-    // Show the Add Cards popup when the button is clicked
-    document.getElementById("addCardsButton").addEventListener("click", function() {
-        document.getElementById("addCardsPopup").style.display = "flex";
-    });
-
-    // Hide the Add Cards popup when the cancel button is clicked
-    document.getElementById("cancelAddCards").addEventListener("click", function() {
-        document.getElementById("addCardsPopup").style.display = "none";
-    });
-
-    // Handle "Create Card" and "Generate From File" buttons as needed
-    // For now, just log the action (you can replace this with actual logic later)
-    document.getElementById("createCardButton").addEventListener("click", function() {
-        console.log("Create Card option selected.");
-    });
-
-    document.getElementById("generateFromFileButton").addEventListener("click", function() {
-        console.log("Generate From File option selected.");
-    });
 </script>
 {% endblock %}
