@@ -90,17 +90,32 @@
     <!-- Create Deck popup -->
     <div id="newDeckMenu" class="hidden absolute bg-white rounded-lg shadow-lg p-4 z-50"
         style="min-width: 200px;">
-        <a href="{% url 'user_documents' %}" 
-        class="block py-2 px-4 rounded hover:bg-gray-100 text-[#6b8276] font-semibold transition-all duration-200 whitespace-nowrap overflow-hidden">
-            <i class="fas fa-file-alt mr-2"></i>
-            From Document
-        </a>
 
-        <button onclick="openCreateDeckPopup()" 
-            class="block w-full text-left text-[#6b8276] hover:bg-gray-100 py-2 px-4 rounded font-semibold">
-            <i class="fas fa-clone mr-2"></i>
-            Standalone Deck
-    </button>
+        <!-- Section: Create Deck -->
+        <div class="mb-2">
+            <p class="text-sm font-semibold text-[#9daca2] tracking-wide mb-2 px-2">Create Deck</p>
+
+            <a href="{% url 'user_documents' %}" 
+            class="block py-2 px-4 rounded hover:bg-gray-100 text-[#6b8276] font-semibold transition-all duration-200 whitespace-nowrap overflow-hidden">
+                <i class="fas fa-file-alt mr-2"></i>
+                From Document
+            </a>
+
+            <button onclick="openCreateDeckPopup()" 
+                    class="block w-full text-left text-[#6b8276] hover:bg-gray-100 py-2 px-4 rounded font-semibold">
+                <i class="fas fa-clone mr-2"></i>
+                Standalone Deck
+            </button>
+        </div>
+
+        <!-- Section: Add Cards -->
+        <div class="mt-3 pt-2 border-t border-gray-200">
+            <button onclick="location.href='{% url 'create_manually' %}'" 
+                class="block w-full text-left text-[#6b8276] hover:bg-gray-100 py-2 px-4 rounded font-semibold">
+                <i class="fas fa-plus mr-2"></i>
+                Add Cards
+            </button>
+        </div>
     </div>
 
 
