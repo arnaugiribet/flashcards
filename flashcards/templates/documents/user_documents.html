@@ -217,20 +217,24 @@
                 </div>
             </div>
             <!-- Options subheader -->
-            <div class="px-4 py-2 border-b flex gap-2">
-                <button id="aiButton" class="text-sm text-gray-400 flex items-center cursor-not-allowed disabled:hover:text-gray-400" title="Select text to generate AI cards" disabled>
-                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-                    </svg>
-                    AI
-                </button>
-                <button class="custom-button text-sm text-gray-600 hover:text-gray-900 flex items-center" title="Create custom cards">
-                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                    </svg>
-                    Custom
-                </button>
+            <div class="px-4 py-2 border-b">
+                <div class="text-xs text-gray-500 uppercase tracking-wide mb-1">Create Cards</div>
+                <div class="flex gap-2">
+                    <button id="aiButton" class="text-sm text-gray-400 flex items-center cursor-not-allowed disabled:hover:text-gray-400" title="Select text to generate AI cards" disabled>
+                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                        </svg>
+                        AI
+                    </button>
+                    <button class="custom-button text-sm text-gray-600 hover:text-gray-900 flex items-center" title="Create custom cards">
+                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                        </svg>
+                        Manually
+                    </button>
+                </div>
             </div>
+
 
             <!-- Flashcards list -->
             <div id="flashcardsContainer" class="p-4 overflow-auto h-full"></div>
