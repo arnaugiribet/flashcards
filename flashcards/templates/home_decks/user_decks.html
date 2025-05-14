@@ -4,6 +4,17 @@
 <div style="max-width: 800px; margin: 2rem auto; padding: 2rem;">
     <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
     <div style="background-color: #f4f6f5; padding: 2rem; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+        <!-- Header with + New Deck Button -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <h2 style="margin: 0; font-size: 1.2rem; color: #6b8276;"></h2>
+            <button onclick="openNewDeckMenu()"
+                class="bg-[#9daca2] hover:bg-opacity-90 text-white p-3 rounded-full shadow-md hover:shadow-lg transition-all duration-200 ease-in-out focus:outline-none">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+                </svg>
+            </button>
+        </div>
         {% if decks %}
             <ul style="list-style: none; padding: 0;">
                 {% for deck in decks %}
