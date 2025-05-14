@@ -113,7 +113,10 @@ def delete_account(request):
 
 @login_required
 def manage_cards(request):
-    user_flashcards = Flashcard.objects.filter(user=request.user).select_related('deck')
+    user_flashcards = Flashcard.objects.filter(
+        user=request.user,
+        accepted=True
+    ).select_related('deck')
     user_decks = Deck.objects.filter(user=request.user)
     ordered_decks = Deck.order_decks(user_decks)
 
