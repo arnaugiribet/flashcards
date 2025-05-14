@@ -150,7 +150,8 @@ class FlashcardGenerator:
                     question=question.strip(), 
                     answer=answer.strip(), 
                     user=user,
-                    deck=deck
+                    deck=deck,
+                    accepted=False
                 )
                 flashcards.append(card_i)
             except ValueError as ve:
