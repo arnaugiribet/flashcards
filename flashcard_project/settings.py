@@ -149,7 +149,7 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 # AWS S3 settings
 AWS_ACCESS_KEY_ID = os.getenv('AWS_ACCESS_KEY_ID')
 AWS_SECRET_ACCESS_KEY = os.getenv('AWS_SECRET_ACCESS_KEY')
-AWS_STORAGE_BUCKET_NAME = 'bibodibo-user-documents'
+AWS_STORAGE_BUCKET_NAME = 'doctude-prod'
 AWS_S3_REGION_NAME = 'eu-north-1'
 AWS_S3_CUSTOM_DOMAIN = f'{AWS_STORAGE_BUCKET_NAME}.s3.{AWS_S3_REGION_NAME}.amazonaws.com'
 AWS_S3_FILE_OVERWRITE = False
