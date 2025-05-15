@@ -1,6 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.utils import timezone
+from django.utils.text import slugify
 from datetime import timedelta
 from django.http import JsonResponse
 from django.conf import settings
@@ -309,7 +310,11 @@ def upload_document(request):
             
             logger.debug(f"Generating S3 key")
             # Generate S3 key
-            s3_key = f'documents/{request.user.id}/{user_document.id}.{file_type}'
+            safe_deck_name = slugify(deck_name) or 'untitled-deck'
+            user_id_str = str(request.user.id)
+            username = str(request.user.username)
+            deck_id = str(deck.id)
+            s3_key = f'{username}-{user_id_str}/{safe_deck_name}-{deck_id}/{user_document.id}.{file_type}'
             user_document.s3_key = s3_key
             
             # Upload to S3
@@ -322,7 +327,7 @@ def upload_document(request):
                     region_name=settings.AWS_S3_REGION_NAME
                 )
                 
-                logger.debug(f"S3 client created, uploading...")
+                logger.debug(f"S3 client created, uploading with key:\n{s3_key}")
                 s3_client.upload_fileobj(
                     document,
                     settings.AWS_STORAGE_BUCKET_NAME,
