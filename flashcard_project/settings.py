@@ -34,7 +34,7 @@ LLM_API_KEY = os.getenv('LLM_API_KEY')
 SECRET_KEY = os.getenv('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv('DEBUG', '').lower() in ('true', '1', 'yes')
 
 # Get it from the .env file for local development.
 ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS').split(',')
