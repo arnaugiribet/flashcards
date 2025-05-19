@@ -336,9 +336,6 @@ document.getElementById('startTextSelection').addEventListener('click', function
         // Enter selection mode
         inSelectionMode = true;
         
-        // Change cursor for the document viewer to indicate selection mode
-        document.getElementById('viewerContainer').classList.add('selection-mode');
-        
         // Update button visual state
         this.classList.add('bg-yellow-200', 'border-yellow-400');
         this.textContent = 'Cancel';
@@ -347,7 +344,7 @@ document.getElementById('startTextSelection').addEventListener('click', function
         const notification = document.createElement('div');
         notification.className = 'absolute bottom-4 right-4 transform bg-gray-800 text-white px-4 py-2 rounded-lg shadow z-10';
         notification.textContent = 'Select text in the document. Hold Ctrl to select over already linked text.';
-
+        
         const viewer = document.getElementById('documentViewerModal');
         viewer.style.position = 'relative'; // Ensure relative positioning
         viewer.appendChild(notification);
