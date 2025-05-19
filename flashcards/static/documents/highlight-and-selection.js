@@ -1,3 +1,7 @@
+// Add these global variables
+let inSelectionMode = false;
+let lastSelectionData = null;
+
 // Clear any existing highlights
 function clearHighlights() {
     const existingHighlights = document.querySelectorAll('.pdf-highlight');
@@ -30,15 +34,19 @@ async function getSelectionWordCoords(startPage, endPage) {
     return allWords;
 }
 
-// Attach event listener to detect text selection
+// Replace your mouseup event listener
 window.addEventListener('mouseup', function() {
+    if (!inSelectionMode) return;  // Only process selections in selection mode
+    
     const selection = window.getSelection();
-    const range = selection.getRangeAt(0);
     const selectionText = selection.toString();
     const selectionLength = selectionText.length;
+    
     if (selectionLength > 2) {
         // Get start and end pages
+        const range = selection.getRangeAt(0);
         const pages = getStartAndEndPage(range);
+        
         if (pages) {
             // Get the coordinates of the selected text for all pages in range
             getSelectionWordCoords(pages.startPage, pages.endPage).then(data => {
@@ -48,17 +56,23 @@ window.addEventListener('mouseup', function() {
                     words: data,
                     doc_id: currentDocumentId
                 };
-                console.log("Selected text is:", lastSelectionData);
-                // Update UI to reflect selection
-                hasSelectedText = true;
-                updateAIButton();
+                
+                // Show selection in the preview area
+                document.getElementById('selectionPreview').classList.remove('hidden');
+                document.getElementById('selectedTextPreview').textContent = 
+                    selectionText.length > 200 ? selectionText.substring(0, 200) + '...' : selectionText;
+                
+                // Enable the submit button
+                document.getElementById('submitAiFlashcard').disabled = false;
+                document.getElementById('submitAiFlashcard').classList.remove('opacity-50', 'cursor-not-allowed');
+                
+                // Reset selection mode
+                inSelectionMode = false;
+                document.getElementById('startTextSelection').textContent = 'Start Selection';
+                document.getElementById('startTextSelection').classList.remove('bg-yellow-200', 'border-yellow-400');
+                document.getElementById('viewerContainer').classList.remove('selection-mode');
             });
         }
-    } else {
-        // Clear selection data if no text is selected
-        lastSelectionData = null;
-        hasSelectedText = false;
-        updateAIButton();
     }
 });
 
@@ -98,47 +112,16 @@ function getStartAndEndPage(range) {
     return null;
 }
 
-
-
-function updateAIButton() {
-    const aiButton = document.getElementById('aiButton');
-    if (hasSelectedText) {
-        aiButton.disabled = false;
-        aiButton.classList.remove('text-gray-400', 'cursor-not-allowed', 'disabled:hover:text-gray-400');
-        aiButton.classList.add('text-gray-600', 'hover:text-gray-900', 'button-flash');
-        aiButton.title = "AI will generate cards from your selection";
-        
-        // Remove the animation class after it completes
-        aiButton.addEventListener('animationend', () => {
-            aiButton.classList.remove('button-flash');
-        }, { once: true });
-    } else {
-        aiButton.disabled = true;
-        aiButton.classList.remove('text-gray-600', 'hover:text-gray-900', 'button-flash');
-        aiButton.classList.add('text-gray-400', 'cursor-not-allowed', 'disabled:hover:text-gray-400');
-        aiButton.title = "Select text to generate AI cards";
-    }
-}
-
-// Add click handler for AI button
-document.getElementById('aiButton').addEventListener('click', function(e) {
-    if (this.disabled || !lastSelectionData) {
-        // Show a tooltip or notification that text needs to be selected
-        const notification = document.createElement('div');
-        notification.className = 'fixed bottom-4 right-4 bg-gray-800 text-white px-4 py-2 rounded-lg shadow-lg z-50';
-        notification.textContent = 'Please select text first';
-        document.body.appendChild(notification);
-        
-        // Remove the notification after 2 seconds
-        setTimeout(() => {
-            notification.remove();
-        }, 2000);
+// Add this event listener
+document.getElementById('submitAiFlashcard').addEventListener('click', function() {
+    if (!lastSelectionData) {
         return;
     }
     
-    // Send the selection data to the server
-    console.log("Sending selection data to server:", lastSelectionData);
-
+    // Get context from input
+    const aiContext = document.getElementById('aiContext').value;
+    
+    // Send the selection data and context to the server
     fetch('/process-selection/', {
         method: 'POST',
         headers: {
@@ -147,6 +130,7 @@ document.getElementById('aiButton').addEventListener('click', function(e) {
         },
         body: JSON.stringify({
             selection: lastSelectionData,
+            context: aiContext,
             deck_id: currentDeckId
         })
     })
@@ -157,6 +141,10 @@ document.getElementById('aiButton').addEventListener('click', function(e) {
         if (currentDocumentId) {
             fetchAndCreateHighlights(currentDocumentId);
         }
+        
+        // Return to flashcards view
+        document.getElementById('flashcardsContainer').classList.remove('hidden');
+        document.getElementById('aiSelectionPanel').classList.add('hidden');
     })
     .catch(error => {
         console.error("Error:", error);
@@ -166,11 +154,28 @@ document.getElementById('aiButton').addEventListener('click', function(e) {
         notification.textContent = 'Error processing selection. Please try again.';
         document.body.appendChild(notification);
         
-        // Remove the notification after 2 seconds
         setTimeout(() => {
             notification.remove();
         }, 2000);
     });
+});
+
+// Click handler for AI button
+document.getElementById('aiButton').addEventListener('click', function(e) {
+    // Toggle the AI selection panel
+    const aiSelectionPanel = document.getElementById('aiSelectionPanel');
+    const flashcardsContainer = document.getElementById('flashcardsContainer');
+    
+    // Hide flashcards list and show AI selection panel
+    flashcardsContainer.classList.add('hidden');
+    aiSelectionPanel.classList.remove('hidden');
+    
+    // Reset any previous selection state
+    inSelectionMode = false;
+    lastSelectionData = null;
+    document.getElementById('selectionPreview').classList.add('hidden');
+    document.getElementById('submitAiFlashcard').disabled = true;
+    document.getElementById('submitAiFlashcard').classList.add('opacity-50', 'cursor-not-allowed');
 });
 
 
@@ -319,4 +324,41 @@ document.getElementById('viewerContainer').addEventListener('click', function(e)
             });
         });
     }
+});
+
+// Add this event listener
+document.getElementById('startTextSelection').addEventListener('click', function() {
+    // Toggle selection mode
+    inSelectionMode = true;
+    
+    // Change cursor for the document viewer to indicate selection mode
+    document.getElementById('viewerContainer').classList.add('selection-mode');
+    
+    // Update button visual state
+    this.classList.add('bg-yellow-200', 'border-yellow-400');
+    this.textContent = 'Selecting...';
+    
+    // Show a notification to the user
+    const notification = document.createElement('div');
+    notification.className = 'fixed bottom-4 right-4 bg-gray-800 text-white px-4 py-2 rounded-lg shadow-lg z-50';
+    notification.textContent = 'Select text in the document. Hold Ctrl to select over already linked text.';
+    document.body.appendChild(notification);
+    
+    // Remove the notification after 3 seconds
+    setTimeout(() => {
+        notification.remove();
+    }, 3000);
+});
+
+// Add this event listener
+document.getElementById('backFromAiSelection').addEventListener('click', function() {
+    // Exit selection mode
+    inSelectionMode = false;
+    
+    // Remove selection mode styling
+    document.getElementById('viewerContainer').classList.remove('selection-mode');
+    
+    // Show flashcards list and hide AI selection panel
+    document.getElementById('flashcardsContainer').classList.remove('hidden');
+    document.getElementById('aiSelectionPanel').classList.add('hidden');
 });
