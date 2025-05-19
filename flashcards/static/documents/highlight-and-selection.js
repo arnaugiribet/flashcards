@@ -326,37 +326,48 @@ document.getElementById('viewerContainer').addEventListener('click', function(e)
     }
 });
 
-// Add this event listener
+// startTextSelection event listener
 document.getElementById('startTextSelection').addEventListener('click', function() {
     // Toggle selection mode
-    inSelectionMode = true;
-    
-    // Change cursor for the document viewer to indicate selection mode
-    document.getElementById('viewerContainer').classList.add('selection-mode');
-    
-    // Update button visual state
-    this.classList.add('bg-yellow-200', 'border-yellow-400');
-    this.textContent = 'Selecting...';
-    
-    // Show a notification to the user
-    const notification = document.createElement('div');
-    notification.className = 'fixed bottom-4 right-4 bg-gray-800 text-white px-4 py-2 rounded-lg shadow-lg z-50';
-    notification.textContent = 'Select text in the document. Hold Ctrl to select over already linked text.';
-    document.body.appendChild(notification);
-    
-    // Remove the notification after 3 seconds
-    setTimeout(() => {
-        notification.remove();
-    }, 3000);
+    if (inSelectionMode) {
+        // If already in selection mode, exit it
+        exitSelectionMode();
+    } else {
+        // Enter selection mode
+        inSelectionMode = true;
+        
+        // Change cursor for the document viewer to indicate selection mode
+        document.getElementById('viewerContainer').classList.add('selection-mode');
+        
+        // Update button visual state
+        this.classList.add('bg-yellow-200', 'border-yellow-400');
+        this.textContent = 'Cancel';
+        
+        // Show a notification to the user
+        const notification = document.createElement('div');
+        notification.className = 'fixed bottom-4 right-4 bg-gray-800 text-white px-4 py-2 rounded-lg shadow-lg z-50';
+        notification.textContent = 'Select text in the document. Hold Ctrl to select over already linked text.';
+        document.body.appendChild(notification);
+        
+        // Remove the notification after 3 seconds
+        setTimeout(() => {
+            notification.remove();
+        }, 3000);
+    }
 });
 
-// Add this event listener
-document.getElementById('backFromAiSelection').addEventListener('click', function() {
-    // Exit selection mode
+// Handle exiting selection mode
+function exitSelectionMode() {
     inSelectionMode = false;
-    
-    // Remove selection mode styling
     document.getElementById('viewerContainer').classList.remove('selection-mode');
+    document.getElementById('startTextSelection').textContent = 'Start Selection';
+    document.getElementById('startTextSelection').classList.remove('bg-yellow-200', 'border-yellow-400');
+}
+
+// Update this event listener
+document.getElementById('backFromAiSelection').addEventListener('click', function() {
+    // Use the exitSelectionMode function to properly exit selection mode
+    exitSelectionMode();
     
     // Show flashcards list and hide AI selection panel
     document.getElementById('flashcardsContainer').classList.remove('hidden');
