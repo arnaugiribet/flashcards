@@ -409,7 +409,7 @@ function showEditPanel(flashcard) {
 
     // Determine if the flashcard has a bbox
     const hasBBox = flashcard.bbox && flashcard.bbox.length > 0;
-    const textPlacementLabel = hasBBox ? "Edit Text Placement" : "Set Text Placement";
+    const editTextPlacementLabel = hasBBox ? "Edit Text Placement" : "Set Text Placement";
     
     // Populate the edit panel
     editPanel.innerHTML = `
@@ -434,11 +434,11 @@ function showEditPanel(flashcard) {
             </div>
             
             <div class="flex justify-between items-center gap-4">
-                <button id="textPlacement" data-flashcard-id="${flashcard.id}" class="flex items-center px-4 py-2 border ${hasBBox ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-yellow-50 border-yellow-300 text-yellow-800'} rounded-md hover:${hasBBox ? 'bg-emerald-100 hover:text-emerald-800' : 'bg-yellow-100'} transition-colors w-auto font-medium shadow-sm">
+                <button id="editTextPlacement" data-flashcard-id="${flashcard.id}" class="flex items-center px-4 py-2 border ${hasBBox ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-yellow-50 border-yellow-300 text-yellow-800'} rounded-md hover:${hasBBox ? 'bg-emerald-100 hover:text-emerald-800' : 'bg-yellow-100'} transition-colors w-auto font-medium shadow-sm">
                     ${!hasBBox ? `<svg class="w-5 h-5 mr-2 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
                     </svg>` : ''}
-                    ${textPlacementLabel}
+                    ${editTextPlacementLabel}
                 </button>
                 
                 <button id="saveFlashcard" data-flashcard-id="${flashcard.id}" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">
@@ -454,12 +454,18 @@ function showEditPanel(flashcard) {
     // Add click handler for the back button
     document.getElementById('backToFlashcards').addEventListener('click', hideEditPanel);
     
-    // Add click handler for the text placement button
-    document.getElementById('textPlacement').addEventListener('click', function() {
+    // Click handler for edit text placement (in existing cards)
+    document.getElementById('editTextPlacement').addEventListener('click', function() {
+        console.log('Edit text placement clicked');
         const flashcardId = this.dataset.flashcardId;
-        console.log('Text placement clicked for flashcard:', flashcardId);
-        // Placeholder for the text placement functionality
-        alert('Text placement functionality will be implemented later.');
+        console.log('Edit text placement clicked for flashcard:', flashcardId);
+        toggleSelectionMode(this);
+    });
+
+    // Click handler for add text placement (in new cards)
+    document.getElementById('setTextPlacement').addEventListener('click', function() {
+        console.log('setTextPlacement clicked');
+        toggleSelectionMode(this);
     });
     
     // Add click handler for the save button (placeholder for now)

@@ -326,34 +326,40 @@ document.getElementById('viewerContainer').addEventListener('click', function(e)
     }
 });
 
-// startTextSelection event listener
-document.getElementById('startTextSelection').addEventListener('click', function() {
-    // Toggle selection mode
+// text selection mode
+function toggleSelectionMode(button) {
     if (inSelectionMode) {
-        // If already in selection mode, exit it
+        // Exit selection mode
         exitSelectionMode();
+        button.classList.remove('bg-yellow-200', 'border-yellow-400');
+        button.textContent = button.dataset.originalText || 'Start Selection';
     } else {
         // Enter selection mode
         inSelectionMode = true;
         
-        // Update button visual state
-        this.classList.add('bg-yellow-200', 'border-yellow-400');
-        this.textContent = 'Cancel';
+        // Save original text if not saved yet
+        if (!button.dataset.originalText) {
+            button.dataset.originalText = button.textContent;
+        }
         
-        // Show a notification to the user
+        button.classList.add('bg-yellow-200', 'border-yellow-400');
+        button.textContent = 'Cancel';
+        
         const notification = document.createElement('div');
         notification.className = 'absolute bottom-4 right-4 transform bg-gray-800 text-white px-4 py-2 rounded-lg shadow z-10';
         notification.textContent = 'Select text in the document. Hold Ctrl to select over already linked text.';
         
         const viewer = document.getElementById('documentViewerModal');
-        viewer.style.position = 'relative'; // Ensure relative positioning
+        viewer.style.position = 'relative';
         viewer.appendChild(notification);
         
-        // Remove the notification after 3 seconds
-        setTimeout(() => {
-            notification.remove();
-        }, 3000);
+        setTimeout(() => notification.remove(), 3000);
     }
+}
+
+// Use the reusable function in your old button
+document.getElementById('startTextSelection').addEventListener('click', function() {
+    toggleSelectionMode(this);
 });
 
 // Handle exiting selection mode
