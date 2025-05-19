@@ -345,9 +345,12 @@ document.getElementById('startTextSelection').addEventListener('click', function
         
         // Show a notification to the user
         const notification = document.createElement('div');
-        notification.className = 'fixed bottom-4 right-4 bg-gray-800 text-white px-4 py-2 rounded-lg shadow-lg z-50';
+        notification.className = 'absolute bottom-4 right-4 transform bg-gray-800 text-white px-4 py-2 rounded-lg shadow z-10';
         notification.textContent = 'Select text in the document. Hold Ctrl to select over already linked text.';
-        document.body.appendChild(notification);
+
+        const viewer = document.getElementById('documentViewerModal');
+        viewer.style.position = 'relative'; // Ensure relative positioning
+        viewer.appendChild(notification);
         
         // Remove the notification after 3 seconds
         setTimeout(() => {

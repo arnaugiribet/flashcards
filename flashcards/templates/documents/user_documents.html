@@ -354,34 +354,5 @@
 <script src="{% static 'documents/flashcard-module.js' %}"></script>
 <script src="{% static 'documents/manual-cards.js' %}"></script>
 
-<style>
-    /* Add this CSS */
-    .selection-mode {
-        cursor: text !important;
-    }
-
-    .selection-mode::after {
-        content: '';
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: rgba(0, 0, 255, 0.05);
-        pointer-events: none;
-        z-index: 999;
-    }
-
-    /* Button flash animation */
-    @keyframes button-flash {
-        0% { background-color: rgba(59, 130, 246, 0.1); }
-        50% { background-color: rgba(59, 130, 246, 0.3); }
-        100% { background-color: transparent; }
-    }
-
-    .button-flash {
-        animation: button-flash 1s ease-out;
-    }
-</style>
 
 {% endblock %}
