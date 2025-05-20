@@ -1,12 +1,12 @@
-// Show loading overlay with custom text
+// Show loading panel with custom text
 function showLoading(text = "Loading...") {
     document.getElementById('loadingText').innerText = text;
-    document.getElementById('loadingOverlay').classList.remove('hidden');
+    document.getElementById('loadingPanel').classList.remove('hidden');
 }
 
-// Hide loading overlay
+// Hide loading panel
 function hideLoading() {
-    document.getElementById('loadingOverlay').classList.add('hidden');
+    document.getElementById('loadingPanel').classList.add('hidden');
 }
 
 // === Upload Modal Logic ===
