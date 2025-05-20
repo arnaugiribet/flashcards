@@ -59,8 +59,13 @@ window.addEventListener('mouseup', function() {
                 
                 // Show selection in the preview area
                 document.getElementById('selectionPreview').classList.remove('hidden');
-                document.getElementById('selectedTextPreview').textContent = 
-                    selectionText.length > 200 ? selectionText.substring(0, 200) + '...' : selectionText;
+                const previewElement = document.getElementById('selectedTextPreview');
+                if (selectionText.length > 200) {
+                    previewElement.textContent = 
+                        selectionText.substring(0, 100) + ' [...] ' + selectionText.substring(selectionText.length - 100);
+                } else {
+                    previewElement.textContent = selectionText;
+                }
                 
                 // Enable the submit button
                 document.getElementById('submitAiFlashcard').disabled = false;
