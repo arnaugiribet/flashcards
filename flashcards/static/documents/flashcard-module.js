@@ -391,12 +391,10 @@ document.addEventListener('DOMContentLoaded', function() {
 function showEditPanel(flashcard) {
     // Get containers
     const rightSection = document.getElementById('rightSection');
-    const optionsSubheader = rightSection.querySelector('.px-4.py-2.border-b');
     const flashcardsContainer = document.getElementById('flashcardsContainer');
     
-    // Hide the options subheader and flashcards container
-    optionsSubheader.style.display = 'none';
-    flashcardsContainer.style.display = 'none';
+    // Hide the flashcards container
+    flashcardsContainer.classList.add('hidden');
     
     // Create the edit panel if it doesn't exist
     let editPanel = document.getElementById('editPanel');
@@ -449,7 +447,7 @@ function showEditPanel(flashcard) {
     `;
     
     // Display the edit panel
-    editPanel.style.display = 'flex';
+    editPanel.classList.remove('hidden');
     
     // Add click handler for the back button
     document.getElementById('backToFlashcards').addEventListener('click', hideEditPanel);
@@ -506,16 +504,14 @@ function showEditPanel(flashcard) {
 function hideEditPanel() {
     // Get containers
     const rightSection = document.getElementById('rightSection');
-    const optionsSubheader = rightSection.querySelector('.px-4.py-2.border-b');
     const flashcardsContainer = document.getElementById('flashcardsContainer');
     const editPanel = document.getElementById('editPanel');
     
-    // Show the options subheader and flashcards container
-    optionsSubheader.style.display = 'flex';
-    flashcardsContainer.style.display = 'block';
+    // Show the flashcards container
+    flashcardsContainer.classList.remove('hidden');
     
     // Hide the edit panel
     if (editPanel) {
-        editPanel.style.display = 'none';
+        editPanel.classList.add('hidden');
     }
 }

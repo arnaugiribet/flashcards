@@ -8,6 +8,13 @@ async function viewDocument(documentId, documentName) {
     // Reset UI state - make sure the create panels are hidden and the flashcard list is visible
     document.getElementById('createPanel').classList.add('hidden');
     document.getElementById('aiSelectionPanel').classList.add('hidden');
+    const editPanel = document.getElementById('editPanel');
+    if (editPanel) {
+        console.log("editPanel found, hiding it.");
+        editPanel.classList.add('hidden');
+    }
+
+
     if (document.querySelector('.px-4.py-2.border-b')) {
         document.querySelector('.px-4.py-2.border-b').style.display = '';
     }
