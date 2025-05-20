@@ -362,6 +362,13 @@ document.getElementById('startTextSelection').addEventListener('click', function
     toggleSelectionMode(this);
 });
 
+function navigateTo(view) {
+    const panels = ['flashcardsContainer', 'createPanel', 'aiSelectionPanel'];
+    panels.forEach(id => document.getElementById(id).classList.add('hidden'));
+
+    document.getElementById(view).classList.remove('hidden');
+}
+
 // Handle exiting selection mode
 function exitSelectionMode() {
     inSelectionMode = false;
@@ -370,12 +377,8 @@ function exitSelectionMode() {
     document.getElementById('startTextSelection').classList.remove('bg-yellow-200', 'border-yellow-400');
 }
 
-// Update this event listener
-document.getElementById('backFromAiSelection').addEventListener('click', function() {
-    // Use the exitSelectionMode function to properly exit selection mode
+// Back from AI selection to flashcards list
+document.getElementById('backFromAiSelection').addEventListener('click', () => {
     exitSelectionMode();
-    
-    // Show flashcards list and hide AI selection panel
-    document.getElementById('flashcardsContainer').classList.remove('hidden');
-    document.getElementById('aiSelectionPanel').classList.add('hidden');
+    navigateTo('flashcardsContainer');
 });

@@ -1,22 +1,21 @@
 
-
+// // Click handler for Manually button
 document.getElementById('manualCardButton').addEventListener('click', () => {
-    // Show create panel
     document.getElementById('createPanel').classList.remove('hidden');
-    document.querySelector('.px-4.py-2.border-b').style.display = 'none';
-    document.getElementById('flashcardsContainer').style.display = 'none';
+    document.getElementById('aiSelectionPanel').classList.add('hidden');
+    document.getElementById('flashcardsContainer').classList.add('hidden');
 });
 
+// Back from manual creation to flashcards list
 document.getElementById('backFromCreate').addEventListener('click', () => {
-    // Hide create panel and show previous UI
-    document.getElementById('createPanel').classList.add('hidden');
-    document.querySelector('.px-4.py-2.border-b').style.display = '';
-    document.getElementById('flashcardsContainer').style.display = '';
-    
-    // Optional: clear inputs
+    exitSelectionMode();
+    navigateTo('flashcardsContainer');
+
+    // Clear inputs
     document.getElementById('newQuestion').value = '';
     document.getElementById('newAnswer').value = '';
 });
+
 
 document.getElementById('saveNewFlashcard').addEventListener('click', () => {
     const question = document.getElementById('newQuestion').value.trim();
