@@ -271,11 +271,10 @@ function discardFlashcard(flashcardId) {
   const yesBtn = document.getElementById('confirm-yes');
   const noBtn = document.getElementById('confirm-no');
 
-  modal.style.display = 'flex';
+  modal.classList.remove('hidden');
 
   yesBtn.onclick = () => {
-    modal.style.display = 'none';
-    console.log(`Discarding flashcard with ID: ${flashcardId}`);
+    modal.classList.add('hidden');
 
     fetch(`/delete_card/${flashcardId}/`, {
       method: 'POST',
@@ -302,7 +301,7 @@ function discardFlashcard(flashcardId) {
   };
 
   noBtn.onclick = () => {
-    modal.style.display = 'none';
+    modal.classList.add('hidden');
   };
 }
 

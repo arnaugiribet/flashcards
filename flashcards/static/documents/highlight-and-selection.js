@@ -117,12 +117,26 @@ function getStartAndEndPage(range) {
     return null;
 }
 
-// Add this event listener
+// Generate Cards submit button event listener
 document.getElementById('submitAiFlashcard').addEventListener('click', function() {
     if (!lastSelectionData) {
         return;
     }
     
+    // Disable button while processing, show message
+    const submitButton = document.getElementById('submitAiFlashcard');
+    showLoading("Generating Cards...");
+
+    // Save original text if not already saved
+    if (!submitButton.dataset.originalText) {
+        submitButton.dataset.originalText = submitButton.textContent;
+    }
+
+    // Disable button and show overlay
+    submitButton.disabled = true;
+    submitButton.classList.add('opacity-50', 'cursor-not-allowed');
+    submitButton.textContent = 'Generating Cards...';
+
     // Get context from input
     const aiContext = document.getElementById('aiContext').value;
     
@@ -162,6 +176,12 @@ document.getElementById('submitAiFlashcard').addEventListener('click', function(
         setTimeout(() => {
             notification.remove();
         }, 2000);
+    })
+    .finally(() => {
+        submitButton.disabled = false;
+        submitButton.classList.remove('opacity-50', 'cursor-not-allowed');
+        submitButton.textContent = submitButton.dataset.originalText;
+        hideLoading();
     });
 });
 
