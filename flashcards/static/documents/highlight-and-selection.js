@@ -161,23 +161,10 @@ document.getElementById('submitAiFlashcard').addEventListener('click', function(
 });
 
 // Click handler for AI button
-document.getElementById('aiButton').addEventListener('click', function(e) {
-    // Toggle the AI selection panel
-    const aiSelectionPanel = document.getElementById('aiSelectionPanel');
-    const flashcardsContainer = document.getElementById('flashcardsContainer');
-    
-    // Hide flashcards list and show AI selection panel
-    flashcardsContainer.classList.add('hidden');
-    aiSelectionPanel.classList.remove('hidden');
-    
-    // Reset any previous selection state
-    inSelectionMode = false;
-    lastSelectionData = null;
-    document.getElementById('selectionPreview').classList.add('hidden');
-    document.getElementById('submitAiFlashcard').disabled = true;
-    document.getElementById('submitAiFlashcard').classList.add('opacity-50', 'cursor-not-allowed');
+document.getElementById('aiButton').addEventListener('click', () => {
+    resetCreateState(); // Clear before entering AI view
+    navigateTo('aiSelectionPanel');
 });
-
 
 // Function to create highlights
 function createHighlights(flashcards, showFlashcardsLog) {
@@ -361,6 +348,56 @@ function toggleSelectionMode(button) {
 document.getElementById('startTextSelection').addEventListener('click', function() {
     toggleSelectionMode(this);
 });
+
+// reset any var inside the create with AI of create Manually
+function resetCreateState() {
+    // Exit selection mode if active
+    if (inSelectionMode) {
+        exitSelectionMode();
+    }
+
+    // Reset Manual Create inputs
+    const manualQuestion = document.getElementById('newQuestion');
+    const manualAnswer = document.getElementById('newAnswer');
+    if (manualQuestion) manualQuestion.value = '';
+    if (manualAnswer) manualAnswer.value = '';
+
+    // Reset AI Create inputs
+    const aiContext = document.getElementById('aiContext');
+    if (aiContext) aiContext.value = '';
+
+    // Reset AI selection preview
+    const selectedTextPreview = document.getElementById('selectedTextPreview');
+    if (selectedTextPreview) selectedTextPreview.textContent = 'No text selected';
+    const selectionPreview = document.getElementById('selectionPreview');
+    if (selectionPreview) selectionPreview.classList.add('hidden');
+
+    // Reset selection mode variables & buttons
+    inSelectionMode = false;
+    lastSelectionData = null;
+    const startTextBtn = document.getElementById('startTextSelection');
+    if (startTextBtn) {
+        startTextBtn.textContent = 'Start Selection';
+        startTextBtn.classList.remove('bg-yellow-200', 'border-yellow-400');
+    }
+    const setTextBtn = document.getElementById('setTextPlacement');
+    if (setTextBtn) {
+        setTextBtn.textContent = 'Set Text Placement';
+        setTextBtn.classList.remove('bg-yellow-200', 'border-yellow-400');
+    }
+
+    // Disable AI submit button
+    const submitBtn = document.getElementById('submitAiFlashcard');
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
+    }
+
+    // // Clear any highlights if used
+    // document.querySelectorAll('.highlight').forEach(el => el.classList.remove('highlight'));
+}
+
+
 
 function navigateTo(view) {
     const panels = ['flashcardsContainer', 'createPanel', 'aiSelectionPanel'];

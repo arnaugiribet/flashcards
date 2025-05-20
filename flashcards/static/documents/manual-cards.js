@@ -1,21 +1,20 @@
 
 // // Click handler for Manually button
 document.getElementById('manualCardButton').addEventListener('click', () => {
-    document.getElementById('createPanel').classList.remove('hidden');
-    document.getElementById('aiSelectionPanel').classList.add('hidden');
-    document.getElementById('flashcardsContainer').classList.add('hidden');
+    resetCreateState(); // Clear any stale state before showing
+    navigateTo('createPanel');
 });
 
 // Back from manual creation to flashcards list
 document.getElementById('backFromCreate').addEventListener('click', () => {
     exitSelectionMode();
     navigateTo('flashcardsContainer');
-
-    // Clear inputs
-    document.getElementById('newQuestion').value = '';
-    document.getElementById('newAnswer').value = '';
 });
 
+// Use the reusable function in your old button
+document.getElementById('setTextPlacement').addEventListener('click', function() {
+    toggleSelectionMode(this);
+});
 
 document.getElementById('saveNewFlashcard').addEventListener('click', () => {
     const question = document.getElementById('newQuestion').value.trim();
