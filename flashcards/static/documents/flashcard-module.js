@@ -145,17 +145,17 @@ function displayFlashcards(flashcards) {
         
         // Add click handler for the flashcard body (same as original)
         flashcardElement.addEventListener('click', (e) => {
-            amplifyFlashcard(flashcard);
-            scrollToHighlight(flashcard);
+            amplifyFlashcard(flashcardElement);
+            scrollToHighlight(flashcardElement);
         });
         
         // Add separate click handler for the edit button
         const editButton = flashcardElement.querySelector('.edit-card-btn');
         editButton.addEventListener('click', (e) => {
             e.stopPropagation();
+            amplifyFlashcard(flashcardElement);
+            scrollToHighlight(flashcardElement);
             showEditPanel(flashcard);
-            amplifyFlashcard(flashcard);
-            scrollToHighlight(flashcard);
         });
 
         // Add click handlers for accept and discard buttons for unaccepted cards
@@ -196,18 +196,8 @@ function displayFlashcards(flashcards) {
     }
 }
 
-// Function to get the flashcardElement from a flashcard object
-function getFlashcardElement(flashcard){
-    const flashcardElement = document.querySelector(`[data-flashcard-id="${flashcard.id}"]`);
-    return flashcardElement;
-}
-
 // Amplify flashcard
-function amplifyFlashcard(flashcard){
-    const flashcardElement = getFlashcardElement(flashcard)
-    // Check if this flashcard is already selected
-    const isCurrentlySelected = flashcardElement.classList.contains('bg-blue-50');
-    
+function amplifyFlashcard(flashcardElement){
     // Remove selected class from all flashcards and deactivate all highlights
     document.querySelectorAll('#flashcardsContainer > div').forEach(card => {
         if (!card.classList.contains('py-2')) { // Skip section headers
@@ -221,50 +211,41 @@ function amplifyFlashcard(flashcard){
         }
     });
 
-    // Only add selected class and activate highlights if the clicked flashcard wasn't already selected
-    if (!isCurrentlySelected) {
-        flashcardElement.classList.add('bg-blue-50', 'border-blue-200');
-        
-        const flashcardId = flashcardElement.dataset.flashcardId;
-        const highlights = document.querySelectorAll(`.pdf-highlight[data-flashcard-id="${flashcardId}"]`);
-        
-        // Activate all highlights for this flashcard
-        highlights.forEach(highlight => {
-            highlight.classList.add('active');
-        });
-    }
+    // Add selected class and activate highlights
+    flashcardElement.classList.add('bg-blue-50', 'border-blue-200');
+    
+    const flashcardId = flashcardElement.dataset.flashcardId;
+    const highlights = document.querySelectorAll(`.pdf-highlight[data-flashcard-id="${flashcardId}"]`);
+    
+    // Activate all highlights for this flashcard
+    highlights.forEach(highlight => {
+        highlight.classList.add('active');
+    });
+    
 }
 
 // Scroll to highlight
-function scrollToHighlight(flashcard){
-    const flashcardElement = getFlashcardElement(flashcard)
-    // Check if this flashcard is already selected
-    const isCurrentlySelected = flashcardElement.classList.contains('bg-blue-50');
+function scrollToHighlight(flashcardElement){
+    const flashcardId = flashcardElement.dataset.flashcardId;
+    const highlights = document.querySelectorAll(`.pdf-highlight[data-flashcard-id="${flashcardId}"]`);
 
-    // Only scroll if the clicked flashcard wasn't already selected
-    if (!isCurrentlySelected) {
-
-        const flashcardId = flashcardElement.dataset.flashcardId;
-        const highlights = document.querySelectorAll(`.pdf-highlight[data-flashcard-id="${flashcardId}"]`);
-
-        // Get the first highlight element to scroll to
-        if (highlights.length > 0) {
-            const firstHighlight = highlights[0];
-            const pdfContainer = document.querySelector('#viewerContainer');
-            
-            // Get the highlight's position relative to the container
-            const highlightRect = firstHighlight.getBoundingClientRect();
-            const containerRect = pdfContainer.getBoundingClientRect();
-            
-            // Calculate the scroll position (adding some padding above)
-            const scrollTop = highlightRect.top - containerRect.top + pdfContainer.scrollTop - 100;
-            
-            // Smooth scroll to the highlight
-            pdfContainer.scrollTo({
-                top: scrollTop,
-                behavior: 'smooth'
-            });
-        }
+    // Get the first highlight element to scroll to
+    if (highlights.length > 0) {
+        const firstHighlight = highlights[0];
+        const pdfContainer = document.querySelector('#viewerContainer');
+        
+        // Get the highlight's position relative to the container
+        const highlightRect = firstHighlight.getBoundingClientRect();
+        const containerRect = pdfContainer.getBoundingClientRect();
+        
+        // Calculate the scroll position (adding some padding above)
+        const scrollTop = highlightRect.top - containerRect.top + pdfContainer.scrollTop - 100;
+        
+        // Smooth scroll to the highlight
+        pdfContainer.scrollTo({
+            top: scrollTop,
+            behavior: 'smooth'
+        });
     }
 }
 
@@ -416,6 +397,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Function to show the edit panel
 function showEditPanel(flashcard) {
+    console.log("starting showEditPanel()")
     // Get containers
     const rightSection = document.getElementById('rightSection');
     const flashcardsContainer = document.getElementById('flashcardsContainer');
