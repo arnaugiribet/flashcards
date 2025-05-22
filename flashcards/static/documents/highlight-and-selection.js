@@ -34,7 +34,7 @@ async function getSelectionWordCoords(startPage, endPage) {
     return allWords;
 }
 
-// Replace your mouseup event listener
+// Select text
 window.addEventListener('mouseup', function() {
     if (!inSelectionMode) return;  // Only process selections in selection mode
     
@@ -423,7 +423,7 @@ function resetCreateState() {
 }
 
 
-
+// Navigate to a panel. Hide all panels, show only the one we navigate to
 function navigateTo(view) {
     const panels = ['flashcardsContainer', 'createPanel', 'aiSelectionPanel'];
     panels.forEach(id => document.getElementById(id).classList.add('hidden'));
