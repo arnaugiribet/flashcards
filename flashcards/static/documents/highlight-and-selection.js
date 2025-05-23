@@ -34,54 +34,60 @@ async function getSelectionWordCoords(startPage, endPage) {
     return allWords;
 }
 
-// Select text
-window.addEventListener('mouseup', function() {
-    if (!inSelectionMode) return;  // Only process selections in selection mode
-    
-    const selection = window.getSelection();
-    const selectionText = selection.toString();
-    const selectionLength = selectionText.length;
-    
-    if (selectionLength > 2) {
-        // Get start and end pages
-        const range = selection.getRangeAt(0);
-        const pages = getStartAndEndPage(range);
-        
-        if (pages) {
-            // Get the coordinates of the selected text for all pages in range
-            getSelectionWordCoords(pages.startPage, pages.endPage).then(data => {
-                // Store the selection data
-                lastSelectionData = {
-                    text: selectionText,
-                    words: data,
-                    doc_id: currentDocumentId
-                };
-                
-                // Show selection in the preview area
-                document.getElementById('selectionPreview').classList.remove('hidden');
-                const previewElement = document.getElementById('selectedTextPreview');
-                if (selectionText.length > 200) {
-                    previewElement.textContent = 
-                        selectionText.substring(0, 100) + ' [...] ' + selectionText.substring(selectionText.length - 100);
-                } else {
-                    previewElement.textContent = selectionText;
-                }
-                
-                // Enable the submit button
-                document.getElementById('submitAiFlashcard').disabled = false;
-                document.getElementById('submitAiFlashcard').classList.remove('opacity-50', 'cursor-not-allowed');
-                
-                // Reset selection mode
-                inSelectionMode = false;
-                document.getElementById('startTextSelection').textContent = 'Start Selection';
-                document.getElementById('startTextSelection').classList.remove('bg-yellow-200', 'border-yellow-400');
-                document.getElementById('viewerContainer').classList.remove('selection-mode');
-            });
-        }
+// Event listener for mouseup that triggers text selection
+window.addEventListener('mouseup', async function () {
+    const selectionData = await generateSelectionData();
+    if (!selectionData) return;
+
+    lastSelectionData = selectionData;
+
+    // Show selection in the preview area
+    document.getElementById('selectionPreview').classList.remove('hidden');
+    const previewElement = document.getElementById('selectedTextPreview');
+    const selectionText = selectionData.text;
+    if (selectionText.length > 200) {
+        previewElement.textContent = 
+            selectionText.substring(0, 100) + ' [...] ' + selectionText.substring(selectionText.length - 100);
+    } else {
+        previewElement.textContent = selectionText;
     }
+
+    // Enable the submit button
+    document.getElementById('submitAiFlashcard').disabled = false;
+    document.getElementById('submitAiFlashcard').classList.remove('opacity-50', 'cursor-not-allowed');
+
+    // Reset selection mode
+    inSelectionMode = false;
+    document.getElementById('startTextSelection').textContent = 'Start Selection';
+    document.getElementById('startTextSelection').classList.remove('bg-yellow-200', 'border-yellow-400');
+    document.getElementById('viewerContainer').classList.remove('selection-mode');
 });
 
 
+// Generates the selection data we need to pass to the card generator
+async function generateSelectionData() {
+    if (!inSelectionMode) return null;
+
+    const selection = window.getSelection();
+    const selectionText = selection.toString();
+    const selectionLength = selectionText.length;
+
+    if (selectionLength <= 2) return null;
+
+    const range = selection.getRangeAt(0);
+    const pages = getStartAndEndPage(range);
+    if (!pages) return null;
+
+    const wordCoords = await getSelectionWordCoords(pages.startPage, pages.endPage);
+
+    return {
+        text: selectionText,
+        words: wordCoords,
+        doc_id: currentDocumentId
+    };
+}
+
+// Get start and end page of selected data
 function getStartAndEndPage(range) {
     let startNode = range.startContainer;
     let endNode = range.endContainer;
@@ -426,10 +432,22 @@ function resetCreateState() {
 // Navigate to a panel. Hide all panels, show only the one we navigate to
 function navigateTo(view) {
     const panels = ['flashcardsContainer', 'createPanel', 'aiSelectionPanel', 'editPanel'];
-    panels.forEach(id => document.getElementById(id).classList.add('hidden'));
+    panels.forEach(id => {
+        const element = document.getElementById(id);
+        if (element) {
+            element.classList.add('hidden');
+        }
+    });
 
-    document.getElementById(view).classList.remove('hidden');
+    const target = document.getElementById(view);
+    if (target) {
+        target.classList.remove('hidden');
+    } else {
+        console.warn(`Element with ID '${view}' not found.`);
+    }
 }
+
+
 
 // Handle exiting selection mode
 function exitSelectionMode() {
