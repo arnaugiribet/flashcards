@@ -441,7 +441,7 @@ function showEditPanel(flashcard) {
             </div>
             
             <div class="flex justify-between items-center gap-4">
-                <button id="editTextPlacement" data-flashcard-id="${flashcard.id}" class="flex items-center px-4 py-2 border ${hasBBox ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-yellow-50 border-yellow-300 text-yellow-800'} rounded-md hover:${hasBBox ? 'bg-emerald-100 hover:text-emerald-800' : 'bg-yellow-100'} transition-colors w-auto font-medium shadow-sm">
+                <button id="editTextPlacement" data-flashcard-id="${flashcard.id}"class="flex items-center px-4 py-2 border ${hasBBox ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-yellow-50 border-yellow-300 text-yellow-800'} rounded-md hover:${hasBBox ? 'bg-emerald-100 hover:text-emerald-800' : 'bg-yellow-100'} transition-colors w-auto font-medium shadow-sm">
                     ${!hasBBox ? `<svg class="w-5 h-5 mr-2 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
                     </svg>` : ''}
@@ -457,10 +457,13 @@ function showEditPanel(flashcard) {
     
     // Display the edit panel
     editPanel.classList.remove('hidden');
-    
-    // Add click handler for the back button
-    document.getElementById('backToFlashcards').addEventListener('click', hideEditPanel);
-    
+                  
+    // Back to flashcards list
+    document.getElementById('backToFlashcards').addEventListener('click', () => {
+        exitSelectionMode();
+        navigateTo('flashcardsContainer');
+    });
+
     // Click handler for edit text placement (in existing cards)
     document.getElementById('editTextPlacement').addEventListener('click', function() {
         console.log('Edit text placement clicked');

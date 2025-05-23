@@ -344,7 +344,7 @@ function toggleSelectionMode(button) {
         // Exit selection mode
         exitSelectionMode();
         button.classList.remove('bg-yellow-200', 'border-yellow-400');
-        button.textContent = button.dataset.originalText || 'Start Selection';
+        button.textContent = button.dataset.originalText;
     } else {
         // Enter selection mode
         inSelectionMode = true;
@@ -425,7 +425,7 @@ function resetCreateState() {
 
 // Navigate to a panel. Hide all panels, show only the one we navigate to
 function navigateTo(view) {
-    const panels = ['flashcardsContainer', 'createPanel', 'aiSelectionPanel'];
+    const panels = ['flashcardsContainer', 'createPanel', 'aiSelectionPanel', 'editPanel'];
     panels.forEach(id => document.getElementById(id).classList.add('hidden'));
 
     document.getElementById(view).classList.remove('hidden');
