@@ -48,7 +48,7 @@ window.addEventListener('mouseup', async function () {
     if (buttonIdTextSelection == "startTextSelection") {
         console.log('selection happened in create with AI')
         // Show selection in the preview area
-        document.getElementById('selectionPreview').classList.remove('hidden');
+        document.getElementById('selectionPreviewAI').classList.remove('hidden');
         const previewElement = document.getElementById('selectedTextPreview');
         const selectionText = selectionData.text;
         if (selectionText.length > 200) {
@@ -399,7 +399,7 @@ document.getElementById('startTextSelection').addEventListener('click', function
     toggleSelectionMode(this);
 });
 
-// reset any var inside the create with AI of create Manually
+// reset any var inside the create with AI or create Manually
 function resetCreateState() {
     // Exit selection mode if active
     if (inSelectionMode) {
@@ -419,8 +419,8 @@ function resetCreateState() {
     // Reset AI selection preview
     const selectedTextPreview = document.getElementById('selectedTextPreview');
     if (selectedTextPreview) selectedTextPreview.textContent = 'No text selected';
-    const selectionPreview = document.getElementById('selectionPreview');
-    if (selectionPreview) selectionPreview.classList.add('hidden');
+    const selectionPreviewAI = document.getElementById('selectionPreviewAI');
+    if (selectionPreviewAI) selectionPreviewAI.classList.add('hidden');
 
     // Reset selection mode variables & buttons
     inSelectionMode = false;
