@@ -1,6 +1,7 @@
 // Add these global variables
 let inSelectionMode = false;
 let lastSelectionData = null;
+let buttonIdTextSelection = null;
 
 // Clear any existing highlights
 function clearHighlights() {
@@ -38,24 +39,30 @@ async function getSelectionWordCoords(startPage, endPage) {
 window.addEventListener('mouseup', async function () {
     const selectionData = await generateSelectionData();
     if (!selectionData) return;
+    console.log("selectionData is: ", selectionData)
 
+    // This object is where we store the selected data. Acessible from everywhere
     lastSelectionData = selectionData;
 
-    // Show selection in the preview area
-    document.getElementById('selectionPreview').classList.remove('hidden');
-    const previewElement = document.getElementById('selectedTextPreview');
-    const selectionText = selectionData.text;
-    if (selectionText.length > 200) {
-        previewElement.textContent = 
-            selectionText.substring(0, 100) + ' [...] ' + selectionText.substring(selectionText.length - 100);
-    } else {
-        previewElement.textContent = selectionText;
+    // If the selection happened in create with AI
+    if (buttonIdTextSelection == "startTextSelection") {
+        console.log('selection happened in create with AI')
+        // Show selection in the preview area
+        document.getElementById('selectionPreview').classList.remove('hidden');
+        const previewElement = document.getElementById('selectedTextPreview');
+        const selectionText = selectionData.text;
+        if (selectionText.length > 200) {
+            previewElement.textContent = 
+                selectionText.substring(0, 100) + ' [...] ' + selectionText.substring(selectionText.length - 100);
+        } else {
+            previewElement.textContent = selectionText;
+        }
+
+        // Enable the submit button
+        document.getElementById('submitAiFlashcard').disabled = false;
+        document.getElementById('submitAiFlashcard').classList.remove('opacity-50', 'cursor-not-allowed');
     }
-
-    // Enable the submit button
-    document.getElementById('submitAiFlashcard').disabled = false;
-    document.getElementById('submitAiFlashcard').classList.remove('opacity-50', 'cursor-not-allowed');
-
+    
     // Reset selection mode
     inSelectionMode = false;
     document.getElementById('startTextSelection').textContent = 'Start Selection';
@@ -354,6 +361,7 @@ function toggleSelectionMode(button) {
     } else {
         // Enter selection mode
         inSelectionMode = true;
+        buttonIdTextSelection = button.id;
         
         // Save original text if not saved yet
         if (!button.dataset.originalText) {
@@ -375,7 +383,7 @@ function toggleSelectionMode(button) {
     }
 }
 
-// Use the reusable function in your old button
+// Use the reusable function to start selection mode when clicking on select text from create with AI
 document.getElementById('startTextSelection').addEventListener('click', function() {
     toggleSelectionMode(this);
 });
