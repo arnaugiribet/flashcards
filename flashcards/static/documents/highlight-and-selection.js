@@ -49,7 +49,7 @@ window.addEventListener('mouseup', async function () {
         console.log('selection happened in create with AI')
         // Show selection in the preview area
         document.getElementById('selectionPreviewAI').classList.remove('hidden');
-        const previewElement = document.getElementById('selectedTextPreview');
+        const previewElement = document.getElementById('selectedTextPreviewAI');
         const selectionText = selectionData.text;
         if (selectionText.length > 200) {
             previewElement.textContent = 
@@ -66,6 +66,16 @@ window.addEventListener('mouseup', async function () {
     // If the selection happened in create Manually
     if (buttonIdTextSelection == "setTextPlacement"){
         console.log('selection happened in create Manually')
+        // Show selection in the preview area
+        document.getElementById('selectionPreviewManually').classList.remove('hidden');
+        const previewElement = document.getElementById('selectedTextPreviewManually');
+        const selectionText = selectionData.text;
+        if (selectionText.length > 200) {
+            previewElement.textContent = 
+                selectionText.substring(0, 100) + ' [...] ' + selectionText.substring(selectionText.length - 100);
+        } else {
+            previewElement.textContent = selectionText;
+        }
     }
 
     // If the selection happened in edit Card
@@ -417,10 +427,16 @@ function resetCreateState() {
     if (aiContext) aiContext.value = '';
 
     // Reset AI selection preview
-    const selectedTextPreview = document.getElementById('selectedTextPreview');
-    if (selectedTextPreview) selectedTextPreview.textContent = 'No text selected';
+    const selectedTextPreviewAI = document.getElementById('selectedTextPreviewAI');
+    if (selectedTextPreviewAI) selectedTextPreviewAI.textContent = 'No text selected';
     const selectionPreviewAI = document.getElementById('selectionPreviewAI');
     if (selectionPreviewAI) selectionPreviewAI.classList.add('hidden');
+
+    // Reset manual selection preview
+    const selectedTextPreviewManually = document.getElementById('selectedTextPreviewManually');
+    if (selectedTextPreviewManually) selectedTextPreviewManually.textContent = 'No text selected';
+    const selectionPreviewManually = document.getElementById('selectionPreviewManually');
+    if (selectionPreviewManually) selectionPreviewManually.classList.add('hidden');
 
     // Reset selection mode variables & buttons
     inSelectionMode = false;
