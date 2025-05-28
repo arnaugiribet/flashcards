@@ -470,12 +470,7 @@ function showEditPanel(flashcard) {
         const flashcardId = this.dataset.flashcardId;
         console.log('Edit text placement clicked for flashcard:', flashcardId);
         toggleSelectionMode(this);
-    });
 
-    // Click handler for add text placement (in new cards)
-    document.getElementById('setTextPlacement').addEventListener('click', function() {
-        console.log('setTextPlacement clicked');
-        toggleSelectionMode(this);
     });
     
     // Add click handler for the save button (placeholder for now)

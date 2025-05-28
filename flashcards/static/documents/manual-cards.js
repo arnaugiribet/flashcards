@@ -11,7 +11,7 @@ document.getElementById('backFromCreate').addEventListener('click', () => {
     navigateTo('flashcardsContainer');
 });
 
-// Use the reusable function in your old button
+// Toggle selection mode when clicking on set text placement from create Manually
 document.getElementById('setTextPlacement').addEventListener('click', function() {
     toggleSelectionMode(this);
 });

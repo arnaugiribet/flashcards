@@ -62,6 +62,17 @@ window.addEventListener('mouseup', async function () {
         document.getElementById('submitAiFlashcard').disabled = false;
         document.getElementById('submitAiFlashcard').classList.remove('opacity-50', 'cursor-not-allowed');
     }
+
+    // If the selection happened in create Manually
+    if (buttonIdTextSelection == "setTextPlacement"){
+        console.log('selection happened in create Manually')
+    }
+
+    // If the selection happened in edit Card
+    if (buttonIdTextSelection == "editTextPlacement"){
+        console.log('selection happened in edit Card')
+    }
+    
     
     // Reset selection mode
     inSelectionMode = false;
@@ -383,7 +394,7 @@ function toggleSelectionMode(button) {
     }
 }
 
-// Use the reusable function to start selection mode when clicking on select text from create with AI
+// Toggle selection mode when clicking on select text from create with AI
 document.getElementById('startTextSelection').addEventListener('click', function() {
     toggleSelectionMode(this);
 });
