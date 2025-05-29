@@ -16,7 +16,8 @@ document.getElementById('setTextPlacement').addEventListener('click', function()
     toggleSelectionMode(this);
 });
 
-document.getElementById('saveNewFlashcard').addEventListener('click', () => {
+const saveNewFlashcardButton = document.getElementById('saveNewFlashcard');
+saveNewFlashcardButton.addEventListener('click', () => {
     const question = document.getElementById('newQuestion').value.trim();
     const answer = document.getElementById('newAnswer').value.trim();
 
@@ -41,10 +42,9 @@ document.getElementById('saveNewFlashcard').addEventListener('click', () => {
         document_id: currentDocumentId
     };
 
-    const saveButton = document.getElementById('saveNewFlashcard');
-    const originalText = saveButton.textContent;
-    saveButton.textContent = 'Creating...';
-    saveButton.disabled = true;
+    const originalText = saveNewFlashcardButton.textContent;
+    saveNewFlashcardButton.textContent = 'Creating...';
+    saveNewFlashcardButton.disabled = true;
 
     // Send the data to your server endpoint
     fetch('/create-flashcard/', {
@@ -92,7 +92,7 @@ document.getElementById('saveNewFlashcard').addEventListener('click', () => {
     })
     .finally(() => {
         // Reset button state
-        saveButton.textContent = originalText;
-        saveButton.disabled = false;
+        saveNewFlashcardButton.textContent = originalText;
+        saveNewFlashcardButton.disabled = false;
     });
 });
