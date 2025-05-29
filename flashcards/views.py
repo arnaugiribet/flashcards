@@ -404,28 +404,42 @@ def accept_card(request, card_id):
         logger.error(f"Error accepting flashcard: {e}")
         return JsonResponse({'success': False}, status=500)
 
-# Pass selected text to LLM
+# Match text to boxes
 @login_required
-def process_selection(request):
-
+def text_to_boxes(request):
     if request.method == 'POST':
         data = json.loads(request.body)
         user = request.user
 
-        logger.debug(f"data keys are: {data.keys()}")
-
-        # Extract the selection data and deck name
+        # Obtain data
         selection_data = data.get("selection")
+
+        # Get bounding boxes with corresponding text
+        boxes = match_selected_text_to_word_boxes(selection_data["text"], selection_data["words"])
+
+        # Return boxes as JSON
+        return JsonResponse({'boxes': boxes})
+
+    return JsonResponse({'error': 'Invalid request'}, status=400)
+
+# Match flashcards to text boxes
+def match_flashcards_to_text(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        user = request.user
+
+        # Obtain data
+        selection_data = data.get("selection")
+        boxes = data.get("boxes")
         deck_id = data.get("deck_id")
         deck = Deck.objects.get(id=deck_id)
 
-        # Log what we received for debugging
-        logger.debug(f"Selection data keys: {selection_data.keys()}")
-        logger.debug(f"deck_id is: {deck_id}")
-
-        boxes = match_selected_text_to_word_boxes(selection_data["text"], selection_data["words"])
+        # Get flashcards matched to text boxes
         get_matched_flashcards_to_text(selection_data["doc_id"], selection_data["text"], boxes, user, deck)
+
+        # Return success
         return JsonResponse({'status': 'success'})
+
     return JsonResponse({'error': 'Invalid request'}, status=400)
 
 @login_required

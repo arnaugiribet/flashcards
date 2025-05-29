@@ -385,15 +385,13 @@
         return document.querySelector('[name=csrfmiddlewaretoken]').value;
     }
 
-    window.appState = {
-        currentPDF: null,
-        currentPage: 1,
-        currentDeckId: null,
-        currentDocumentId: null,
-        lastSelectionData: null,
-        hasSelectedText: false,
-        flashcards: []
-    };
+    let currentPDF = null;
+    let currentPage = 1;
+    let currentDeckId = null;
+    let currentDocumentId = null;
+    let hasSelectedText = false;
+    let flashcards = [];
+
 </script>
 
 <script src="{% static 'documents/documents-ui-controller.js' %}"></script>

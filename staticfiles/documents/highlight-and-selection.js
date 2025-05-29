@@ -139,7 +139,7 @@ document.getElementById('aiButton').addEventListener('click', function(e) {
     // Send the selection data to the server
     console.log("Sending selection data to server:", lastSelectionData);
 
-    fetch('/process-selection/', {
+    fetch('/text-to-boxes/', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',

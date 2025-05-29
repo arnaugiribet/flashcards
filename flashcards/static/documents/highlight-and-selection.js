@@ -152,7 +152,7 @@ function getStartAndEndPage(range) {
 }
 
 // Generate Cards submit button event listener
-document.getElementById('submitAiFlashcard').addEventListener('click', function() {
+document.getElementById('submitAiFlashcard').addEventListener('click', async function() {
     if (!lastSelectionData) {
         return;
     }
@@ -174,32 +174,24 @@ document.getElementById('submitAiFlashcard').addEventListener('click', function(
     // Get context from input
     const aiContext = document.getElementById('aiContext').value;
     
-    // Send the selection data and context to the server
-    fetch('/process-selection/', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': getCsrfToken()
-        },
-        body: JSON.stringify({
-            selection: lastSelectionData,
-            context: aiContext,
-            deck_id: currentDeckId
-        })
-    })
-    .then(response => response.json())
-    .then(data => {
-        console.log("Server response:", data);
+    try{
+        // Step 1: Process selection and get boxes
+        const boxes = await processSelection(lastSelectionData);
+        console.log('Boxes from text-to-boxes:', boxes);
+
+        // Step 2: Get matched flashcards to text using boxes
+        await matchFlashcardsToText(lastSelectionData, aiContext, boxes, currentDeckId);
+
         // Refresh the flashcards after successful processing
         if (currentDocumentId) {
+            console.log("currentDocumentId found, calling fetchAndCreateHighlights()...")
             fetchAndCreateHighlights(currentDocumentId);
         }
-        
+
         // Return to flashcards view
         document.getElementById('flashcardsContainer').classList.remove('hidden');
         document.getElementById('aiSelectionPanel').classList.add('hidden');
-    })
-    .catch(error => {
+    } catch (error) {
         console.error("Error:", error);
         // Show error notification
         const notification = document.createElement('div');
@@ -210,14 +202,58 @@ document.getElementById('submitAiFlashcard').addEventListener('click', function(
         setTimeout(() => {
             notification.remove();
         }, 2000);
-    })
-    .finally(() => {
+    } finally {
         submitButton.disabled = false;
         submitButton.classList.remove('opacity-50', 'cursor-not-allowed');
         submitButton.textContent = submitButton.dataset.originalText;
         hideLoading();
-    });
+    }
 });
+
+// Function 1: Call /text-to-boxes/
+async function processSelection(selection, context) {
+    const response = await fetch('/text-to-boxes/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCsrfToken()
+        },
+        body: JSON.stringify({
+            selection: selection
+        })
+    });
+
+    if (!response.ok) {
+        throw new Error('Failed to process selection');
+    }
+
+    const data = await response.json();
+    return data.boxes;
+}
+
+// Function 2: Call /match-flashcards-to-text/
+async function matchFlashcardsToText(selection, aiContext, boxes, deckId) {
+    const response = await fetch('/match-flashcards-to-text/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCsrfToken()
+        },
+        body: JSON.stringify({
+            selection: selection,
+            aiContext: aiContext,
+            boxes: boxes,
+            deck_id: deckId
+        })
+    });
+
+    if (!response.ok) {
+        throw new Error('Failed to get matched flashcards');
+    }
+
+    await response.json();
+}
+
 
 // Click handler for AI button
 document.getElementById('aiButton').addEventListener('click', () => {
