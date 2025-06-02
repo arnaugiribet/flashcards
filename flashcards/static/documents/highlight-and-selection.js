@@ -2,6 +2,7 @@
 let inSelectionMode = false;
 let lastSelectionData = null;
 let buttonIdTextSelection = null;
+let updateTextPlacement = false;
 
 // Clear any existing highlights
 function clearHighlights() {
@@ -81,13 +82,24 @@ window.addEventListener('mouseup', async function () {
     // If the selection happened in edit Card
     if (buttonIdTextSelection == "editTextPlacement"){
         console.log('selection happened in edit Card')
+        // Show selection in the preview area
+        document.getElementById('selectionPreviewEdit').classList.remove('hidden');
+        const previewElement = document.getElementById('selectedTextPreviewEdit');
+        const selectionText = selectionData.text;
+        if (selectionText.length > 200) {
+            previewElement.textContent = 
+                selectionText.substring(0, 100) + ' [...] ' + selectionText.substring(selectionText.length - 100);
+        } else {
+            previewElement.textContent = selectionText;
+        }
+        updateTextPlacement = true;
 
-        // Step 1: Process selection and get boxes
-        const boxes = await processSelection(lastSelectionData);
-        console.log('Boxes from text-to-boxes:', boxes);
+        // // Step 1: Process selection and get boxes
+        // const boxes = await processSelection(lastSelectionData);
+        // console.log('Boxes from text-to-boxes:', boxes);
         
-        // Step 2: Store boxes in flashcard box field
-        const status = await setTextPlacement(boxes, currentSelectedFlashcardId);
+        // // Step 2: Store boxes in flashcard box field
+        // const status = await setTextPlacement(boxes, currentSelectedFlashcardId);
     }
     
     
@@ -502,6 +514,12 @@ function resetCreateState() {
     if (selectedTextPreviewManually) selectedTextPreviewManually.textContent = 'No text selected';
     const selectionPreviewManually = document.getElementById('selectionPreviewManually');
     if (selectionPreviewManually) selectionPreviewManually.classList.add('hidden');
+
+    // Reset edit selection preview
+    const selectedTextPreviewEdit = document.getElementById('selectedTextPreviewEdit');
+    if (selectedTextPreviewEdit) selectedTextPreviewEdit.textContent = 'No new text placement';
+    const selectionPreviewEdit = document.getElementById('selectionPreviewEdit');
+    if (selectionPreviewEdit) selectionPreviewEdit.classList.add('hidden');
 
     // Reset selection mode variables & buttons
     inSelectionMode = false;

@@ -449,9 +449,9 @@ function showEditPanel(flashcard) {
             
             <!-- Edit selection preview -->
             <div id="selectionPreviewEdit" class="hidden">
-                <label class="block text-sm font-medium text-gray-700 mb-1">Selected Text</label>
+                <label class="block text-sm font-medium text-gray-700 mb-1">New text placement</label>
                 <div class="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 h-24 overflow-auto">
-                    <p id="selectedTextPreviewEdit" class="text-gray-600 italic">No text selected</p>
+                    <p id="selectedTextPreviewEdit" class="text-gray-600 italic">No new text placement</p>
                 </div>
             </div>
 
@@ -483,13 +483,12 @@ function showEditPanel(flashcard) {
     document.getElementById('editTextPlacement').addEventListener('click', function() {
         console.log('Edit text placement clicked');
         const flashcardId = this.dataset.flashcardId;
-        console.log('Edit text placement clicked for flashcard:', flashcardId);
         toggleSelectionMode(this);
 
     });
     
     // Add click handler for the save button (placeholder for now)
-    document.getElementById('saveFlashcard').addEventListener('click', function() {
+    document.getElementById('saveFlashcard').addEventListener('click', async function() {
         const updatedQuestion = document.getElementById('question').value;
         const updatedAnswer = document.getElementById('answer').value;
         const flashcardId = this.dataset.flashcardId;
@@ -501,23 +500,24 @@ function showEditPanel(flashcard) {
             answer: updatedAnswer
         });
         
-        // For now, just update the local data and return to flashcards view
+        // Update the local data and return to flashcards view
         const flashcard = window.flashcards.find(fc => fc.id == flashcardId);
         if (flashcard) {
             flashcard.question = updatedQuestion;
             flashcard.answer = updatedAnswer;
             
-            // Update the displayed flashcard
-            const flashcardElement = document.querySelector(`#flashcardsContainer > div[data-flashcard-id="${flashcardId}"]`);
-            if (flashcardElement) {
-                const questionEl = flashcardElement.querySelector('p:first-child');
-                const answerEl = flashcardElement.querySelector('p:nth-child(2)');
+            if (updateTextPlacement) {
+                // Add the new text placement update
+                // Step 1: Process selection and get boxes
+                const boxes = await processSelection(lastSelectionData);
+                console.log('Boxes from text-to-boxes:', boxes);
                 
-                if (questionEl) questionEl.innerHTML = `Q: ${updatedQuestion}`;
-                if (answerEl) answerEl.innerHTML = `A: ${updatedAnswer}`;
+                // Step 2: Store boxes in flashcard box field
+                const status = await setTextPlacement(boxes, flashcardId);
             }
+            updateTextPlacement = false
         }
-        
+            
         hideEditPanel();
     });
 }
