@@ -17,10 +17,10 @@ document.getElementById('setTextPlacement').addEventListener('click', function()
 });
 
 const saveNewFlashcardButton = document.getElementById('saveNewFlashcard');
-saveNewFlashcardButton.addEventListener('click', () => {
+saveNewFlashcardButton.addEventListener('click', async () => {
     const question = document.getElementById('newQuestion').value.trim();
     const answer = document.getElementById('newAnswer').value.trim();
-
+    
     if (!question || !answer) {
         // Show error message
         const notification = document.createElement('div');
@@ -34,12 +34,22 @@ saveNewFlashcardButton.addEventListener('click', () => {
         return;
     }
 
+    let boxes = []
+    if (updateTextPlacement) {
+        // Add the new text placement update
+        // Step 1: Process selection and get boxes
+        boxes = await processSelection(lastSelectionData);
+        console.log('Boxes from text-to-boxes:', boxes);
+    }
+    updateTextPlacement = true;
+
     // Create the flashcard data to send to the server
     const flashcardData = {
         question: question,
         answer: answer,
         deck_id: currentDeckId,
-        document_id: currentDocumentId
+        document_id: currentDocumentId,
+        boxes: boxes
     };
 
     const originalText = saveNewFlashcardButton.textContent;

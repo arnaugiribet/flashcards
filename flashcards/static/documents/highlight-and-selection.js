@@ -81,6 +81,11 @@ window.addEventListener('mouseup', async function () {
         } else {
             previewElement.textContent = selectionText;
         }
+        updateTextPlacement = true;
+        
+        // Restart buttons
+        document.getElementById('setTextPlacement').textContent = 'Edit Text Placement';
+        document.getElementById('setTextPlacement').classList.remove('bg-yellow-200', 'border-yellow-400');
     }
 
     // If the selection happened in edit Card

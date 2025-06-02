@@ -852,13 +852,15 @@ def create_flashcard_from_document(request):
         return JsonResponse({'error': 'Method not allowed'}, status=405)
     
     try:
-        print(f"creating flashcard manually from document viewer")
+        logger.debug(f"creating flashcard manually from document viewer")
         data = json.loads(request.body)
         deck_id = data.get('deck_id')
         document_id = data.get('document_id')
         question = data.get('question')
         answer = data.get('answer')
-        
+        boxes = data.get('boxes')
+        logger.debug(f"boxes are:{boxes}")
+
         # Ensure all required fields are present
         if not (deck_id and question and answer):
             return JsonResponse({'error': 'Missing required fields'}, status=400)
@@ -877,9 +879,10 @@ def create_flashcard_from_document(request):
             question=question,
             answer=answer,
             user=request.user,
-            document=document
+            document=document,
+            bounding_box=boxes
         )
-        print('card successfully created')
+        logger.debug('card successfully created')
         return JsonResponse({
             'success': True,
             'id': str(flashcard.id),  # Convert UUID to string for JSON
