@@ -1,3 +1,14 @@
+// Show loading panel with custom text
+function showLoading(text = "Loading...") {
+    document.getElementById('loadingText').innerText = text;
+    document.getElementById('loadingPanel').classList.remove('hidden');
+}
+
+// Hide loading panel
+function hideLoading() {
+    document.getElementById('loadingPanel').classList.add('hidden');
+}
+
 // === Upload Modal Logic ===
 const openBtn = document.getElementById('open-upload-modal');
 const modal = document.getElementById('upload-modal');
