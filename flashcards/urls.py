@@ -12,6 +12,7 @@ urlpatterns = [
     path('documents/delete/<uuid:document_id>/', views.delete_document, name='delete_document'),
     path('text-to-boxes/', views.text_to_boxes, name='text_to_boxes'),
     path('match-flashcards-to-text/', views.match_flashcards_to_text, name='match-flashcards-to-text'),
+    path('save-question-answer/', views.save_question_answer, name='save_question_answer'),
     path('set-text-placement/', views.set_text_placement, name='set_text_placement'),
     path('manage_cards/', views.manage_cards, name='manage_cards'),
     path('accept_card/<uuid:card_id>/', views.accept_card, name='accept_card'),

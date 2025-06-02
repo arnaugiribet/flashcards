@@ -500,26 +500,49 @@ function showEditPanel(flashcard) {
             answer: updatedAnswer
         });
         
-        // Update the local data and return to flashcards view
-        const flashcard = window.flashcards.find(fc => fc.id == flashcardId);
-        if (flashcard) {
-            flashcard.question = updatedQuestion;
-            flashcard.answer = updatedAnswer;
+        // Update question, answer and set placement
+        const status = await saveQuestionAnswer(updatedQuestion, updatedAnswer, flashcardId)
+        console.log('QA saving status is ', status)
+
+        if (updateTextPlacement) {
+            console.log('updating text placement...')
+            // Add the new text placement update
+            // Step 1: Process selection and get boxes
+            const boxes = await processSelection(lastSelectionData);
+            console.log('Boxes from text-to-boxes:', boxes);
             
-            if (updateTextPlacement) {
-                // Add the new text placement update
-                // Step 1: Process selection and get boxes
-                const boxes = await processSelection(lastSelectionData);
-                console.log('Boxes from text-to-boxes:', boxes);
-                
-                // Step 2: Store boxes in flashcard box field
-                const status = await setTextPlacement(boxes, flashcardId);
-            }
-            updateTextPlacement = false
+            // Step 2: Store boxes in flashcard box field
+            const status = await setTextPlacement(boxes, flashcardId);
         }
-            
+        updateTextPlacement = false
+        
+        
+        fetchAndCreateHighlights(currentDocumentId);
         hideEditPanel();
     });
+}
+
+// Set text placement in flashcard
+async function saveQuestionAnswer(question, answer, flashcardId) {
+    const response = await fetch('/save-question-answer/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCsrfToken()
+        },
+        body: JSON.stringify({
+            question: question,
+            answer: answer,
+            flashcardId: flashcardId
+        })
+    });
+
+    if (!response.ok) {
+        throw new Error('Failed to process selection');
+    }
+
+    const status = await response.json();
+    return status;
 }
 
 // Function to hide the edit panel and return to flashcards view

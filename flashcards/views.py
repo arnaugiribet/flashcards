@@ -404,6 +404,27 @@ def accept_card(request, card_id):
         logger.error(f"Error accepting flashcard: {e}")
         return JsonResponse({'success': False}, status=500)
 
+# Save edited question and answer for a flashcard
+@login_required
+def save_question_answer(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        user = request.user
+
+        # Obtain data
+        flashcardId = data.get("flashcardId")
+        question = data.get("question")
+        answer = data.get("answer")
+
+        logger.debug(f"question and answer are:\n{question}\n{answer}")
+        # update flashcard box field
+        Flashcard.objects.filter(id=flashcardId, user=request.user).update(question=question, answer=answer)
+
+        # Return success
+        return JsonResponse({'status': 'success'})
+
+    return JsonResponse({'error': 'Invalid request'}, status=400)
+
 # Set text placement for a flashcard
 @login_required
 def set_text_placement(request):
