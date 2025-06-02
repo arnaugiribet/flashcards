@@ -1,4 +1,6 @@
 
+let currentSelectedFlashcardId = null;
+
 // Fetch flashcards for the current document and call create highlights
 async function fetchAndCreateHighlights(documentId) {
     const flashcardsContainer = document.getElementById("flashcardsContainer");
@@ -145,60 +147,16 @@ function displayFlashcards(flashcards) {
         
         // Add click handler for the flashcard body (same as original)
         flashcardElement.addEventListener('click', (e) => {
-            // Prevent triggering when clicking the edit button
-            if (e.target.closest('.edit-card-btn')) return;
-            
-            // Check if this flashcard is already selected
-            const isCurrentlySelected = flashcardElement.classList.contains('bg-blue-50');
-            
-            // Remove selected class from all flashcards and deactivate all highlights
-            document.querySelectorAll('#flashcardsContainer > div').forEach(card => {
-                if (!card.classList.contains('py-2')) { // Skip section headers
-                    card.classList.remove('bg-blue-50', 'border-blue-200');
-                    const cardId = card.dataset.flashcardId;
-                    if (cardId) {
-                        document.querySelectorAll(`.pdf-highlight[data-flashcard-id="${cardId}"]`).forEach(highlight => {
-                            highlight.classList.remove('active');
-                        });
-                    }
-                }
-            });
-            
-            // Only add selected class and activate highlights if the clicked flashcard wasn't already selected
-            if (!isCurrentlySelected) {
-                flashcardElement.classList.add('bg-blue-50', 'border-blue-200');
-                const flashcardId = flashcard.id;
-                const highlights = document.querySelectorAll(`.pdf-highlight[data-flashcard-id="${flashcardId}"]`);
-                
-                // Activate all highlights for this flashcard
-                highlights.forEach(highlight => {
-                    highlight.classList.add('active');
-                });
-
-                // Get the first highlight element to scroll to
-                if (highlights.length > 0) {
-                    const firstHighlight = highlights[0];
-                    const pdfContainer = document.querySelector('#viewerContainer');
-                    
-                    // Get the highlight's position relative to the container
-                    const highlightRect = firstHighlight.getBoundingClientRect();
-                    const containerRect = pdfContainer.getBoundingClientRect();
-                    
-                    // Calculate the scroll position (adding some padding above)
-                    const scrollTop = highlightRect.top - containerRect.top + pdfContainer.scrollTop - 100;
-                    
-                    // Smooth scroll to the highlight
-                    pdfContainer.scrollTo({
-                        top: scrollTop,
-                        behavior: 'smooth'
-                    });
-                }
-            }
+            amplifyFlashcard(flashcardElement);
+            scrollToHighlight(flashcardElement);
         });
         
         // Add separate click handler for the edit button
         const editButton = flashcardElement.querySelector('.edit-card-btn');
         editButton.addEventListener('click', (e) => {
+            e.stopPropagation();
+            amplifyFlashcard(flashcardElement);
+            scrollToHighlight(flashcardElement);
             showEditPanel(flashcard);
         });
 
@@ -240,6 +198,59 @@ function displayFlashcards(flashcards) {
     }
 }
 
+// Amplify flashcard
+function amplifyFlashcard(flashcardElement){
+    // Remove selected class from all flashcards and deactivate all highlights
+    document.querySelectorAll('#flashcardsContainer > div').forEach(card => {
+        if (!card.classList.contains('py-2')) { // Skip section headers
+            card.classList.remove('bg-blue-50', 'border-blue-200');
+            const cardId = card.dataset.flashcardId;
+            if (cardId) {
+                document.querySelectorAll(`.pdf-highlight[data-flashcard-id="${cardId}"]`).forEach(highlight => {
+                    highlight.classList.remove('active');
+                });
+            }
+        }
+    });
+
+    // Add selected class and activate highlights
+    flashcardElement.classList.add('bg-blue-50', 'border-blue-200');
+    
+    const flashcardId = flashcardElement.dataset.flashcardId;
+    const highlights = document.querySelectorAll(`.pdf-highlight[data-flashcard-id="${flashcardId}"]`);
+    
+    // Activate all highlights for this flashcard
+    highlights.forEach(highlight => {
+        highlight.classList.add('active');
+    });
+    
+}
+
+// Scroll to highlight
+function scrollToHighlight(flashcardElement){
+    const flashcardId = flashcardElement.dataset.flashcardId;
+    const highlights = document.querySelectorAll(`.pdf-highlight[data-flashcard-id="${flashcardId}"]`);
+
+    // Get the first highlight element to scroll to
+    if (highlights.length > 0) {
+        const firstHighlight = highlights[0];
+        const pdfContainer = document.querySelector('#viewerContainer');
+        
+        // Get the highlight's position relative to the container
+        const highlightRect = firstHighlight.getBoundingClientRect();
+        const containerRect = pdfContainer.getBoundingClientRect();
+        
+        // Calculate the scroll position (adding some padding above)
+        const scrollTop = highlightRect.top - containerRect.top + pdfContainer.scrollTop - 100;
+        
+        // Smooth scroll to the highlight
+        pdfContainer.scrollTo({
+            top: scrollTop,
+            behavior: 'smooth'
+        });
+    }
+}
+
 // Handle accept and discard actions
 function acceptFlashcard(flashcardId) {
   console.log(`Accepting flashcard with ID: ${flashcardId}`);
@@ -271,11 +282,10 @@ function discardFlashcard(flashcardId) {
   const yesBtn = document.getElementById('confirm-yes');
   const noBtn = document.getElementById('confirm-no');
 
-  modal.style.display = 'flex';
+  modal.classList.remove('hidden');
 
   yesBtn.onclick = () => {
-    modal.style.display = 'none';
-    console.log(`Discarding flashcard with ID: ${flashcardId}`);
+    modal.classList.add('hidden');
 
     fetch(`/delete_card/${flashcardId}/`, {
       method: 'POST',
@@ -302,7 +312,7 @@ function discardFlashcard(flashcardId) {
   };
 
   noBtn.onclick = () => {
-    modal.style.display = 'none';
+    modal.classList.add('hidden');
   };
 }
 
@@ -389,14 +399,18 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Function to show the edit panel
 function showEditPanel(flashcard) {
+    console.log("starting showEditPanel()")
+
+    // Set the currently selected flashcard ID globally
+    currentSelectedFlashcardId = flashcard.id;
+    console.log("Set current selected flashcard ID:", currentSelectedFlashcardId);
+    
     // Get containers
     const rightSection = document.getElementById('rightSection');
-    const optionsSubheader = rightSection.querySelector('.px-4.py-2.border-b');
     const flashcardsContainer = document.getElementById('flashcardsContainer');
     
-    // Hide the options subheader and flashcards container
-    optionsSubheader.style.display = 'none';
-    flashcardsContainer.style.display = 'none';
+    // Hide the flashcards container
+    flashcardsContainer.classList.add('hidden');
     
     // Create the edit panel if it doesn't exist
     let editPanel = document.getElementById('editPanel');
@@ -409,7 +423,7 @@ function showEditPanel(flashcard) {
 
     // Determine if the flashcard has a bbox
     const hasBBox = flashcard.bbox && flashcard.bbox.length > 0;
-    const textPlacementLabel = hasBBox ? "Edit Text Placement" : "Set Text Placement";
+    const editTextPlacementLabel = hasBBox ? "Edit Text Placement" : "Set Text Placement";
     
     // Populate the edit panel
     editPanel.innerHTML = `
@@ -433,12 +447,20 @@ function showEditPanel(flashcard) {
                 <textarea id="answer" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 h-24">${flashcard.answer}</textarea>
             </div>
             
+            <!-- Edit selection preview -->
+            <div id="selectionPreviewEdit" class="hidden">
+                <label class="block text-sm font-medium text-gray-700 mb-1">New text placement</label>
+                <div class="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 h-24 overflow-auto">
+                    <p id="selectedTextPreviewEdit" class="text-gray-600 italic">No new text placement</p>
+                </div>
+            </div>
+
             <div class="flex justify-between items-center gap-4">
-                <button id="textPlacement" data-flashcard-id="${flashcard.id}" class="flex items-center px-4 py-2 border ${hasBBox ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-yellow-50 border-yellow-300 text-yellow-800'} rounded-md hover:${hasBBox ? 'bg-emerald-100 hover:text-emerald-800' : 'bg-yellow-100'} transition-colors w-auto font-medium shadow-sm">
+                <button id="editTextPlacement" data-flashcard-id="${flashcard.id}"class="flex items-center px-4 py-2 border ${hasBBox ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-yellow-50 border-yellow-300 text-yellow-800'} rounded-md hover:${hasBBox ? 'bg-emerald-100 hover:text-emerald-800' : 'bg-yellow-100'} transition-colors w-auto font-medium shadow-sm">
                     ${!hasBBox ? `<svg class="w-5 h-5 mr-2 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
                     </svg>` : ''}
-                    ${textPlacementLabel}
+                    ${editTextPlacementLabel}
                 </button>
                 
                 <button id="saveFlashcard" data-flashcard-id="${flashcard.id}" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">
@@ -449,21 +471,24 @@ function showEditPanel(flashcard) {
     `;
     
     // Display the edit panel
-    editPanel.style.display = 'flex';
-    
-    // Add click handler for the back button
-    document.getElementById('backToFlashcards').addEventListener('click', hideEditPanel);
-    
-    // Add click handler for the text placement button
-    document.getElementById('textPlacement').addEventListener('click', function() {
+    editPanel.classList.remove('hidden');
+                  
+    // Back to flashcards list
+    document.getElementById('backToFlashcards').addEventListener('click', () => {
+        exitSelectionMode();
+        navigateTo('flashcardsContainer');
+    });
+
+    // Click handler for edit text placement (in existing cards)
+    document.getElementById('editTextPlacement').addEventListener('click', function() {
+        console.log('Edit text placement clicked');
         const flashcardId = this.dataset.flashcardId;
-        console.log('Text placement clicked for flashcard:', flashcardId);
-        // Placeholder for the text placement functionality
-        alert('Text placement functionality will be implemented later.');
+        toggleSelectionMode(this);
+
     });
     
     // Add click handler for the save button (placeholder for now)
-    document.getElementById('saveFlashcard').addEventListener('click', function() {
+    document.getElementById('saveFlashcard').addEventListener('click', async function() {
         const updatedQuestion = document.getElementById('question').value;
         const updatedAnswer = document.getElementById('answer').value;
         const flashcardId = this.dataset.flashcardId;
@@ -475,41 +500,66 @@ function showEditPanel(flashcard) {
             answer: updatedAnswer
         });
         
-        // For now, just update the local data and return to flashcards view
-        const flashcard = window.flashcards.find(fc => fc.id == flashcardId);
-        if (flashcard) {
-            flashcard.question = updatedQuestion;
-            flashcard.answer = updatedAnswer;
+        // Update question, answer and set placement
+        const status = await saveQuestionAnswer(updatedQuestion, updatedAnswer, flashcardId)
+        console.log('QA saving status is ', status)
+
+        if (updateTextPlacement) {
+            console.log('updating text placement...')
+            // Add the new text placement update
+            // Step 1: Process selection and get boxes
+            const boxes = await processSelection(lastSelectionData);
+            console.log('Boxes from text-to-boxes:', boxes);
             
-            // Update the displayed flashcard
-            const flashcardElement = document.querySelector(`#flashcardsContainer > div[data-flashcard-id="${flashcardId}"]`);
-            if (flashcardElement) {
-                const questionEl = flashcardElement.querySelector('p:first-child');
-                const answerEl = flashcardElement.querySelector('p:nth-child(2)');
-                
-                if (questionEl) questionEl.innerHTML = `Q: ${updatedQuestion}`;
-                if (answerEl) answerEl.innerHTML = `A: ${updatedAnswer}`;
-            }
+            // Step 2: Store boxes in flashcard box field
+            const status = await setTextPlacement(boxes, flashcardId);
         }
+        updateTextPlacement = false
         
+        
+        fetchAndCreateHighlights(currentDocumentId);
         hideEditPanel();
     });
 }
 
+// Set text placement in flashcard
+async function saveQuestionAnswer(question, answer, flashcardId) {
+    const response = await fetch('/save-question-answer/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCsrfToken()
+        },
+        body: JSON.stringify({
+            question: question,
+            answer: answer,
+            flashcardId: flashcardId
+        })
+    });
+
+    if (!response.ok) {
+        throw new Error('Failed to process selection');
+    }
+
+    const status = await response.json();
+    return status;
+}
+
 // Function to hide the edit panel and return to flashcards view
 function hideEditPanel() {
+    // Clear the currently selected flashcard ID
+    currentSelectedFlashcardId = null;
+    
     // Get containers
     const rightSection = document.getElementById('rightSection');
-    const optionsSubheader = rightSection.querySelector('.px-4.py-2.border-b');
     const flashcardsContainer = document.getElementById('flashcardsContainer');
     const editPanel = document.getElementById('editPanel');
     
-    // Show the options subheader and flashcards container
-    optionsSubheader.style.display = 'flex';
-    flashcardsContainer.style.display = 'block';
+    // Show the flashcards container
+    flashcardsContainer.classList.remove('hidden');
     
     // Hide the edit panel
     if (editPanel) {
-        editPanel.style.display = 'none';
+        editPanel.classList.add('hidden');
     }
 }

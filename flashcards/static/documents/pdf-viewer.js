@@ -5,13 +5,21 @@ const pdfjsViewer = window.pdfjsViewer;
 async function viewDocument(documentId, documentName) {
     console.log("Retrieving document with id:", documentId);
 
-    // Reset UI state - make sure the create panel is hidden and the flashcard list is visible
+    // Reset UI state - make sure the create panels are hidden and the flashcard list is visible
     document.getElementById('createPanel').classList.add('hidden');
+    document.getElementById('aiSelectionPanel').classList.add('hidden');
+    const editPanel = document.getElementById('editPanel');
+    if (editPanel) {
+        console.log("editPanel found, hiding it.");
+        editPanel.classList.add('hidden');
+    }
+
+
     if (document.querySelector('.px-4.py-2.border-b')) {
         document.querySelector('.px-4.py-2.border-b').style.display = '';
     }
     if (document.getElementById('flashcardsContainer')) {
-        document.getElementById('flashcardsContainer').style.display = '';
+        document.getElementById('flashcardsContainer').classList.remove('hidden');
     }
     // Clear any form inputs from previous sessions
     if (document.getElementById('newQuestion')) {
