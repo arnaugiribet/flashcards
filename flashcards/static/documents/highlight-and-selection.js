@@ -46,7 +46,7 @@ window.addEventListener('mouseup', async function () {
     lastSelectionData = selectionData;
 
     // If the selection happened in create with AI
-    if (buttonIdTextSelection == "startTextSelection") {
+    if (buttonIdTextSelection == "startTextSelectionAI") {
         console.log('selection happened in create with AI')
         // Show selection in the preview area
         document.getElementById('selectionPreviewAI').classList.remove('hidden');
@@ -62,6 +62,10 @@ window.addEventListener('mouseup', async function () {
         // Enable the submit button
         document.getElementById('submitAiFlashcard').disabled = false;
         document.getElementById('submitAiFlashcard').classList.remove('opacity-50', 'cursor-not-allowed');
+
+        // Restart buttons
+        document.getElementById('startTextSelectionAI').textContent = 'Start Selection';
+        document.getElementById('startTextSelectionAI').classList.remove('bg-yellow-200', 'border-yellow-400');
     }
 
     // If the selection happened in create Manually
@@ -94,19 +98,14 @@ window.addEventListener('mouseup', async function () {
         }
         updateTextPlacement = true;
 
-        // // Step 1: Process selection and get boxes
-        // const boxes = await processSelection(lastSelectionData);
-        // console.log('Boxes from text-to-boxes:', boxes);
-        
-        // // Step 2: Store boxes in flashcard box field
-        // const status = await setTextPlacement(boxes, currentSelectedFlashcardId);
+        // Restart buttons
+        document.getElementById('editTextPlacement').textContent = 'Edit Text Placement';
+        document.getElementById('editTextPlacement').classList.remove('bg-yellow-200', 'border-yellow-400');
     }
     
     
     // Reset selection mode
     inSelectionMode = false;
-    document.getElementById('startTextSelection').textContent = 'Start Selection';
-    document.getElementById('startTextSelection').classList.remove('bg-yellow-200', 'border-yellow-400');
     document.getElementById('viewerContainer').classList.remove('selection-mode');
 });
 
@@ -482,7 +481,7 @@ function toggleSelectionMode(button) {
 }
 
 // Toggle selection mode when clicking on select text from create with AI
-document.getElementById('startTextSelection').addEventListener('click', function() {
+document.getElementById('startTextSelectionAI').addEventListener('click', function() {
     toggleSelectionMode(this);
 });
 
@@ -524,7 +523,7 @@ function resetCreateState() {
     // Reset selection mode variables & buttons
     inSelectionMode = false;
     lastSelectionData = null;
-    const startTextBtn = document.getElementById('startTextSelection');
+    const startTextBtn = document.getElementById('startTextSelectionAI');
     if (startTextBtn) {
         startTextBtn.textContent = 'Start Selection';
         startTextBtn.classList.remove('bg-yellow-200', 'border-yellow-400');
@@ -571,8 +570,8 @@ function navigateTo(view) {
 function exitSelectionMode() {
     inSelectionMode = false;
     document.getElementById('viewerContainer').classList.remove('selection-mode');
-    document.getElementById('startTextSelection').textContent = 'Start Selection';
-    document.getElementById('startTextSelection').classList.remove('bg-yellow-200', 'border-yellow-400');
+    document.getElementById('startTextSelectionAI').textContent = 'Start Selection';
+    document.getElementById('startTextSelectionAI').classList.remove('bg-yellow-200', 'border-yellow-400');
 }
 
 // Back from AI selection to flashcards list
