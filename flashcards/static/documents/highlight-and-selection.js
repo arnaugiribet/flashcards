@@ -35,7 +35,7 @@ async function getSelectionWordCoords(startPage, endPage) {
     return allWords;
 }
 
-// Event listener for mouseup that triggers text selection
+// Event listener for mouseup that waits for text selection and handles what happens
 window.addEventListener('mouseup', async function () {
     const selectionData = await generateSelectionData();
     if (!selectionData) return;
@@ -81,6 +81,13 @@ window.addEventListener('mouseup', async function () {
     // If the selection happened in edit Card
     if (buttonIdTextSelection == "editTextPlacement"){
         console.log('selection happened in edit Card')
+
+        // Step 1: Process selection and get boxes
+        const boxes = await processSelection(lastSelectionData);
+        console.log('Boxes from text-to-boxes:', boxes);
+        
+        // Step 2: Store boxes in flashcard box field
+        const status = await setTextPlacement(boxes, currentSelectedFlashcardId);
     }
     
     
@@ -91,6 +98,28 @@ window.addEventListener('mouseup', async function () {
     document.getElementById('viewerContainer').classList.remove('selection-mode');
 });
 
+// Set text placement in flashcard
+async function setTextPlacement(boxes, card_id) {
+    const response = await fetch('/set-text-placement/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCsrfToken()
+        },
+        body: JSON.stringify({
+            boxes: boxes,
+            card_id: card_id
+        })
+    });
+
+    if (!response.ok) {
+        throw new Error('Failed to process selection');
+    }
+
+    const data = await response.json();
+    return data.boxes;
+
+}
 
 // Generates the selection data we need to pass to the card generator
 async function generateSelectionData() {

@@ -404,6 +404,27 @@ def accept_card(request, card_id):
         logger.error(f"Error accepting flashcard: {e}")
         return JsonResponse({'success': False}, status=500)
 
+# Set text placement for a flashcard
+@login_required
+def set_text_placement(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        user = request.user
+
+        # Obtain data
+        boxes = data.get("boxes")
+        card_id = data.get("card_id")
+        logger.debug(f"boxes is:\n{boxes}")
+        logger.debug(f"card_id:\n{card_id}")
+
+        # update flashcard box field
+        Flashcard.objects.filter(id=card_id, user=request.user).update(bounding_box=boxes)
+
+        # Return success
+        return JsonResponse({'status': 'success'})
+
+    return JsonResponse({'error': 'Invalid request'}, status=400)
+
 # Match text to boxes
 @login_required
 def text_to_boxes(request):

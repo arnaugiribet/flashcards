@@ -1,4 +1,6 @@
 
+let currentSelectedFlashcardId = null;
+
 // Fetch flashcards for the current document and call create highlights
 async function fetchAndCreateHighlights(documentId) {
     const flashcardsContainer = document.getElementById("flashcardsContainer");
@@ -398,6 +400,11 @@ document.addEventListener('DOMContentLoaded', function() {
 // Function to show the edit panel
 function showEditPanel(flashcard) {
     console.log("starting showEditPanel()")
+
+    // Set the currently selected flashcard ID globally
+    currentSelectedFlashcardId = flashcard.id;
+    console.log("Set current selected flashcard ID:", currentSelectedFlashcardId);
+    
     // Get containers
     const rightSection = document.getElementById('rightSection');
     const flashcardsContainer = document.getElementById('flashcardsContainer');
@@ -517,6 +524,9 @@ function showEditPanel(flashcard) {
 
 // Function to hide the edit panel and return to flashcards view
 function hideEditPanel() {
+    // Clear the currently selected flashcard ID
+    currentSelectedFlashcardId = null;
+    
     // Get containers
     const rightSection = document.getElementById('rightSection');
     const flashcardsContainer = document.getElementById('flashcardsContainer');
