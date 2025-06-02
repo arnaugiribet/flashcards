@@ -404,28 +404,84 @@ def accept_card(request, card_id):
         logger.error(f"Error accepting flashcard: {e}")
         return JsonResponse({'success': False}, status=500)
 
-# Pass selected text to LLM
+# Save edited question and answer for a flashcard
 @login_required
-def process_selection(request):
-
+def save_question_answer(request):
     if request.method == 'POST':
         data = json.loads(request.body)
         user = request.user
 
-        logger.debug(f"data keys are: {data.keys()}")
+        # Obtain data
+        flashcardId = data.get("flashcardId")
+        question = data.get("question")
+        answer = data.get("answer")
 
-        # Extract the selection data and deck name
+        logger.debug(f"question and answer are:\n{question}\n{answer}")
+        # update flashcard box field
+        Flashcard.objects.filter(id=flashcardId, user=request.user).update(question=question, answer=answer)
+
+        # Return success
+        return JsonResponse({'status': 'success'})
+
+    return JsonResponse({'error': 'Invalid request'}, status=400)
+
+# Set text placement for a flashcard
+@login_required
+def set_text_placement(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        user = request.user
+
+        # Obtain data
+        boxes = data.get("boxes")
+        card_id = data.get("card_id")
+        logger.debug(f"boxes is:\n{boxes}")
+        logger.debug(f"card_id:\n{card_id}")
+
+        # update flashcard box field
+        Flashcard.objects.filter(id=card_id, user=request.user).update(bounding_box=boxes)
+
+        # Return success
+        return JsonResponse({'status': 'success'})
+
+    return JsonResponse({'error': 'Invalid request'}, status=400)
+
+# Match text to boxes
+@login_required
+def text_to_boxes(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        user = request.user
+
+        # Obtain data
         selection_data = data.get("selection")
+
+        # Get bounding boxes with corresponding text
+        boxes = match_selected_text_to_word_boxes(selection_data["text"], selection_data["words"])
+
+        # Return boxes as JSON
+        return JsonResponse({'boxes': boxes})
+
+    return JsonResponse({'error': 'Invalid request'}, status=400)
+
+# Match flashcards to text boxes
+def match_flashcards_to_text(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        user = request.user
+
+        # Obtain data
+        selection_data = data.get("selection")
+        boxes = data.get("boxes")
         deck_id = data.get("deck_id")
         deck = Deck.objects.get(id=deck_id)
 
-        # Log what we received for debugging
-        logger.debug(f"Selection data keys: {selection_data.keys()}")
-        logger.debug(f"deck_id is: {deck_id}")
-
-        boxes = match_selected_text_to_word_boxes(selection_data["text"], selection_data["words"])
+        # Get flashcards matched to text boxes
         get_matched_flashcards_to_text(selection_data["doc_id"], selection_data["text"], boxes, user, deck)
+
+        # Return success
         return JsonResponse({'status': 'success'})
+
     return JsonResponse({'error': 'Invalid request'}, status=400)
 
 @login_required
@@ -817,13 +873,15 @@ def create_flashcard_from_document(request):
         return JsonResponse({'error': 'Method not allowed'}, status=405)
     
     try:
-        print(f"creating flashcard manually from document viewer")
+        logger.debug(f"creating flashcard manually from document viewer")
         data = json.loads(request.body)
         deck_id = data.get('deck_id')
         document_id = data.get('document_id')
         question = data.get('question')
         answer = data.get('answer')
-        
+        boxes = data.get('boxes')
+        logger.debug(f"boxes are:{boxes}")
+
         # Ensure all required fields are present
         if not (deck_id and question and answer):
             return JsonResponse({'error': 'Missing required fields'}, status=400)
@@ -842,9 +900,10 @@ def create_flashcard_from_document(request):
             question=question,
             answer=answer,
             user=request.user,
-            document=document
+            document=document,
+            bounding_box=boxes
         )
-        print('card successfully created')
+        logger.debug('card successfully created')
         return JsonResponse({
             'success': True,
             'id': str(flashcard.id),  # Convert UUID to string for JSON
