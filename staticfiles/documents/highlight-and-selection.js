@@ -1,3 +1,9 @@
+// Add these global variables
+let inSelectionMode = false;
+let lastSelectionData = null;
+let buttonIdTextSelection = null;
+let updateTextPlacement = false;
+
 // Clear any existing highlights
 function clearHighlights() {
     const existingHighlights = document.querySelectorAll('.pdf-highlight');
@@ -30,39 +36,131 @@ async function getSelectionWordCoords(startPage, endPage) {
     return allWords;
 }
 
-// Attach event listener to detect text selection
-window.addEventListener('mouseup', function() {
-    const selection = window.getSelection();
-    const range = selection.getRangeAt(0);
-    const selectionText = selection.toString();
-    const selectionLength = selectionText.length;
-    if (selectionLength > 2) {
-        // Get start and end pages
-        const pages = getStartAndEndPage(range);
-        if (pages) {
-            // Get the coordinates of the selected text for all pages in range
-            getSelectionWordCoords(pages.startPage, pages.endPage).then(data => {
-                // Store the selection data
-                lastSelectionData = {
-                    text: selectionText,
-                    words: data,
-                    doc_id: currentDocumentId
-                };
-                console.log("Selected text is:", lastSelectionData);
-                // Update UI to reflect selection
-                hasSelectedText = true;
-                updateAIButton();
-            });
+// Event listener for mouseup that waits for text selection and handles what happens
+window.addEventListener('mouseup', async function () {
+    const selectionData = await generateSelectionData();
+    if (!selectionData) return;
+    console.log("selectionData is: ", selectionData)
+
+    // This object is where we store the selected data. Acessible from everywhere
+    lastSelectionData = selectionData;
+
+    // If the selection happened in create with AI
+    if (buttonIdTextSelection == "startTextSelectionAI") {
+        console.log('selection happened in create with AI')
+        // Show selection in the preview area
+        document.getElementById('selectionPreviewAI').classList.remove('hidden');
+        const previewElement = document.getElementById('selectedTextPreviewAI');
+        const selectionText = selectionData.text;
+        if (selectionText.length > 200) {
+            previewElement.textContent = 
+                selectionText.substring(0, 100) + ' [...] ' + selectionText.substring(selectionText.length - 100);
+        } else {
+            previewElement.textContent = selectionText;
         }
-    } else {
-        // Clear selection data if no text is selected
-        lastSelectionData = null;
-        hasSelectedText = false;
-        updateAIButton();
+
+        // Enable the submit button
+        document.getElementById('submitAiFlashcard').disabled = false;
+        document.getElementById('submitAiFlashcard').classList.remove('opacity-50', 'cursor-not-allowed');
+
+        // Restart buttons
+        document.getElementById('startTextSelectionAI').textContent = 'Start Selection';
+        document.getElementById('startTextSelectionAI').classList.remove('bg-yellow-200', 'border-yellow-400');
     }
+
+    // If the selection happened in create Manually
+    if (buttonIdTextSelection == "setTextPlacement"){
+        console.log('selection happened in create Manually')
+        // Show selection in the preview area
+        document.getElementById('selectionPreviewManually').classList.remove('hidden');
+        const previewElement = document.getElementById('selectedTextPreviewManually');
+        const selectionText = selectionData.text;
+        if (selectionText.length > 200) {
+            previewElement.textContent = 
+                selectionText.substring(0, 100) + ' [...] ' + selectionText.substring(selectionText.length - 100);
+        } else {
+            previewElement.textContent = selectionText;
+        }
+        updateTextPlacement = true;
+        
+        // Restart buttons
+        document.getElementById('setTextPlacement').textContent = 'Edit Text Placement';
+        document.getElementById('setTextPlacement').classList.remove('bg-yellow-200', 'border-yellow-400');
+    }
+
+    // If the selection happened in edit Card
+    if (buttonIdTextSelection == "editTextPlacement"){
+        console.log('selection happened in edit Card')
+        // Show selection in the preview area
+        document.getElementById('selectionPreviewEdit').classList.remove('hidden');
+        const previewElement = document.getElementById('selectedTextPreviewEdit');
+        const selectionText = selectionData.text;
+        if (selectionText.length > 200) {
+            previewElement.textContent = 
+                selectionText.substring(0, 100) + ' [...] ' + selectionText.substring(selectionText.length - 100);
+        } else {
+            previewElement.textContent = selectionText;
+        }
+        updateTextPlacement = true;
+
+        // Restart buttons
+        document.getElementById('editTextPlacement').textContent = 'Edit Text Placement';
+        document.getElementById('editTextPlacement').classList.remove('bg-yellow-200', 'border-yellow-400');
+    }
+    
+    
+    // Reset selection mode
+    inSelectionMode = false;
+    document.getElementById('viewerContainer').classList.remove('selection-mode');
 });
 
+// Set text placement in flashcard
+async function setTextPlacement(boxes, card_id) {
+    const response = await fetch('/set-text-placement/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCsrfToken()
+        },
+        body: JSON.stringify({
+            boxes: boxes,
+            card_id: card_id
+        })
+    });
 
+    if (!response.ok) {
+        throw new Error('Failed to process selection');
+    }
+
+    const data = await response.json();
+    return data.boxes;
+
+}
+
+// Generates the selection data we need to pass to the card generator
+async function generateSelectionData() {
+    if (!inSelectionMode) return null;
+
+    const selection = window.getSelection();
+    const selectionText = selection.toString();
+    const selectionLength = selectionText.length;
+
+    if (selectionLength <= 2) return null;
+
+    const range = selection.getRangeAt(0);
+    const pages = getStartAndEndPage(range);
+    if (!pages) return null;
+
+    const wordCoords = await getSelectionWordCoords(pages.startPage, pages.endPage);
+
+    return {
+        text: selectionText,
+        words: wordCoords,
+        doc_id: currentDocumentId
+    };
+}
+
+// Get start and end page of selected data
 function getStartAndEndPage(range) {
     let startNode = range.startContainer;
     let endNode = range.endContainer;
@@ -98,67 +196,47 @@ function getStartAndEndPage(range) {
     return null;
 }
 
-
-
-function updateAIButton() {
-    const aiButton = document.getElementById('aiButton');
-    if (hasSelectedText) {
-        aiButton.disabled = false;
-        aiButton.classList.remove('text-gray-400', 'cursor-not-allowed', 'disabled:hover:text-gray-400');
-        aiButton.classList.add('text-gray-600', 'hover:text-gray-900', 'button-flash');
-        aiButton.title = "AI will generate cards from your selection";
-        
-        // Remove the animation class after it completes
-        aiButton.addEventListener('animationend', () => {
-            aiButton.classList.remove('button-flash');
-        }, { once: true });
-    } else {
-        aiButton.disabled = true;
-        aiButton.classList.remove('text-gray-600', 'hover:text-gray-900', 'button-flash');
-        aiButton.classList.add('text-gray-400', 'cursor-not-allowed', 'disabled:hover:text-gray-400');
-        aiButton.title = "Select text to generate AI cards";
-    }
-}
-
-// Add click handler for AI button
-document.getElementById('aiButton').addEventListener('click', function(e) {
-    if (this.disabled || !lastSelectionData) {
-        // Show a tooltip or notification that text needs to be selected
-        const notification = document.createElement('div');
-        notification.className = 'fixed bottom-4 right-4 bg-gray-800 text-white px-4 py-2 rounded-lg shadow-lg z-50';
-        notification.textContent = 'Please select text first';
-        document.body.appendChild(notification);
-        
-        // Remove the notification after 2 seconds
-        setTimeout(() => {
-            notification.remove();
-        }, 2000);
+// Generate Cards submit button event listener
+document.getElementById('submitAiFlashcard').addEventListener('click', async function() {
+    if (!lastSelectionData) {
         return;
     }
     
-    // Send the selection data to the server
-    console.log("Sending selection data to server:", lastSelectionData);
+    // Disable button while processing, show message
+    const submitButton = document.getElementById('submitAiFlashcard');
+    showLoading("Generating Cards...");
 
-    fetch('/text-to-boxes/', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': getCsrfToken()
-        },
-        body: JSON.stringify({
-            selection: lastSelectionData,
-            deck_id: currentDeckId
-        })
-    })
-    .then(response => response.json())
-    .then(data => {
-        console.log("Server response:", data);
+    // Save original text if not already saved
+    if (!submitButton.dataset.originalText) {
+        submitButton.dataset.originalText = submitButton.textContent;
+    }
+
+    // Disable button and show overlay
+    submitButton.disabled = true;
+    submitButton.classList.add('opacity-50', 'cursor-not-allowed');
+    submitButton.textContent = 'Generating Cards...';
+
+    // Get context from input
+    const aiContext = document.getElementById('aiContext').value;
+    
+    try{
+        // Step 1: Process selection and get boxes
+        const boxes = await processSelection(lastSelectionData);
+        console.log('Boxes from text-to-boxes:', boxes);
+
+        // Step 2: Get matched flashcards to text using boxes
+        await matchFlashcardsToText(lastSelectionData, aiContext, boxes, currentDeckId);
+
         // Refresh the flashcards after successful processing
         if (currentDocumentId) {
+            console.log("currentDocumentId found, calling fetchAndCreateHighlights()...")
             fetchAndCreateHighlights(currentDocumentId);
         }
-    })
-    .catch(error => {
+
+        // Return to flashcards view
+        document.getElementById('flashcardsContainer').classList.remove('hidden');
+        document.getElementById('aiSelectionPanel').classList.add('hidden');
+    } catch (error) {
         console.error("Error:", error);
         // Show error notification
         const notification = document.createElement('div');
@@ -166,13 +244,67 @@ document.getElementById('aiButton').addEventListener('click', function(e) {
         notification.textContent = 'Error processing selection. Please try again.';
         document.body.appendChild(notification);
         
-        // Remove the notification after 2 seconds
         setTimeout(() => {
             notification.remove();
         }, 2000);
-    });
+    } finally {
+        submitButton.disabled = false;
+        submitButton.classList.remove('opacity-50', 'cursor-not-allowed');
+        submitButton.textContent = submitButton.dataset.originalText;
+        hideLoading();
+    }
 });
 
+// Function 1: Call /text-to-boxes/
+async function processSelection(selection, context) {
+    const response = await fetch('/text-to-boxes/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCsrfToken()
+        },
+        body: JSON.stringify({
+            selection: selection
+        })
+    });
+
+    if (!response.ok) {
+        throw new Error('Failed to process selection');
+    }
+
+    const data = await response.json();
+    return data.boxes;
+}
+
+// Function 2: Call /match-flashcards-to-text/
+async function matchFlashcardsToText(selection, aiContext, boxes, deckId) {
+    const response = await fetch('/match-flashcards-to-text/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCsrfToken()
+        },
+        body: JSON.stringify({
+            selection: selection,
+            aiContext: aiContext,
+            boxes: boxes,
+            deck_id: deckId
+        })
+    });
+
+    if (!response.ok) {
+        throw new Error('Failed to get matched flashcards');
+    }
+
+    await response.json();
+}
+
+
+// Click handler for AI button
+document.getElementById('aiButton').addEventListener('click', () => {
+    resetCreateState(); // Clear before entering AI view
+    navigateTo('aiSelectionPanel');
+});
 
 // Function to create highlights
 function createHighlights(flashcards, showFlashcardsLog) {
@@ -319,4 +451,136 @@ document.getElementById('viewerContainer').addEventListener('click', function(e)
             });
         });
     }
+});
+
+// text selection mode
+function toggleSelectionMode(button) {
+    if (inSelectionMode) {
+        // Exit selection mode
+        exitSelectionMode();
+        button.classList.remove('bg-yellow-200', 'border-yellow-400');
+        button.textContent = button.dataset.originalText;
+    } else {
+        // Enter selection mode
+        inSelectionMode = true;
+        buttonIdTextSelection = button.id;
+        
+        // Save original text if not saved yet
+        if (!button.dataset.originalText) {
+            button.dataset.originalText = button.textContent;
+        }
+        
+        button.classList.add('bg-yellow-200', 'border-yellow-400');
+        button.textContent = 'Cancel';
+        
+        const notification = document.createElement('div');
+        notification.className = 'absolute bottom-4 right-4 transform bg-gray-800 text-white px-4 py-2 rounded-lg shadow z-10';
+        notification.textContent = 'Select text in the document. Hold Ctrl to select over already linked text.';
+        
+        const viewer = document.getElementById('documentViewerModal');
+        viewer.style.position = 'relative';
+        viewer.appendChild(notification);
+        
+        setTimeout(() => notification.remove(), 3000);
+    }
+}
+
+// Toggle selection mode when clicking on select text from create with AI
+document.getElementById('startTextSelectionAI').addEventListener('click', function() {
+    toggleSelectionMode(this);
+});
+
+// reset any var inside the create with AI or create Manually
+function resetCreateState() {
+    // Exit selection mode if active
+    if (inSelectionMode) {
+        exitSelectionMode();
+    }
+
+    // Reset Manual Create inputs
+    const manualQuestion = document.getElementById('newQuestion');
+    const manualAnswer = document.getElementById('newAnswer');
+    if (manualQuestion) manualQuestion.value = '';
+    if (manualAnswer) manualAnswer.value = '';
+
+    // Reset AI Create inputs
+    const aiContext = document.getElementById('aiContext');
+    if (aiContext) aiContext.value = '';
+
+    // Reset AI selection preview
+    const selectedTextPreviewAI = document.getElementById('selectedTextPreviewAI');
+    if (selectedTextPreviewAI) selectedTextPreviewAI.textContent = 'No text selected';
+    const selectionPreviewAI = document.getElementById('selectionPreviewAI');
+    if (selectionPreviewAI) selectionPreviewAI.classList.add('hidden');
+
+    // Reset manual selection preview
+    const selectedTextPreviewManually = document.getElementById('selectedTextPreviewManually');
+    if (selectedTextPreviewManually) selectedTextPreviewManually.textContent = 'No text selected';
+    const selectionPreviewManually = document.getElementById('selectionPreviewManually');
+    if (selectionPreviewManually) selectionPreviewManually.classList.add('hidden');
+
+    // Reset edit selection preview
+    const selectedTextPreviewEdit = document.getElementById('selectedTextPreviewEdit');
+    if (selectedTextPreviewEdit) selectedTextPreviewEdit.textContent = 'No new text placement';
+    const selectionPreviewEdit = document.getElementById('selectionPreviewEdit');
+    if (selectionPreviewEdit) selectionPreviewEdit.classList.add('hidden');
+
+    // Reset selection mode variables & buttons
+    inSelectionMode = false;
+    lastSelectionData = null;
+    const startTextBtn = document.getElementById('startTextSelectionAI');
+    if (startTextBtn) {
+        startTextBtn.textContent = 'Start Selection';
+        startTextBtn.classList.remove('bg-yellow-200', 'border-yellow-400');
+    }
+    const setTextBtn = document.getElementById('setTextPlacement');
+    if (setTextBtn) {
+        setTextBtn.textContent = 'Set Text Placement';
+        setTextBtn.classList.remove('bg-yellow-200', 'border-yellow-400');
+    }
+
+    // Disable AI submit button
+    const submitBtn = document.getElementById('submitAiFlashcard');
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
+    }
+
+    // // Clear any highlights if used
+    // document.querySelectorAll('.highlight').forEach(el => el.classList.remove('highlight'));
+}
+
+
+// Navigate to a panel. Hide all panels, show only the one we navigate to
+function navigateTo(view) {
+    const panels = ['flashcardsContainer', 'createPanel', 'aiSelectionPanel', 'editPanel'];
+    panels.forEach(id => {
+        const element = document.getElementById(id);
+        if (element) {
+            element.classList.add('hidden');
+        }
+    });
+
+    const target = document.getElementById(view);
+    if (target) {
+        target.classList.remove('hidden');
+    } else {
+        console.warn(`Element with ID '${view}' not found.`);
+    }
+}
+
+
+
+// Handle exiting selection mode
+function exitSelectionMode() {
+    inSelectionMode = false;
+    document.getElementById('viewerContainer').classList.remove('selection-mode');
+    document.getElementById('startTextSelectionAI').textContent = 'Start Selection';
+    document.getElementById('startTextSelectionAI').classList.remove('bg-yellow-200', 'border-yellow-400');
+}
+
+// Back from AI selection to flashcards list
+document.getElementById('backFromAiSelection').addEventListener('click', () => {
+    exitSelectionMode();
+    navigateTo('flashcardsContainer');
 });

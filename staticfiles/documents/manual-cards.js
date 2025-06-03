@@ -1,27 +1,26 @@
 
-
+// // Click handler for Manually button
 document.getElementById('manualCardButton').addEventListener('click', () => {
-    // Show create panel
-    document.getElementById('createPanel').classList.remove('hidden');
-    document.querySelector('.px-4.py-2.border-b').style.display = 'none';
-    document.getElementById('flashcardsContainer').style.display = 'none';
+    resetCreateState(); // Clear any stale state before showing
+    navigateTo('createPanel');
 });
 
+// Back from manual creation to flashcards list
 document.getElementById('backFromCreate').addEventListener('click', () => {
-    // Hide create panel and show previous UI
-    document.getElementById('createPanel').classList.add('hidden');
-    document.querySelector('.px-4.py-2.border-b').style.display = '';
-    document.getElementById('flashcardsContainer').style.display = '';
-    
-    // Optional: clear inputs
-    document.getElementById('newQuestion').value = '';
-    document.getElementById('newAnswer').value = '';
+    exitSelectionMode();
+    navigateTo('flashcardsContainer');
 });
 
-document.getElementById('saveNewFlashcard').addEventListener('click', () => {
+// Toggle selection mode when clicking on set text placement from create Manually
+document.getElementById('setTextPlacement').addEventListener('click', function() {
+    toggleSelectionMode(this);
+});
+
+const saveNewFlashcardButton = document.getElementById('saveNewFlashcard');
+saveNewFlashcardButton.addEventListener('click', async () => {
     const question = document.getElementById('newQuestion').value.trim();
     const answer = document.getElementById('newAnswer').value.trim();
-
+    
     if (!question || !answer) {
         // Show error message
         const notification = document.createElement('div');
@@ -35,18 +34,27 @@ document.getElementById('saveNewFlashcard').addEventListener('click', () => {
         return;
     }
 
+    let boxes = []
+    if (updateTextPlacement) {
+        // Add the new text placement update
+        // Step 1: Process selection and get boxes
+        boxes = await processSelection(lastSelectionData);
+        console.log('Boxes from text-to-boxes:', boxes);
+    }
+    updateTextPlacement = true;
+
     // Create the flashcard data to send to the server
     const flashcardData = {
         question: question,
         answer: answer,
         deck_id: currentDeckId,
-        document_id: currentDocumentId
+        document_id: currentDocumentId,
+        boxes: boxes
     };
 
-    const saveButton = document.getElementById('saveNewFlashcard');
-    const originalText = saveButton.textContent;
-    saveButton.textContent = 'Creating...';
-    saveButton.disabled = true;
+    const originalText = saveNewFlashcardButton.textContent;
+    saveNewFlashcardButton.textContent = 'Creating...';
+    saveNewFlashcardButton.disabled = true;
 
     // Send the data to your server endpoint
     fetch('/create-flashcard/', {
@@ -94,7 +102,7 @@ document.getElementById('saveNewFlashcard').addEventListener('click', () => {
     })
     .finally(() => {
         // Reset button state
-        saveButton.textContent = originalText;
-        saveButton.disabled = false;
+        saveNewFlashcardButton.textContent = originalText;
+        saveNewFlashcardButton.disabled = false;
     });
 });
