@@ -277,6 +277,7 @@ function acceptFlashcard(flashcardId) {
   });
 }
 
+// delete flashcard
 function discardFlashcard(flashcardId) {
   const modal = document.getElementById('confirm-discard-flashcard');
   const yesBtn = document.getElementById('confirm-yes');
@@ -301,6 +302,7 @@ function discardFlashcard(flashcardId) {
     .then(data => {
       if (data.success) {
         console.log('Flashcard discarded successfully');
+        navigateTo('flashcardsContainer');
         fetchAndCreateHighlights(currentDocumentId);
       } else {
         console.error('Failed to discard flashcard:', data.message);
@@ -315,7 +317,6 @@ function discardFlashcard(flashcardId) {
     modal.classList.add('hidden');
   };
 }
-
 
 // Function to show flashcard tooltip
 function showFlashcardTooltip(flashcard, highlightElement) {
@@ -485,6 +486,12 @@ function showEditPanel(flashcard) {
     document.getElementById('backToFlashcards').addEventListener('click', () => {
         exitSelectionMode();
         navigateTo('flashcardsContainer');
+    });
+
+    // Click handler for delete button
+    document.getElementById('deleteFlashcard').addEventListener('click', (e) => {
+        e.stopPropagation();
+        discardFlashcard(flashcard.id);
     });
 
     // Click handler for edit text placement (in existing cards)
