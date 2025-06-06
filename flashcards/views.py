@@ -475,9 +475,11 @@ def match_flashcards_to_text(request):
         boxes = data.get("boxes")
         deck_id = data.get("deck_id")
         deck = Deck.objects.get(id=deck_id)
-
+        aiContext = data.get("aiContext")
+        
+        logger.debug(f"aiContext is: {aiContext}")
         # Get flashcards matched to text boxes
-        get_matched_flashcards_to_text(selection_data["doc_id"], selection_data["text"], boxes, user, deck)
+        get_matched_flashcards_to_text(selection_data["doc_id"], selection_data["text"], boxes, aiContext, user, deck)
 
         # Return success
         return JsonResponse({'status': 'success'})

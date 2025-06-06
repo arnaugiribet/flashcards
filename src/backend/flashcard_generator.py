@@ -19,26 +19,30 @@ class FlashcardGenerator:
             console_handler.setFormatter(formatter)
             self.logger.addHandler(console_handler)
 
-    def generate_flashcards(self, user, deck, text_input, proposed_flashcards = [], feedback = ""):
+    def generate_flashcards(self, user, deck, text_input, context, proposed_flashcards = [], feedback = ""):
         """
         Generate flashcards from the provided text input.
         """
         system_message = (
             "You are an expert in creating questions and answers out of study material."
+            "You follow the guidelines precisely."
         )
         if not feedback or not proposed_flashcards:
             prompt = (
-            "Transform the following text (within triple claudators) into questions and answers "
-            f"for studying. Make sure the cards are in the same language of the text!! "
-            f"[[[{text_input}]]] "
-            "Return it in purely CSV format without title or prefaces, like this: "
+            "Your task is to transform the study material below into questions and answers "
+            f"for studying.\n The rules you must follow are:\n"
+            " - Make sure the cards are in the same language of the text.\n"
+            " - Return it in purely CSV format without title or prefaces, like this: "
             "\"Who was Mozart?\",\"A classical composer\"\n"
             "\"What is ice?\",\"Frozen water\"\n "
-            "Notice how every question and answer start and end with double quotes, to distinguish "
-            "between commas in the sentence or the comma separator. "
-            "Questions and answers must each be surrounded by quotes. The question must be separated from the answer with a comma. "
-            "Different questions and answers must be separated with a new line. "
-            "Do not add 'Question: ' or 'Answer: ' in the response."
+            " - Notice how every question and answer start and end with double quotes, to distinguish "
+            "between commas in the sentence or the comma separator.\n"
+            " - Questions and answers must each be surrounded by quotes. The question must be separated from the answer with a comma.\n"
+            " - Different questions and answers must be separated with a new line. "
+            " - Do not add 'Question: ' or 'Answer: ' in the response."
+            " - Additionally, the user has added the context below. Please follow it too."
+            f"\nUser context:\n{context}\n"
+            f"\nThe study material is:\n{text_input}"
             )
         elif feedback and proposed_flashcards:
             flashcards_string = "\n".join([flashcard.short_str() for flashcard in proposed_flashcards])
