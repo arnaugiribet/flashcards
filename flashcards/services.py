@@ -76,10 +76,10 @@ def find_best_match_edit_distance(text, words):
     return best_start, best_end, best_score
 
 
-def get_matched_flashcards_to_text(doc_id, text, boxes, user, deck):
+def get_matched_flashcards_to_text(doc_id, text, boxes, aiContext, user, deck):
     logger.debug(f"Processing selected text...")
 
-    flashcards = generate_flashcards(content=text, content_format='raw_string', context='', user=user, deck=deck)
+    flashcards = generate_flashcards(content=text, content_format='raw_string', context=aiContext, user=user, deck=deck)
     logger.debug(f"Trying to match flashcards and store them in db...")
     for flashcard in flashcards:
         logger.debug(f"Matching flashcard:\n{flashcard}")
@@ -173,49 +173,16 @@ def generate_flashcards(content, content_format, context, user, deck):
     llm_client = LLMClient(llm_api_key)
     generator = FlashcardGenerator(llm_client)
 
-    # Combine file and context inputs
-    input_text = context or ""
-
-    # Process content based on format
-    if content_format == '.txt':
-        # For file uploads
-        raw_user_text = content.read().decode('utf-8')
-        logger.debug(f"input .txt was read as:\n{raw_user_text}")
-        input_text += "\n" + raw_user_text
-
-    elif content_format == '.docx':
-        raw_user_text = get_docx(content)
-        logger.debug(f"input .docx was read as:\n{raw_user_text}")
-        input_text += "\n" + raw_user_text
-
-    elif content_format == '.pdf':
-        raw_user_text = get_pdf(content)
-        logger.debug(f"input .pdf was read as:\n{raw_user_text}")
-        input_text += "\n" + raw_user_text
-
-    elif content_format == 'string':
-        # For stringIO input
-        raw_user_text = content.getvalue()
-        input_text += "\n" + raw_user_text
-    
-    elif content_format == 'raw_string':
-        # For raw string input
-        raw_user_text = content
-        input_text += "\n" + raw_user_text
-
-    else:
-        raise ValueError(f"Unsupported content format: {content_format}")
-
-    if not input_text.strip():
+    if not content.strip():
         raise ValueError("No input provided to generate flashcards")
 
     # Check length of inut text and user token consumption before proceeding
-    assert_input_length(raw_user_text)
-    assert_enough_tokens(user, input_text)
+    assert_input_length(content)
+    assert_enough_tokens(user, content)
 
     try:
         # Generate flashcards using the pipeline
-        flashcards, tokens = generator.generate_flashcards(text_input=input_text, user=user, deck=deck)
+        flashcards, tokens = generator.generate_flashcards(text_input=content, context=context, user=user, deck=deck)
 
         # Update TokenUsage database
         logger.debug(f"Total tokens used: {tokens}")

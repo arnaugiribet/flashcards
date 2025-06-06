@@ -218,7 +218,7 @@ document.getElementById('submitAiFlashcard').addEventListener('click', async fun
 
     // Get context from input
     const aiContext = document.getElementById('aiContext').value;
-    
+    console.log("aiContext is: ", aiContext)
     try{
         // Step 1: Process selection and get boxes
         const boxes = await processSelection(lastSelectionData);
