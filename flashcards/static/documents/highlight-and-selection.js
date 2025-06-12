@@ -22,11 +22,12 @@ async function getSelectionWordCoords(startPage, endPage) {
         const textContent = await page.getTextContent();
         const pageWords = textContent.items.map(item => {
             const [x, y] = viewport.convertToViewportPoint(item.transform[4], item.transform[5]);
+            const scaledWidth = item.width * viewport.transform[0];
             return {
                 text: item.str,
                 x: x,
                 y: viewport.height - y, // Flip Y-axis for correct PDF coordinate system
-                width: item.width,
+                width: scaledWidth,
                 height: item.height,
                 page: pageNum
             };
