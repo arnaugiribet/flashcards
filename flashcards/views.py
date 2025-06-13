@@ -516,10 +516,17 @@ def user_decks(request):
 
     today = timezone.now().date()
 
-    # Fetch the decks and convert the queryset to a list
+    # Prefetch only due flashcards that are accepted and due today or earlier
+    due_flashcards_prefetch = Prefetch(
+        'flashcards',
+        queryset=Flashcard.objects.filter(due__lte=today, accepted=True),
+        to_attr='due_flashcards'
+    )
+
+    # Annotate with total flashcards count
     decks_queryset = Deck.objects.filter(user=request.user).annotate(
         flashcards_count=Count('flashcards')
-    ).select_related('parent_deck')
+    ).select_related('parent_deck').prefetch_related(due_flashcards_prefetch)
 
     # Convert queryset to a list
     decks = list(decks_queryset)
@@ -529,9 +536,9 @@ def user_decks(request):
     for root_deck in root_decks:
         set_indentation_level(root_deck, decks, 0)
 
-    # Add due cards today count
+    # Use pre-fetched due flashcards to avoid N+1 queries
     for deck in decks:
-        deck.due_cards_today = deck.flashcards.filter(due__lte=today, accepted=True).count()
+        deck.due_cards_today = len(deck.due_flashcards)
 
     # Order the decks hierarchically using the class method
     ordered_decks = Deck.order_decks(decks)
