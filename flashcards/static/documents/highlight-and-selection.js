@@ -249,7 +249,7 @@ document.getElementById('submitAiFlashcard').addEventListener('click', async fun
     } catch (error) {
         console.error("Error:", error);
         // Show error notification
-        showNotification('Error processing selection. Please try again.', 'error');
+        showNotification(error.message, 'error');
     } finally {
         submitButton.disabled = false;
         submitButton.classList.remove('opacity-50', 'cursor-not-allowed');
@@ -296,7 +296,8 @@ async function matchFlashcardsToText(selection, aiContext, boxes, deckId) {
     });
 
     if (!response.ok) {
-        throw new Error('Failed to get matched flashcards');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to generate cards.');
     }
 
     await response.json();
