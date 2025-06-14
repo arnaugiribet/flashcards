@@ -22,11 +22,12 @@ async function getSelectionWordCoords(startPage, endPage) {
         const textContent = await page.getTextContent();
         const pageWords = textContent.items.map(item => {
             const [x, y] = viewport.convertToViewportPoint(item.transform[4], item.transform[5]);
+            const scaledWidth = item.width * viewport.transform[0];
             return {
                 text: item.str,
                 x: x,
                 y: viewport.height - y, // Flip Y-axis for correct PDF coordinate system
-                width: item.width,
+                width: scaledWidth,
                 height: item.height,
                 page: pageNum
             };
@@ -202,6 +203,15 @@ document.getElementById('submitAiFlashcard').addEventListener('click', async fun
         return;
     }
     
+    const wordCount = lastSelectionData.text.trim().split(/\s+/).length;
+    console.log("wordCount is ", wordCount)
+    const MAX_WORDS = 1000; // adjust the limit as needed
+
+    if (wordCount > MAX_WORDS) {
+        showNotification(`Please select no more than ${MAX_WORDS} words to ensure high-quality flashcards.`, 'error', 4000);
+        return;
+    }
+
     // Disable button while processing, show message
     const submitButton = document.getElementById('submitAiFlashcard');
     showLoading("Generating Cards...");
@@ -239,14 +249,7 @@ document.getElementById('submitAiFlashcard').addEventListener('click', async fun
     } catch (error) {
         console.error("Error:", error);
         // Show error notification
-        const notification = document.createElement('div');
-        notification.className = 'fixed bottom-4 right-4 bg-red-600 text-white px-4 py-2 rounded-lg shadow-lg z-50';
-        notification.textContent = 'Error processing selection. Please try again.';
-        document.body.appendChild(notification);
-        
-        setTimeout(() => {
-            notification.remove();
-        }, 2000);
+        showNotification(error.message, 'error');
     } finally {
         submitButton.disabled = false;
         submitButton.classList.remove('opacity-50', 'cursor-not-allowed');
@@ -293,7 +296,8 @@ async function matchFlashcardsToText(selection, aiContext, boxes, deckId) {
     });
 
     if (!response.ok) {
-        throw new Error('Failed to get matched flashcards');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to generate cards.');
     }
 
     await response.json();
@@ -473,15 +477,8 @@ function toggleSelectionMode(button) {
         button.classList.add('bg-yellow-200', 'border-yellow-400');
         button.textContent = 'Cancel';
         
-        const notification = document.createElement('div');
-        notification.className = 'absolute bottom-4 right-4 transform bg-gray-800 text-white px-4 py-2 rounded-lg shadow z-10';
-        notification.textContent = 'Select text in the document. Hold Ctrl to select over already linked text.';
-        
-        const viewer = document.getElementById('documentViewerModal');
-        viewer.style.position = 'relative';
-        viewer.appendChild(notification);
-        
-        setTimeout(() => notification.remove(), 3000);
+        // Show select text notification
+        showNotification('Select text in the document. Hold Ctrl to select over already linked text.', 'info');
     }
 }
 

@@ -464,9 +464,11 @@ def text_to_boxes(request):
 
     return JsonResponse({'error': 'Invalid request'}, status=400)
 
-# Match flashcards to text boxes
 def match_flashcards_to_text(request):
-    if request.method == 'POST':
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Invalid request method'}, status=400)
+
+    try:
         data = json.loads(request.body)
         user = request.user
 
@@ -474,17 +476,47 @@ def match_flashcards_to_text(request):
         selection_data = data.get("selection")
         boxes = data.get("boxes")
         deck_id = data.get("deck_id")
-        deck = Deck.objects.get(id=deck_id)
         aiContext = data.get("aiContext")
-        
-        logger.debug(f"aiContext is: {aiContext}")
-        # Get flashcards matched to text boxes
-        get_matched_flashcards_to_text(selection_data["doc_id"], selection_data["text"], boxes, aiContext, user, deck)
 
-        # Return success
+        if not selection_data or not boxes or not deck_id:
+            return JsonResponse({'error': 'Missing required data'}, status=400)
+
+        try:
+            deck = Deck.objects.get(id=deck_id)
+        except Deck.DoesNotExist:
+            return JsonResponse({'error': 'Deck not found'}, status=404)
+
+        # Main logic that may raise InsufficientTokensError
+        get_matched_flashcards_to_text(
+            selection_data["doc_id"],
+            selection_data["text"],
+            boxes,
+            aiContext,
+            user,
+            deck
+        )
+
         return JsonResponse({'status': 'success'})
 
-    return JsonResponse({'error': 'Invalid request'}, status=400)
+    except InsufficientTokensError as e:
+        # Handle the specific InsufficientTokensError
+        logger.error(f"InsufficientTokensError handled. Insufficient tokens: {str(e)}", exc_info=True)
+        
+        last_usage_timestamps = e.most_recent_usage_timestamp
+        time_in_4_hours = last_usage_timestamps + timedelta(hours=4) + timedelta(minutes=1)
+        formatted_time = time_in_4_hours.strftime('%I:%M %p')
+        if formatted_time.startswith('0'): # trick to avoid the preceding 0 
+            formatted_time = formatted_time[1:]
+        return JsonResponse({
+            "success": False, 
+            "error": f"You are out of tokens until {formatted_time}. Unlimited Pro version coming soon."
+        }, status=400)
+
+
+    except Exception as e:
+        logger.exception("Unexpected error in match_flashcards_to_text")
+        return JsonResponse({'error': 'An unexpected error occurred.'}, status=500)
+
 
 @login_required
 def user_decks(request):
@@ -516,10 +548,17 @@ def user_decks(request):
 
     today = timezone.now().date()
 
-    # Fetch the decks and convert the queryset to a list
+    # Prefetch only due flashcards that are accepted and due today or earlier
+    due_flashcards_prefetch = Prefetch(
+        'flashcards',
+        queryset=Flashcard.objects.filter(due__lte=today, accepted=True),
+        to_attr='due_flashcards'
+    )
+
+    # Annotate with total flashcards count
     decks_queryset = Deck.objects.filter(user=request.user).annotate(
         flashcards_count=Count('flashcards')
-    ).select_related('parent_deck')
+    ).select_related('parent_deck').prefetch_related(due_flashcards_prefetch)
 
     # Convert queryset to a list
     decks = list(decks_queryset)
@@ -529,9 +568,9 @@ def user_decks(request):
     for root_deck in root_decks:
         set_indentation_level(root_deck, decks, 0)
 
-    # Add due cards today count
+    # Use pre-fetched due flashcards to avoid N+1 queries
     for deck in decks:
-        deck.due_cards_today = deck.flashcards.filter(due__lte=today, accepted=True).count()
+        deck.due_cards_today = len(deck.due_flashcards)
 
     # Order the decks hierarchically using the class method
     ordered_decks = Deck.order_decks(decks)
