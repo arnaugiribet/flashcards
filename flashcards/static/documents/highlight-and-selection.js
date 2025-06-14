@@ -203,6 +203,15 @@ document.getElementById('submitAiFlashcard').addEventListener('click', async fun
         return;
     }
     
+    const wordCount = lastSelectionData.text.trim().split(/\s+/).length;
+    console.log("wordCount is ", wordCount)
+    const MAX_WORDS = 1000; // adjust the limit as needed
+
+    if (wordCount > MAX_WORDS) {
+        showNotification(`Please select no more than ${MAX_WORDS} words to ensure high-quality flashcards.`, 'error', 4000);
+        return;
+    }
+
     // Disable button while processing, show message
     const submitButton = document.getElementById('submitAiFlashcard');
     showLoading("Generating Cards...");
@@ -240,14 +249,7 @@ document.getElementById('submitAiFlashcard').addEventListener('click', async fun
     } catch (error) {
         console.error("Error:", error);
         // Show error notification
-        const notification = document.createElement('div');
-        notification.className = 'fixed bottom-4 right-4 bg-red-600 text-white px-4 py-2 rounded-lg shadow-lg z-50';
-        notification.textContent = 'Error processing selection. Please try again.';
-        document.body.appendChild(notification);
-        
-        setTimeout(() => {
-            notification.remove();
-        }, 2000);
+        showNotification('Error processing selection. Please try again.', 'error');
     } finally {
         submitButton.disabled = false;
         submitButton.classList.remove('opacity-50', 'cursor-not-allowed');
@@ -474,15 +476,8 @@ function toggleSelectionMode(button) {
         button.classList.add('bg-yellow-200', 'border-yellow-400');
         button.textContent = 'Cancel';
         
-        const notification = document.createElement('div');
-        notification.className = 'absolute bottom-4 right-4 transform bg-gray-800 text-white px-4 py-2 rounded-lg shadow z-10';
-        notification.textContent = 'Select text in the document. Hold Ctrl to select over already linked text.';
-        
-        const viewer = document.getElementById('documentViewerModal');
-        viewer.style.position = 'relative';
-        viewer.appendChild(notification);
-        
-        setTimeout(() => notification.remove(), 3000);
+        // Show select text notification
+        showNotification('Select text in the document. Hold Ctrl to select over already linked text.', 'info');
     }
 }
 

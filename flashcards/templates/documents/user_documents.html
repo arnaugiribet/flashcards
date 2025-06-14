@@ -392,6 +392,48 @@
     let hasSelectedText = false;
     let flashcards = [];
 
+    // Helper function to show consistent notifications
+    function showNotification(message, type = 'info', duration = 3000) {
+        const notification = document.createElement('div');
+        
+        // Base classes
+        let className = 'fixed bottom-4 right-20 text-white px-4 py-2 rounded-lg shadow-lg z-50 transition-opacity duration-300';
+        
+        // Add type-specific styling
+        switch (type) {
+            case 'error':
+                className += ' bg-red-600';
+                break;
+            case 'success':
+                className += ' bg-green-600';
+                break;
+            case 'warning':
+                className += ' bg-yellow-600';
+                break;
+            case 'info':
+            default:
+                className += ' bg-gray-800';
+                break;
+        }
+        
+        notification.className = className;
+        notification.textContent = message;
+        
+        document.body.appendChild(notification);
+        
+        // Auto-remove after specified duration
+        setTimeout(() => {
+            notification.style.opacity = '0';
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.remove();
+                }
+            }, 300); // Wait for fade out transition
+        }, duration);
+        
+        return notification; // Return in case you need to manually remove it
+    }
+
 </script>
 
 <script src="{% static 'documents/documents-ui-controller.js' %}"></script>
