@@ -5,9 +5,9 @@ from .models import UserPlan, TokenUsage, UserDocument
 # Register your models here.
 @admin.register(UserDocument)
 class UserDocumentAdmin(admin.ModelAdmin):
-    list_display = ('user', 'name', 'file_type', 's3_key')  # Columns to show in the list view
+    list_display = ('user', 'name', 'file_type', 's3_key', 'file_size')  # Columns to show in the list view
     search_fields = ('user__username', 'name')  # Search by username or document name
-    list_filter = ('file_type',)  # Filter by file type
+    list_filter = ('file_type','file_size')  # Filter by file type and size
 
 @admin.register(FailedFeedback)
 class FailedFeedbackAdmin(admin.ModelAdmin):

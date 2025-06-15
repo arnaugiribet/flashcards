@@ -8,7 +8,7 @@ from flashcards.models import UserDocument, Deck
 class DocumentUploadForm(forms.ModelForm):
     document = forms.FileField(
         widget=forms.FileInput(attrs={'class': 'form-control'}),
-        help_text='Accepted formats: PDF, TXT, DOCX'
+        help_text='Accepted formats: PDF'
     )
     deck_name = forms.CharField(
         max_length=200,
@@ -24,8 +24,8 @@ class DocumentUploadForm(forms.ModelForm):
         document = self.cleaned_data.get('document')
         if document:
             file_type = document.name.split('.')[-1].lower()
-            if file_type not in ['pdf', 'txt', 'docx']:
-                raise forms.ValidationError('File type not supported. Please upload PDF, TXT, or DOCX files only.')
+            if file_type not in ['pdf']:
+                raise forms.ValidationError('File type not supported. Please upload PDF files only.')
             return document
 
 

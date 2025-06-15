@@ -148,6 +148,7 @@ class UserDocument(models.Model):
     name = models.CharField(max_length=255)
     file_type = models.CharField(max_length=10)  # pdf, txt, docx
     s3_key = models.CharField(max_length=255)
+    file_size = models.BigIntegerField()  # in bytes
     uploaded_at = models.DateTimeField(auto_now_add=True)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     deck = models.ForeignKey(Deck, on_delete=models.CASCADE, related_name='documents')
