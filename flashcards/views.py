@@ -18,7 +18,7 @@ from .services import delete_document_from_s3, generate_flashcards, get_matched_
 from .forms import CustomUserCreationForm
 from django.views.decorators.http import require_http_methods, require_POST
 from django.core.exceptions import ValidationError
-from django.db.models import Count, Q, Prefetch
+from django.db.models import Count, Q, Prefetch, Sum
 import random
 import logging
 import io
@@ -289,9 +289,20 @@ def upload_document(request):
             logger.debug(f"Form is valid request received for file upload to s3")
             document = form.cleaned_data['document']
             deck_name = form.cleaned_data['deck_name']
-            file_type = document.name.split('.')[-1].lower()
-            name = document.name
-            
+            name, file_type = os.path.splitext(document.name)
+            file_type = file_type.lstrip('.').lower()
+            file_size = document.size
+
+            existing_total = UserDocument.objects.filter(user=request.user).aggregate(Sum('file_size'))['file_size__sum'] or 0
+            new_total = existing_total + file_size
+            logger.debug(f"allocated space in s3: {settings.MAX_S3_SPACE/1024/1024}mb")
+            logger.debug(f"used space in s3: {round(existing_total/1024/1024, 2)}mb")
+            logger.debug(f"file size: {round(file_size/1024/1024, 2)}mb")
+
+            if new_total > settings.MAX_S3_SPACE:
+                logger.debug("Not enough space")
+                form.add_error(None, 'Storage space limit reached. Delete documents before uploading new ones.')
+                return redirect('user_documents')
             # Create a new deck
             deck = Deck(
                 name=deck_name,
@@ -307,6 +318,7 @@ def upload_document(request):
             user_document.file_type = file_type
             user_document.name = name
             user_document.deck = deck
+            user_document.file_size = file_size
             
             logger.debug(f"Generating S3 key")
             # Generate S3 key
@@ -353,7 +365,7 @@ def upload_document(request):
     else:
         form = DocumentUploadForm()
     
-    return render(request, 'documents/user_documents.html', {'form': form})
+    return redirect('user_documents')
 
 @login_required
 @require_POST
