@@ -208,3 +208,6 @@ LOGGING = {
         },
     },
 }
+
+# IN APP SETTINGS
+MAX_S3_SPACE = 100 * 1024 * 1024
